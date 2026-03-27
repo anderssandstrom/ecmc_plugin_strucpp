@@ -68,13 +68,13 @@ required `ecmcMcApi.h` header metadata.
 The host expects the normal `Cfg.LoadPlugin(...)` config string format:
 
 ```text
-logic_lib=<path>;[mapping_file=<path>|input_item=<ecmc data item>|input_bindings=<offset:item[@bytes],...>];[output_item=<ecmc data item>|output_bindings=<offset:item[@bytes],...>];memory_bytes=<n>
+logic_lib=<path>;asyn_port=<plugin asyn port>;[mapping_file=<path>|input_item=<ecmc data item>|input_bindings=<offset:item[@bytes],...>];[output_item=<ecmc data item>|output_bindings=<offset:item[@bytes],...>];memory_bytes=<n>
 ```
 
 Startup-linked mapping example:
 
 ```text
-logic_lib=/abs/path/to/el7041_velocity_logic.so;mapping_file=/abs/path/to/el7041_velocity.map;memory_bytes=16
+logic_lib=/abs/path/to/el7041_velocity_logic.so;asyn_port=PLUGIN.STRUCPP0;mapping_file=/abs/path/to/el7041_velocity.map;memory_bytes=16
 ```
 
 Contiguous image example:
@@ -94,6 +94,9 @@ logic_lib=/abs/path/to/el7041_velocity_logic.so;input_bindings=0:ec0.s14.positio
 - `mapping_file`
   path to a startup-linked manifest that maps exact STruCpp addresses like
   `%IW0` or `%QW2` to literal `ecmcDataItem` names
+- `asyn_port`
+  dedicated asyn port owned by `ecmc_plugin_strucpp`, defaults to
+  `PLUGIN.STRUCPP0`
 - `input_item`
   `ecmcDataItem` used as one contiguous `%I*` byte image
 - `output_item`
@@ -194,6 +197,35 @@ strucpp_set_bit(2, 4, 0, 1);       // set %MX4.0
 ```
 
 Out-of-range access returns `NaN`.
+
+## ST Variable Exports
+
+The host can also publish selected non-located ST variables as normal EPICS
+asyn parameters on the plugin's own dedicated asyn port. The intent is that
+the declaration lives in the ST source, not in a second C++ config list.
+
+Annotation shape:
+
+```text
+counter       : INT;    // @epics plugin.strucpp.machine.counter
+manual_target : INT;    // @epics plugin.strucpp.machine.manual_target rw
+```
+
+Rules:
+
+- the annotation lives on the ST variable declaration line
+- the first token after `@epics` is the exported asyn parameter name
+- optional final token `rw` makes the parameter writable from EPICS
+- default is read-only
+- current support is for top-level scalar program variables:
+  `BOOL`, `SINT`, `USINT`, `BYTE`, `INT`, `UINT`, `WORD`, `DINT`, `UDINT`,
+  `DWORD`, `REAL`, `LREAL`
+
+The application repo runs
+[`scripts/strucpp_epics_exportgen.py`](scripts/strucpp_epics_exportgen.py) to
+turn those annotations into a small generated export header. The logic library
+then exposes that export table through the logic ABI, and the host creates
+matching asyn parameters at startup on the configured `asyn_port`.
 
 ## Installed Public Headers
 

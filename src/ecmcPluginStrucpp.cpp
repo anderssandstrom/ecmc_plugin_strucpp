@@ -13,6 +13,8 @@
 #include "ecmcStrucppBridge.hpp"
 #include "ecmcStrucppLogicIface.hpp"
 
+#include "ecmcAsynDataItem.h"
+#include "ecmcAsynPortDriver.h"
 #include "ecmcDataItem.h"
 #include "ecmcPluginClient.h"
 #include "ecmcPluginDefs.h"
@@ -66,6 +68,7 @@ struct BoundAddressMapping {
 struct PluginConfig {
   std::string logic_lib;
   std::string mapping_file;
+  std::string asyn_port_name;
   std::string input_item;
   std::string output_item;
   std::vector<ItemBindingSpec> input_bindings;
@@ -77,6 +80,13 @@ struct LogicRuntime {
   void* dl_handle {};
   const ecmcStrucppLogicApi* api {};
   void* instance {};
+};
+
+struct ExportedParamBinding {
+  std::string name;
+  ecmcAsynDataItem* param {};
+  uint32_t type {};
+  uint32_t writable {};
 };
 
 static int alreadyLoaded = 0;
@@ -91,10 +101,13 @@ std::vector<AddressMappingSpec> g_mapping_specs;
 std::vector<BoundAddressMapping> g_bound_mappings;
 LogicRuntime g_logic {};
 ecmcStrucppCompiledCopyPlan g_copy_plan {};
+std::vector<ExportedParamBinding> g_exported_params;
+ecmcAsynPortDriver* g_asyn_port = nullptr;
 
 constexpr double kPlcAreaInput = 0.0;
 constexpr double kPlcAreaOutput = 1.0;
 constexpr double kPlcAreaMemory = 2.0;
+constexpr const char* kDefaultAsynPortName = "PLUGIN.STRUCPP0";
 
 double plcNaN() {
   return std::numeric_limits<double>::quiet_NaN();
@@ -277,6 +290,193 @@ double plcGetF64(double area, double offset) {
 
 double plcSetF64(double area, double offset, double value) {
   return plcSetScalar<double>(area, offset, value);
+}
+
+bool exportTypeInfo(uint32_t export_type,
+                    asynParamType* asyn_type_out,
+                    ecmcEcDataType* data_type_out,
+                    size_t* bytes_out) {
+  if (!asyn_type_out || !data_type_out || !bytes_out) {
+    return false;
+  }
+
+  switch (export_type) {
+  case ECMC_STRUCPP_EXPORT_BOOL:
+    *asyn_type_out = asynParamInt32;
+    *data_type_out = ECMC_EC_U8;
+    *bytes_out = 1;
+    return true;
+  case ECMC_STRUCPP_EXPORT_S8:
+    *asyn_type_out = asynParamInt32;
+    *data_type_out = ECMC_EC_S8;
+    *bytes_out = 1;
+    return true;
+  case ECMC_STRUCPP_EXPORT_U8:
+    *asyn_type_out = asynParamInt32;
+    *data_type_out = ECMC_EC_U8;
+    *bytes_out = 1;
+    return true;
+  case ECMC_STRUCPP_EXPORT_S16:
+    *asyn_type_out = asynParamInt32;
+    *data_type_out = ECMC_EC_S16;
+    *bytes_out = 2;
+    return true;
+  case ECMC_STRUCPP_EXPORT_U16:
+    *asyn_type_out = asynParamInt32;
+    *data_type_out = ECMC_EC_U16;
+    *bytes_out = 2;
+    return true;
+  case ECMC_STRUCPP_EXPORT_S32:
+    *asyn_type_out = asynParamInt32;
+    *data_type_out = ECMC_EC_S32;
+    *bytes_out = 4;
+    return true;
+  case ECMC_STRUCPP_EXPORT_U32:
+    *asyn_type_out = asynParamUInt32Digital;
+    *data_type_out = ECMC_EC_U32;
+    *bytes_out = 4;
+    return true;
+  case ECMC_STRUCPP_EXPORT_F32:
+    *asyn_type_out = asynParamFloat64;
+    *data_type_out = ECMC_EC_F32;
+    *bytes_out = 4;
+    return true;
+  case ECMC_STRUCPP_EXPORT_F64:
+    *asyn_type_out = asynParamFloat64;
+    *data_type_out = ECMC_EC_F64;
+    *bytes_out = 8;
+    return true;
+  default:
+    return false;
+  }
+}
+
+const ecmcStrucppExportedVar* logicExportedVars() {
+  if (!g_logic.api || !g_logic.instance || !g_logic.api->get_exported_vars) {
+    return nullptr;
+  }
+  return g_logic.api->get_exported_vars(g_logic.instance);
+}
+
+size_t logicExportedVarCount() {
+  if (!g_logic.api || !g_logic.instance || !g_logic.api->get_exported_var_count) {
+    return 0;
+  }
+  return static_cast<size_t>(g_logic.api->get_exported_var_count(g_logic.instance));
+}
+
+bool bindExportedVars(std::string* error_out) {
+  g_exported_params.clear();
+
+  const ecmcStrucppExportedVar* const vars = logicExportedVars();
+  const size_t count = logicExportedVarCount();
+  if (!vars || count == 0) {
+    return true;
+  }
+
+  if (!g_asyn_port) {
+    if (error_out) {
+      *error_out = "Plugin asyn port is not initialized";
+    }
+    return false;
+  }
+
+  for (size_t i = 0; i < count; ++i) {
+    const auto& export_var = vars[i];
+    if (!export_var.name || !export_var.name[0]) {
+      if (error_out) {
+        *error_out = "Encountered exported ST variable with empty name";
+      }
+      return false;
+    }
+    if (!export_var.data) {
+      if (error_out) {
+        *error_out = std::string("Exported ST variable '") + export_var.name +
+                     "' has null data pointer";
+      }
+      return false;
+    }
+
+    asynParamType asyn_type = asynParamNotDefined;
+    ecmcEcDataType data_type = ECMC_EC_NONE;
+    size_t bytes = 0;
+    if (!exportTypeInfo(export_var.type, &asyn_type, &data_type, &bytes)) {
+      if (error_out) {
+        *error_out = std::string("Unsupported exported ST variable type for '") +
+                     export_var.name + "'";
+      }
+      return false;
+    }
+
+    ecmcAsynDataItem* param = g_asyn_port->findAvailParam(export_var.name);
+    if (param) {
+      param->setEcmcDataPointer(static_cast<uint8_t*>(export_var.data), bytes);
+      param->setEcmcDataType(data_type);
+      param->setAllowWriteToEcmc(export_var.writable != 0);
+      if (export_var.type == ECMC_STRUCPP_EXPORT_BOOL) {
+        param->setEcmcBitCount(1);
+      }
+    } else {
+      param = g_asyn_port->addNewAvailParam(export_var.name,
+                                            asyn_type,
+                                            static_cast<uint8_t*>(export_var.data),
+                                            bytes,
+                                            data_type,
+                                            true);
+      if (!param) {
+        if (error_out) {
+          *error_out = std::string("Failed to create asyn parameter for exported ST variable '") +
+                       export_var.name + "'";
+        }
+        return false;
+      }
+      param->setAllowWriteToEcmc(export_var.writable != 0);
+      if (export_var.type == ECMC_STRUCPP_EXPORT_BOOL) {
+        param->setEcmcBitCount(1);
+      }
+    }
+
+    param->refreshParamRT(1);
+    g_exported_params.push_back({export_var.name, param, export_var.type, export_var.writable});
+  }
+
+  return true;
+}
+
+bool ensureAsynPort(std::string* error_out) {
+  if (g_asyn_port) {
+    return true;
+  }
+
+  try {
+    g_asyn_port = new ecmcAsynPortDriver(g_config.asyn_port_name.c_str(),
+                                         128,
+                                         1,
+                                         0,
+                                         100.0);
+  } catch (const std::exception& ex) {
+    if (error_out) {
+      *error_out = std::string("Failed to create plugin asyn port '") +
+                   g_config.asyn_port_name + "': " + ex.what();
+    }
+    g_asyn_port = nullptr;
+    return false;
+  }
+
+  if (!g_asyn_port) {
+    if (error_out) {
+      *error_out = std::string("Failed to create plugin asyn port '") +
+                   g_config.asyn_port_name + "'";
+    }
+    return false;
+  }
+
+  return true;
+}
+
+void destroyAsynPort() {
+  delete g_asyn_port;
+  g_asyn_port = nullptr;
 }
 
 std::string trim(std::string value) {
@@ -804,6 +1004,7 @@ bool parseConfigString(const char* raw_config,
   }
 
   *out_config = PluginConfig {};
+  out_config->asyn_port_name = kDefaultAsynPortName;
 
   if (!raw_config || raw_config[0] == '\0') {
     if (error_out) {
@@ -836,6 +1037,8 @@ bool parseConfigString(const char* raw_config,
 
       if (key == "logic_lib") {
         out_config->logic_lib = value;
+      } else if (key == "asyn_port") {
+        out_config->asyn_port_name = value;
       } else if (key == "mapping_file") {
         out_config->mapping_file = value;
       } else if (key == "input_item") {
@@ -1321,6 +1524,7 @@ void clearRuntimeState() {
   g_bound_output_bindings.clear();
   g_mapping_specs.clear();
   g_bound_mappings.clear();
+  g_exported_params.clear();
 }
 
 void unloadLogicRuntime() {
@@ -1380,7 +1584,8 @@ bool loadLogicRuntime(const std::string& path, std::string* error_out) {
 
   if (!g_logic.api->create_instance || !g_logic.api->destroy_instance ||
       !g_logic.api->run_cycle || !g_logic.api->get_located_vars ||
-      !g_logic.api->get_located_var_count) {
+      !g_logic.api->get_located_var_count || !g_logic.api->get_exported_vars ||
+      !g_logic.api->get_exported_var_count) {
     if (error_out) {
       *error_out = "Logic API is incomplete";
     }
@@ -1431,11 +1636,18 @@ static int construct(char* configStr) {
     return -1;
   }
 
+  if (!ensureAsynPort(&error)) {
+    unloadLogicRuntime();
+    logError("%s", error.c_str());
+    return -1;
+  }
+
   alreadyLoaded = 1;
   const std::string input_bindings = describeBindingSpecs(g_config.input_bindings);
   const std::string output_bindings = describeBindingSpecs(g_config.output_bindings);
-  logInfo("configured logic_lib=%s mapping_file=%s input_item=%s input_bindings=%s output_item=%s output_bindings=%s memory_bytes=%zu",
+  logInfo("configured logic_lib=%s asyn_port=%s mapping_file=%s input_item=%s input_bindings=%s output_item=%s output_bindings=%s memory_bytes=%zu",
           g_config.logic_lib.c_str(),
+          g_config.asyn_port_name.c_str(),
           g_config.mapping_file.empty() ? "<none>" : g_config.mapping_file.c_str(),
           g_config.input_item.empty() ? "<none>" : g_config.input_item.c_str(),
           input_bindings.c_str(),
@@ -1448,6 +1660,7 @@ static int construct(char* configStr) {
 static void destruct(void) {
   unloadLogicRuntime();
   clearRuntimeState();
+  destroyAsynPort();
   g_config = PluginConfig {};
   alreadyLoaded = 0;
 }
@@ -1600,6 +1813,11 @@ static int enterRealtime(void) {
     return -1;
   }
 
+  if (!bindExportedVars(&error)) {
+    logError("%s", error.c_str());
+    return -1;
+  }
+
   logInfo("bound logic=%s input=%s (%zu bytes) output=%s (%zu bytes) memory=%zu bytes",
           g_logic.api->name ? g_logic.api->name : "<unnamed>",
           g_images.input.name.empty() ? "<none>" : g_images.input.name.c_str(),
@@ -1607,6 +1825,9 @@ static int enterRealtime(void) {
           g_images.output.name.empty() ? "<none>" : g_images.output.name.c_str(),
           g_images.output.size,
           g_images.memory.size);
+  if (!g_exported_params.empty()) {
+    logInfo("published %zu ST variables to asyn", g_exported_params.size());
+  }
   return 0;
 }
 
@@ -1637,6 +1858,12 @@ static int realtime(int) {
   if (!g_bound_output_bindings.empty()) {
     scatterBindings(g_images.output, g_bound_output_bindings);
   }
+
+  for (auto& exported_param : g_exported_params) {
+    if (exported_param.param) {
+      exported_param.param->refreshParamRT(1);
+    }
+  }
   return 0;
 }
 
@@ -1645,7 +1872,7 @@ static struct ecmcPluginData pluginDataDef = {
   .name = "ecmc_plugin_strucpp",
   .desc = "Generic ecmc host plugin for loadable STruCpp logic libraries.",
   .optionDesc =
-    "logic_lib=<path>;[mapping_file=<path>|input_item=<name>|input_bindings=<offset:item[@bytes],...>];"
+    "logic_lib=<path>;asyn_port=<plugin-port>;[mapping_file=<path>|input_item=<name>|input_bindings=<offset:item[@bytes],...>];"
     "[mapping_file=<path>|output_item=<name>|output_bindings=<offset:item[@bytes],...>];memory_bytes=<n>\n"
     "PLC consts: STRUCPP_AREA_I=0, STRUCPP_AREA_Q=1, STRUCPP_AREA_M=2\n"
     "PLC funcs: strucpp_get_bit(a,b,bit), strucpp_set_bit(a,b,bit,v), "
