@@ -1,0 +1,513 @@
+{
+  "formatVersion": 1,
+  "manifest": {
+    "name": "ecmc-motion",
+    "version": "0.1.0",
+    "namespace": "ecmc_motion",
+    "functions": [],
+    "functionBlocks": [
+      {
+        "name": "MC_POWER",
+        "inputs": [
+          {
+            "name": "AXIS",
+            "type": "ECMC_AXIS_REF"
+          },
+          {
+            "name": "ENABLE",
+            "type": "BOOL"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "STATUS",
+            "type": "BOOL"
+          },
+          {
+            "name": "VALID",
+            "type": "BOOL"
+          },
+          {
+            "name": "BUSY",
+            "type": "BOOL"
+          },
+          {
+            "name": "ERROR",
+            "type": "BOOL"
+          },
+          {
+            "name": "ERRORID",
+            "type": "UDINT"
+          },
+          {
+            "name": "ACTIVE",
+            "type": "BOOL"
+          }
+        ],
+        "inouts": []
+      },
+      {
+        "name": "MC_RESET",
+        "inputs": [
+          {
+            "name": "AXIS",
+            "type": "ECMC_AXIS_REF"
+          },
+          {
+            "name": "EXECUTE",
+            "type": "BOOL"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DONE",
+            "type": "BOOL"
+          },
+          {
+            "name": "BUSY",
+            "type": "BOOL"
+          },
+          {
+            "name": "ERROR",
+            "type": "BOOL"
+          },
+          {
+            "name": "ERRORID",
+            "type": "UDINT"
+          },
+          {
+            "name": "ACTIVE",
+            "type": "BOOL"
+          }
+        ],
+        "inouts": []
+      },
+      {
+        "name": "MC_MOVEABSOLUTE",
+        "inputs": [
+          {
+            "name": "AXIS",
+            "type": "ECMC_AXIS_REF"
+          },
+          {
+            "name": "EXECUTE",
+            "type": "BOOL"
+          },
+          {
+            "name": "POSITION",
+            "type": "LREAL"
+          },
+          {
+            "name": "VELOCITY",
+            "type": "LREAL"
+          },
+          {
+            "name": "ACCELERATION",
+            "type": "LREAL"
+          },
+          {
+            "name": "DECELERATION",
+            "type": "LREAL"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DONE",
+            "type": "BOOL"
+          },
+          {
+            "name": "BUSY",
+            "type": "BOOL"
+          },
+          {
+            "name": "ACTIVE",
+            "type": "BOOL"
+          },
+          {
+            "name": "COMMANDABORTED",
+            "type": "BOOL"
+          },
+          {
+            "name": "ERROR",
+            "type": "BOOL"
+          },
+          {
+            "name": "ERRORID",
+            "type": "UDINT"
+          }
+        ],
+        "inouts": []
+      },
+      {
+        "name": "MC_MOVERELATIVE",
+        "inputs": [
+          {
+            "name": "AXIS",
+            "type": "ECMC_AXIS_REF"
+          },
+          {
+            "name": "EXECUTE",
+            "type": "BOOL"
+          },
+          {
+            "name": "DISTANCE",
+            "type": "LREAL"
+          },
+          {
+            "name": "VELOCITY",
+            "type": "LREAL"
+          },
+          {
+            "name": "ACCELERATION",
+            "type": "LREAL"
+          },
+          {
+            "name": "DECELERATION",
+            "type": "LREAL"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DONE",
+            "type": "BOOL"
+          },
+          {
+            "name": "BUSY",
+            "type": "BOOL"
+          },
+          {
+            "name": "ACTIVE",
+            "type": "BOOL"
+          },
+          {
+            "name": "COMMANDABORTED",
+            "type": "BOOL"
+          },
+          {
+            "name": "ERROR",
+            "type": "BOOL"
+          },
+          {
+            "name": "ERRORID",
+            "type": "UDINT"
+          }
+        ],
+        "inouts": []
+      },
+      {
+        "name": "MC_MOVEVELOCITY",
+        "inputs": [
+          {
+            "name": "AXIS",
+            "type": "ECMC_AXIS_REF"
+          },
+          {
+            "name": "EXECUTE",
+            "type": "BOOL"
+          },
+          {
+            "name": "VELOCITY",
+            "type": "LREAL"
+          },
+          {
+            "name": "ACCELERATION",
+            "type": "LREAL"
+          },
+          {
+            "name": "DECELERATION",
+            "type": "LREAL"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "INVELOCITY",
+            "type": "BOOL"
+          },
+          {
+            "name": "BUSY",
+            "type": "BOOL"
+          },
+          {
+            "name": "ACTIVE",
+            "type": "BOOL"
+          },
+          {
+            "name": "COMMANDABORTED",
+            "type": "BOOL"
+          },
+          {
+            "name": "ERROR",
+            "type": "BOOL"
+          },
+          {
+            "name": "ERRORID",
+            "type": "UDINT"
+          }
+        ],
+        "inouts": []
+      },
+      {
+        "name": "MC_HOME",
+        "inputs": [
+          {
+            "name": "AXIS",
+            "type": "ECMC_AXIS_REF"
+          },
+          {
+            "name": "EXECUTE",
+            "type": "BOOL"
+          },
+          {
+            "name": "SEQID",
+            "type": "DINT"
+          },
+          {
+            "name": "HOMEPOSITION",
+            "type": "LREAL"
+          },
+          {
+            "name": "VELOCITYTOWARDSCAM",
+            "type": "LREAL"
+          },
+          {
+            "name": "VELOCITYOFFCAM",
+            "type": "LREAL"
+          },
+          {
+            "name": "ACCELERATION",
+            "type": "LREAL"
+          },
+          {
+            "name": "DECELERATION",
+            "type": "LREAL"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DONE",
+            "type": "BOOL"
+          },
+          {
+            "name": "BUSY",
+            "type": "BOOL"
+          },
+          {
+            "name": "ACTIVE",
+            "type": "BOOL"
+          },
+          {
+            "name": "COMMANDABORTED",
+            "type": "BOOL"
+          },
+          {
+            "name": "ERROR",
+            "type": "BOOL"
+          },
+          {
+            "name": "ERRORID",
+            "type": "UDINT"
+          }
+        ],
+        "inouts": []
+      },
+      {
+        "name": "MC_HALT",
+        "inputs": [
+          {
+            "name": "AXIS",
+            "type": "ECMC_AXIS_REF"
+          },
+          {
+            "name": "EXECUTE",
+            "type": "BOOL"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DONE",
+            "type": "BOOL"
+          },
+          {
+            "name": "BUSY",
+            "type": "BOOL"
+          },
+          {
+            "name": "ACTIVE",
+            "type": "BOOL"
+          },
+          {
+            "name": "COMMANDABORTED",
+            "type": "BOOL"
+          },
+          {
+            "name": "ERROR",
+            "type": "BOOL"
+          },
+          {
+            "name": "ERRORID",
+            "type": "UDINT"
+          }
+        ],
+        "inouts": []
+      },
+      {
+        "name": "MC_READSTATUS",
+        "inputs": [
+          {
+            "name": "AXIS",
+            "type": "ECMC_AXIS_REF"
+          },
+          {
+            "name": "ENABLE",
+            "type": "BOOL"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "VALID",
+            "type": "BOOL"
+          },
+          {
+            "name": "BUSY",
+            "type": "BOOL"
+          },
+          {
+            "name": "ERROR",
+            "type": "BOOL"
+          },
+          {
+            "name": "ERRORID",
+            "type": "UDINT"
+          },
+          {
+            "name": "ERRORSTOP",
+            "type": "BOOL"
+          },
+          {
+            "name": "DISABLED",
+            "type": "BOOL"
+          },
+          {
+            "name": "STOPPING",
+            "type": "BOOL"
+          },
+          {
+            "name": "HOMING",
+            "type": "BOOL"
+          },
+          {
+            "name": "STANDSTILL",
+            "type": "BOOL"
+          },
+          {
+            "name": "DISCRETEMOTION",
+            "type": "BOOL"
+          },
+          {
+            "name": "CONTINUOUSMOTION",
+            "type": "BOOL"
+          },
+          {
+            "name": "SYNCHRONIZEDMOTION",
+            "type": "BOOL"
+          }
+        ],
+        "inouts": []
+      },
+      {
+        "name": "MC_READACTUALPOSITION",
+        "inputs": [
+          {
+            "name": "AXIS",
+            "type": "ECMC_AXIS_REF"
+          },
+          {
+            "name": "ENABLE",
+            "type": "BOOL"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "VALID",
+            "type": "BOOL"
+          },
+          {
+            "name": "BUSY",
+            "type": "BOOL"
+          },
+          {
+            "name": "ERROR",
+            "type": "BOOL"
+          },
+          {
+            "name": "ERRORID",
+            "type": "UDINT"
+          },
+          {
+            "name": "POSITION",
+            "type": "LREAL"
+          }
+        ],
+        "inouts": []
+      },
+      {
+        "name": "MC_READACTUALVELOCITY",
+        "inputs": [
+          {
+            "name": "AXIS",
+            "type": "ECMC_AXIS_REF"
+          },
+          {
+            "name": "ENABLE",
+            "type": "BOOL"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "VALID",
+            "type": "BOOL"
+          },
+          {
+            "name": "BUSY",
+            "type": "BOOL"
+          },
+          {
+            "name": "ERROR",
+            "type": "BOOL"
+          },
+          {
+            "name": "ERRORID",
+            "type": "UDINT"
+          },
+          {
+            "name": "VELOCITY",
+            "type": "LREAL"
+          }
+        ],
+        "inouts": []
+      }
+    ],
+    "types": [
+      {
+        "name": "ECMC_AXIS_REF",
+        "kind": "struct"
+      }
+    ],
+    "headers": [
+      "ecmcMcApi.h"
+    ],
+    "isBuiltin": false,
+    "sourceFiles": [
+      "ecmc_motion.st"
+    ]
+  },
+  "headerCode": "\n// User-defined types\n\nstruct ECMC_AXIS_REF {\n    IEC_DINT AXISINDEX{};\n};\n\nusing IEC_ECMC_AXIS_REF = ECMC_AXIS_REF;\n\nclass MC_POWER;\nclass MC_RESET;\nclass MC_MOVEABSOLUTE;\nclass MC_MOVERELATIVE;\nclass MC_MOVEVELOCITY;\nclass MC_HOME;\nclass MC_HALT;\nclass MC_READSTATUS;\nclass MC_READACTUALPOSITION;\nclass MC_READACTUALVELOCITY;\n\nclass MC_POWER {\npublic:\n    // Inputs\n    ECMC_AXIS_REF AXIS;\n    IEC_BOOL ENABLE;\n    // Outputs\n    IEC_BOOL STATUS;\n    IEC_BOOL VALID;\n    IEC_BOOL BUSY;\n    IEC_BOOL ERROR;\n    IEC_UDINT ERRORID;\n    IEC_BOOL ACTIVE;\n    // Local variables\n    IEC_ULINT STATEPTR;\n\n    // Constructor\n    MC_POWER();\n\n    // Execute function block\n    void operator()();\n\n    virtual ~MC_POWER() = default;\n};\n\nclass MC_RESET {\npublic:\n    // Inputs\n    ECMC_AXIS_REF AXIS;\n    IEC_BOOL EXECUTE;\n    // Outputs\n    IEC_BOOL DONE;\n    IEC_BOOL BUSY;\n    IEC_BOOL ERROR;\n    IEC_UDINT ERRORID;\n    IEC_BOOL ACTIVE;\n    // Local variables\n    IEC_ULINT STATEPTR;\n\n    // Constructor\n    MC_RESET();\n\n    // Execute function block\n    void operator()();\n\n    virtual ~MC_RESET() = default;\n};\n\nclass MC_MOVEABSOLUTE {\npublic:\n    // Inputs\n    ECMC_AXIS_REF AXIS;\n    IEC_BOOL EXECUTE;\n    IEC_LREAL POSITION;\n    IEC_LREAL VELOCITY;\n    IEC_LREAL ACCELERATION;\n    IEC_LREAL DECELERATION;\n    // Outputs\n    IEC_BOOL DONE;\n    IEC_BOOL BUSY;\n    IEC_BOOL ACTIVE;\n    IEC_BOOL COMMANDABORTED;\n    IEC_BOOL ERROR;\n    IEC_UDINT ERRORID;\n    // Local variables\n    IEC_ULINT STATEPTR;\n\n    // Constructor\n    MC_MOVEABSOLUTE();\n\n    // Execute function block\n    void operator()();\n\n    virtual ~MC_MOVEABSOLUTE() = default;\n};\n\nclass MC_MOVERELATIVE {\npublic:\n    // Inputs\n    ECMC_AXIS_REF AXIS;\n    IEC_BOOL EXECUTE;\n    IEC_LREAL DISTANCE;\n    IEC_LREAL VELOCITY;\n    IEC_LREAL ACCELERATION;\n    IEC_LREAL DECELERATION;\n    // Outputs\n    IEC_BOOL DONE;\n    IEC_BOOL BUSY;\n    IEC_BOOL ACTIVE;\n    IEC_BOOL COMMANDABORTED;\n    IEC_BOOL ERROR;\n    IEC_UDINT ERRORID;\n    // Local variables\n    IEC_ULINT STATEPTR;\n\n    // Constructor\n    MC_MOVERELATIVE();\n\n    // Execute function block\n    void operator()();\n\n    virtual ~MC_MOVERELATIVE() = default;\n};\n\nclass MC_MOVEVELOCITY {\npublic:\n    // Inputs\n    ECMC_AXIS_REF AXIS;\n    IEC_BOOL EXECUTE;\n    IEC_LREAL VELOCITY;\n    IEC_LREAL ACCELERATION;\n    IEC_LREAL DECELERATION;\n    // Outputs\n    IEC_BOOL INVELOCITY;\n    IEC_BOOL BUSY;\n    IEC_BOOL ACTIVE;\n    IEC_BOOL COMMANDABORTED;\n    IEC_BOOL ERROR;\n    IEC_UDINT ERRORID;\n    // Local variables\n    IEC_ULINT STATEPTR;\n\n    // Constructor\n    MC_MOVEVELOCITY();\n\n    // Execute function block\n    void operator()();\n\n    virtual ~MC_MOVEVELOCITY() = default;\n};\n\nclass MC_HOME {\npublic:\n    // Inputs\n    ECMC_AXIS_REF AXIS;\n    IEC_BOOL EXECUTE;\n    IEC_DINT SEQID;\n    IEC_LREAL HOMEPOSITION;\n    IEC_LREAL VELOCITYTOWARDSCAM;\n    IEC_LREAL VELOCITYOFFCAM;\n    IEC_LREAL ACCELERATION;\n    IEC_LREAL DECELERATION;\n    // Outputs\n    IEC_BOOL DONE;\n    IEC_BOOL BUSY;\n    IEC_BOOL ACTIVE;\n    IEC_BOOL COMMANDABORTED;\n    IEC_BOOL ERROR;\n    IEC_UDINT ERRORID;\n    // Local variables\n    IEC_ULINT STATEPTR;\n\n    // Constructor\n    MC_HOME();\n\n    // Execute function block\n    void operator()();\n\n    virtual ~MC_HOME() = default;\n};\n\nclass MC_HALT {\npublic:\n    // Inputs\n    ECMC_AXIS_REF AXIS;\n    IEC_BOOL EXECUTE;\n    // Outputs\n    IEC_BOOL DONE;\n    IEC_BOOL BUSY;\n    IEC_BOOL ACTIVE;\n    IEC_BOOL COMMANDABORTED;\n    IEC_BOOL ERROR;\n    IEC_UDINT ERRORID;\n    // Local variables\n    IEC_ULINT STATEPTR;\n\n    // Constructor\n    MC_HALT();\n\n    // Execute function block\n    void operator()();\n\n    virtual ~MC_HALT() = default;\n};\n\nclass MC_READSTATUS {\npublic:\n    // Inputs\n    ECMC_AXIS_REF AXIS;\n    IEC_BOOL ENABLE;\n    // Outputs\n    IEC_BOOL VALID;\n    IEC_BOOL BUSY;\n    IEC_BOOL ERROR;\n    IEC_UDINT ERRORID;\n    IEC_BOOL ERRORSTOP;\n    IEC_BOOL DISABLED;\n    IEC_BOOL STOPPING;\n    IEC_BOOL HOMING;\n    IEC_BOOL STANDSTILL;\n    IEC_BOOL DISCRETEMOTION;\n    IEC_BOOL CONTINUOUSMOTION;\n    IEC_BOOL SYNCHRONIZEDMOTION;\n    // Local variables\n    IEC_ULINT STATEPTR;\n\n    // Constructor\n    MC_READSTATUS();\n\n    // Execute function block\n    void operator()();\n\n    virtual ~MC_READSTATUS() = default;\n};\n\nclass MC_READACTUALPOSITION {\npublic:\n    // Inputs\n    ECMC_AXIS_REF AXIS;\n    IEC_BOOL ENABLE;\n    // Outputs\n    IEC_BOOL VALID;\n    IEC_BOOL BUSY;\n    IEC_BOOL ERROR;\n    IEC_UDINT ERRORID;\n    IEC_LREAL POSITION;\n    // Local variables\n    IEC_ULINT STATEPTR;\n\n    // Constructor\n    MC_READACTUALPOSITION();\n\n    // Execute function block\n    void operator()();\n\n    virtual ~MC_READACTUALPOSITION() = default;\n};\n\nclass MC_READACTUALVELOCITY {\npublic:\n    // Inputs\n    ECMC_AXIS_REF AXIS;\n    IEC_BOOL ENABLE;\n    // Outputs\n    IEC_BOOL VALID;\n    IEC_BOOL BUSY;\n    IEC_BOOL ERROR;\n    IEC_UDINT ERRORID;\n    IEC_LREAL VELOCITY;\n    // Local variables\n    IEC_ULINT STATEPTR;\n\n    // Constructor\n    MC_READACTUALVELOCITY();\n\n    // Execute function block\n    void operator()();\n\n    virtual ~MC_READACTUALVELOCITY() = default;\n};\n",
+  "cppCode": "\nMC_POWER::MC_POWER() {\n    // Initialize variables\n}\n\nvoid MC_POWER::operator()() {\n    auto *handle = reinterpret_cast<ecmcMcPowerHandle *>(static_cast<uintptr_t>(STATEPTR.get()));\n      if (!handle) {\n        handle = ecmcMcPowerCreate();\n        STATEPTR.set(static_cast<ULINT_t>(reinterpret_cast<uintptr_t>(handle)));\n      }\n\n      if (!handle) {\n        STATUS.set(false);\n        VALID.set(false);\n        BUSY.set(false);\n        ERROR.set(true);\n        ERRORID.set(static_cast<UDINT_t>(0xffffffffu));\n        ACTIVE.set(false);\n      } else {\n        ecmcMcPowerStatus fb_status{};\n        ecmcMcPowerRun(handle, AXIS.AXISINDEX.get(), ENABLE.get() ? 1 : 0, &fb_status);\n        STATUS.set(fb_status.Status != 0);\n        VALID.set(fb_status.Valid != 0);\n        BUSY.set(fb_status.base.Busy != 0);\n        ERROR.set(fb_status.base.Error != 0);\n        ERRORID.set(static_cast<UDINT_t>(fb_status.base.ErrorID));\n        ACTIVE.set(fb_status.base.Active != 0);\n      }\n}\n\nMC_RESET::MC_RESET() {\n    // Initialize variables\n}\n\nvoid MC_RESET::operator()() {\n    auto *handle = reinterpret_cast<ecmcMcResetHandle *>(static_cast<uintptr_t>(STATEPTR.get()));\n      if (!handle) {\n        handle = ecmcMcResetCreate();\n        STATEPTR.set(static_cast<ULINT_t>(reinterpret_cast<uintptr_t>(handle)));\n      }\n\n      if (!handle) {\n        DONE.set(false);\n        BUSY.set(false);\n        ERROR.set(true);\n        ERRORID.set(static_cast<UDINT_t>(0xffffffffu));\n        ACTIVE.set(false);\n      } else {\n        ecmcMcResetStatus fb_status{};\n        ecmcMcResetRun(handle, AXIS.AXISINDEX.get(), EXECUTE.get() ? 1 : 0, &fb_status);\n        DONE.set(fb_status.base.Done != 0);\n        BUSY.set(fb_status.base.Busy != 0);\n        ERROR.set(fb_status.base.Error != 0);\n        ERRORID.set(static_cast<UDINT_t>(fb_status.base.ErrorID));\n        ACTIVE.set(fb_status.base.Active != 0);\n      }\n}\n\nMC_MOVEABSOLUTE::MC_MOVEABSOLUTE() {\n    // Initialize variables\n}\n\nvoid MC_MOVEABSOLUTE::operator()() {\n    auto *handle = reinterpret_cast<ecmcMcMoveAbsoluteHandle *>(static_cast<uintptr_t>(STATEPTR.get()));\n      if (!handle) {\n        handle = ecmcMcMoveAbsoluteCreate();\n        STATEPTR.set(static_cast<ULINT_t>(reinterpret_cast<uintptr_t>(handle)));\n      }\n\n      if (!handle) {\n        DONE.set(false);\n        BUSY.set(false);\n        ACTIVE.set(false);\n        COMMANDABORTED.set(false);\n        ERROR.set(true);\n        ERRORID.set(static_cast<UDINT_t>(0xffffffffu));\n      } else {\n        ecmcMcMoveAbsoluteStatus fb_status{};\n        ecmcMcMoveAbsoluteRun(handle,\n                              AXIS.AXISINDEX.get(),\n                              EXECUTE.get() ? 1 : 0,\n                              POSITION.get(),\n                              VELOCITY.get(),\n                              ACCELERATION.get(),\n                              DECELERATION.get(),\n                              &fb_status);\n        DONE.set(fb_status.base.Done != 0);\n        BUSY.set(fb_status.base.Busy != 0);\n        ACTIVE.set(fb_status.base.Active != 0);\n        COMMANDABORTED.set(fb_status.base.CommandAborted != 0);\n        ERROR.set(fb_status.base.Error != 0);\n        ERRORID.set(static_cast<UDINT_t>(fb_status.base.ErrorID));\n      }\n}\n\nMC_MOVERELATIVE::MC_MOVERELATIVE() {\n    // Initialize variables\n}\n\nvoid MC_MOVERELATIVE::operator()() {\n    auto *handle = reinterpret_cast<ecmcMcMoveRelativeHandle *>(static_cast<uintptr_t>(STATEPTR.get()));\n      if (!handle) {\n        handle = ecmcMcMoveRelativeCreate();\n        STATEPTR.set(static_cast<ULINT_t>(reinterpret_cast<uintptr_t>(handle)));\n      }\n\n      if (!handle) {\n        DONE.set(false);\n        BUSY.set(false);\n        ACTIVE.set(false);\n        COMMANDABORTED.set(false);\n        ERROR.set(true);\n        ERRORID.set(static_cast<UDINT_t>(0xffffffffu));\n      } else {\n        ecmcMcMoveRelativeStatus fb_status{};\n        ecmcMcMoveRelativeRun(handle,\n                              AXIS.AXISINDEX.get(),\n                              EXECUTE.get() ? 1 : 0,\n                              DISTANCE.get(),\n                              VELOCITY.get(),\n                              ACCELERATION.get(),\n                              DECELERATION.get(),\n                              &fb_status);\n        DONE.set(fb_status.base.Done != 0);\n        BUSY.set(fb_status.base.Busy != 0);\n        ACTIVE.set(fb_status.base.Active != 0);\n        COMMANDABORTED.set(fb_status.base.CommandAborted != 0);\n        ERROR.set(fb_status.base.Error != 0);\n        ERRORID.set(static_cast<UDINT_t>(fb_status.base.ErrorID));\n      }\n}\n\nMC_MOVEVELOCITY::MC_MOVEVELOCITY() {\n    // Initialize variables\n}\n\nvoid MC_MOVEVELOCITY::operator()() {\n    auto *handle = reinterpret_cast<ecmcMcMoveVelocityHandle *>(static_cast<uintptr_t>(STATEPTR.get()));\n      if (!handle) {\n        handle = ecmcMcMoveVelocityCreate();\n        STATEPTR.set(static_cast<ULINT_t>(reinterpret_cast<uintptr_t>(handle)));\n      }\n\n      if (!handle) {\n        INVELOCITY.set(false);\n        BUSY.set(false);\n        ACTIVE.set(false);\n        COMMANDABORTED.set(false);\n        ERROR.set(true);\n        ERRORID.set(static_cast<UDINT_t>(0xffffffffu));\n      } else {\n        ecmcMcMoveVelocityStatus fb_status{};\n        ecmcMcMoveVelocityRun(handle,\n                              AXIS.AXISINDEX.get(),\n                              EXECUTE.get() ? 1 : 0,\n                              VELOCITY.get(),\n                              ACCELERATION.get(),\n                              DECELERATION.get(),\n                              &fb_status);\n        INVELOCITY.set(fb_status.InVelocity != 0);\n        BUSY.set(fb_status.base.Busy != 0);\n        ACTIVE.set(fb_status.base.Active != 0);\n        COMMANDABORTED.set(fb_status.base.CommandAborted != 0);\n        ERROR.set(fb_status.base.Error != 0);\n        ERRORID.set(static_cast<UDINT_t>(fb_status.base.ErrorID));\n      }\n}\n\nMC_HOME::MC_HOME() {\n    // Initialize variables\n}\n\nvoid MC_HOME::operator()() {\n    auto *handle = reinterpret_cast<ecmcMcHomeHandle *>(static_cast<uintptr_t>(STATEPTR.get()));\n      if (!handle) {\n        handle = ecmcMcHomeCreate();\n        STATEPTR.set(static_cast<ULINT_t>(reinterpret_cast<uintptr_t>(handle)));\n      }\n\n      if (!handle) {\n        DONE.set(false);\n        BUSY.set(false);\n        ACTIVE.set(false);\n        COMMANDABORTED.set(false);\n        ERROR.set(true);\n        ERRORID.set(static_cast<UDINT_t>(0xffffffffu));\n      } else {\n        ecmcMcHomeStatus fb_status{};\n        ecmcMcHomeRun(handle,\n                      AXIS.AXISINDEX.get(),\n                      EXECUTE.get() ? 1 : 0,\n                      static_cast<int>(SEQID.get()),\n                      HOMEPOSITION.get(),\n                      VELOCITYTOWARDSCAM.get(),\n                      VELOCITYOFFCAM.get(),\n                      ACCELERATION.get(),\n                      DECELERATION.get(),\n                      &fb_status);\n        DONE.set(fb_status.base.Done != 0);\n        BUSY.set(fb_status.base.Busy != 0);\n        ACTIVE.set(fb_status.base.Active != 0);\n        COMMANDABORTED.set(fb_status.base.CommandAborted != 0);\n        ERROR.set(fb_status.base.Error != 0);\n        ERRORID.set(static_cast<UDINT_t>(fb_status.base.ErrorID));\n      }\n}\n\nMC_HALT::MC_HALT() {\n    // Initialize variables\n}\n\nvoid MC_HALT::operator()() {\n    auto *handle = reinterpret_cast<ecmcMcHaltHandle *>(static_cast<uintptr_t>(STATEPTR.get()));\n      if (!handle) {\n        handle = ecmcMcHaltCreate();\n        STATEPTR.set(static_cast<ULINT_t>(reinterpret_cast<uintptr_t>(handle)));\n      }\n\n      if (!handle) {\n        DONE.set(false);\n        BUSY.set(false);\n        ACTIVE.set(false);\n        COMMANDABORTED.set(false);\n        ERROR.set(true);\n        ERRORID.set(static_cast<UDINT_t>(0xffffffffu));\n      } else {\n        ecmcMcHaltStatus fb_status{};\n        ecmcMcHaltRun(handle, AXIS.AXISINDEX.get(), EXECUTE.get() ? 1 : 0, &fb_status);\n        DONE.set(fb_status.base.Done != 0);\n        BUSY.set(fb_status.base.Busy != 0);\n        ACTIVE.set(fb_status.base.Active != 0);\n        COMMANDABORTED.set(fb_status.base.CommandAborted != 0);\n        ERROR.set(fb_status.base.Error != 0);\n        ERRORID.set(static_cast<UDINT_t>(fb_status.base.ErrorID));\n      }\n}\n\nMC_READSTATUS::MC_READSTATUS() {\n    // Initialize variables\n}\n\nvoid MC_READSTATUS::operator()() {\n    auto *handle = reinterpret_cast<ecmcMcReadStatusHandle *>(static_cast<uintptr_t>(STATEPTR.get()));\n      if (!handle) {\n        handle = ecmcMcReadStatusCreate();\n        STATEPTR.set(static_cast<ULINT_t>(reinterpret_cast<uintptr_t>(handle)));\n      }\n\n      if (!handle) {\n        VALID.set(false);\n        BUSY.set(false);\n        ERROR.set(true);\n        ERRORID.set(static_cast<UDINT_t>(0xffffffffu));\n        ERRORSTOP.set(false);\n        DISABLED.set(false);\n        STOPPING.set(false);\n        HOMING.set(false);\n        STANDSTILL.set(false);\n        DISCRETEMOTION.set(false);\n        CONTINUOUSMOTION.set(false);\n        SYNCHRONIZEDMOTION.set(false);\n      } else {\n        ecmcMcReadStatusStatus fb_status{};\n        ecmcMcReadStatusRun(handle, AXIS.AXISINDEX.get(), ENABLE.get() ? 1 : 0, &fb_status);\n        VALID.set(fb_status.Valid != 0);\n        BUSY.set(fb_status.base.Busy != 0);\n        ERROR.set(fb_status.base.Error != 0);\n        ERRORID.set(static_cast<UDINT_t>(fb_status.base.ErrorID));\n        ERRORSTOP.set(fb_status.ErrorStop != 0);\n        DISABLED.set(fb_status.Disabled != 0);\n        STOPPING.set(fb_status.Stopping != 0);\n        HOMING.set(fb_status.Homing != 0);\n        STANDSTILL.set(fb_status.StandStill != 0);\n        DISCRETEMOTION.set(fb_status.DiscreteMotion != 0);\n        CONTINUOUSMOTION.set(fb_status.ContinuousMotion != 0);\n        SYNCHRONIZEDMOTION.set(fb_status.SynchronizedMotion != 0);\n      }\n}\n\nMC_READACTUALPOSITION::MC_READACTUALPOSITION() {\n    // Initialize variables\n}\n\nvoid MC_READACTUALPOSITION::operator()() {\n    auto *handle = reinterpret_cast<ecmcMcReadActualPositionHandle *>(static_cast<uintptr_t>(STATEPTR.get()));\n      if (!handle) {\n        handle = ecmcMcReadActualPositionCreate();\n        STATEPTR.set(static_cast<ULINT_t>(reinterpret_cast<uintptr_t>(handle)));\n      }\n\n      if (!handle) {\n        VALID.set(false);\n        BUSY.set(false);\n        ERROR.set(true);\n        ERRORID.set(static_cast<UDINT_t>(0xffffffffu));\n        POSITION.set(0.0);\n      } else {\n        ecmcMcReadActualPositionStatus fb_status{};\n        ecmcMcReadActualPositionRun(handle, AXIS.AXISINDEX.get(), ENABLE.get() ? 1 : 0, &fb_status);\n        VALID.set(fb_status.Valid != 0);\n        BUSY.set(fb_status.base.Busy != 0);\n        ERROR.set(fb_status.base.Error != 0);\n        ERRORID.set(static_cast<UDINT_t>(fb_status.base.ErrorID));\n        POSITION.set(fb_status.Position);\n      }\n}\n\nMC_READACTUALVELOCITY::MC_READACTUALVELOCITY() {\n    // Initialize variables\n}\n\nvoid MC_READACTUALVELOCITY::operator()() {\n    auto *handle = reinterpret_cast<ecmcMcReadActualVelocityHandle *>(static_cast<uintptr_t>(STATEPTR.get()));\n      if (!handle) {\n        handle = ecmcMcReadActualVelocityCreate();\n        STATEPTR.set(static_cast<ULINT_t>(reinterpret_cast<uintptr_t>(handle)));\n      }\n\n      if (!handle) {\n        VALID.set(false);\n        BUSY.set(false);\n        ERROR.set(true);\n        ERRORID.set(static_cast<UDINT_t>(0xffffffffu));\n        VELOCITY.set(0.0);\n      } else {\n        ecmcMcReadActualVelocityStatus fb_status{};\n        ecmcMcReadActualVelocityRun(handle, AXIS.AXISINDEX.get(), ENABLE.get() ? 1 : 0, &fb_status);\n        VALID.set(fb_status.Valid != 0);\n        BUSY.set(fb_status.base.Busy != 0);\n        ERROR.set(fb_status.base.Error != 0);\n        ERRORID.set(static_cast<UDINT_t>(fb_status.base.ErrorID));\n        VELOCITY.set(fb_status.Velocity);\n      }\n}\n",
+  "dependencies": [],
+  "sources": [
+    {
+      "fileName": "ecmc_motion.st",
+      "source": "TYPE ECMC_AXIS_REF :\nSTRUCT\n  AxisIndex : DINT;\nEND_STRUCT\nEND_TYPE\n\nFUNCTION_BLOCK MC_Power\nVAR_INPUT\n  Axis   : ECMC_AXIS_REF;\n  Enable : BOOL;\nEND_VAR\nVAR_OUTPUT\n  Status  : BOOL;\n  Valid   : BOOL;\n  Busy    : BOOL;\n  Error   : BOOL;\n  ErrorID : UDINT;\n  Active  : BOOL;\nEND_VAR\nVAR\n  StatePtr : ULINT;\nEND_VAR\n{external\n  auto *handle = reinterpret_cast<ecmcMcPowerHandle *>(static_cast<uintptr_t>(STATEPTR.get()));\n  if (!handle) {\n    handle = ecmcMcPowerCreate();\n    STATEPTR.set(static_cast<ULINT_t>(reinterpret_cast<uintptr_t>(handle)));\n  }\n\n  if (!handle) {\n    STATUS.set(false);\n    VALID.set(false);\n    BUSY.set(false);\n    ERROR.set(true);\n    ERRORID.set(static_cast<UDINT_t>(0xffffffffu));\n    ACTIVE.set(false);\n  } else {\n    ecmcMcPowerStatus fb_status{};\n    ecmcMcPowerRun(handle, AXIS.AXISINDEX.get(), ENABLE.get() ? 1 : 0, &fb_status);\n    STATUS.set(fb_status.Status != 0);\n    VALID.set(fb_status.Valid != 0);\n    BUSY.set(fb_status.base.Busy != 0);\n    ERROR.set(fb_status.base.Error != 0);\n    ERRORID.set(static_cast<UDINT_t>(fb_status.base.ErrorID));\n    ACTIVE.set(fb_status.base.Active != 0);\n  }\n}\nEND_FUNCTION_BLOCK\n\nFUNCTION_BLOCK MC_Reset\nVAR_INPUT\n  Axis    : ECMC_AXIS_REF;\n  Execute : BOOL;\nEND_VAR\nVAR_OUTPUT\n  Done    : BOOL;\n  Busy    : BOOL;\n  Error   : BOOL;\n  ErrorID : UDINT;\n  Active  : BOOL;\nEND_VAR\nVAR\n  StatePtr : ULINT;\nEND_VAR\n{external\n  auto *handle = reinterpret_cast<ecmcMcResetHandle *>(static_cast<uintptr_t>(STATEPTR.get()));\n  if (!handle) {\n    handle = ecmcMcResetCreate();\n    STATEPTR.set(static_cast<ULINT_t>(reinterpret_cast<uintptr_t>(handle)));\n  }\n\n  if (!handle) {\n    DONE.set(false);\n    BUSY.set(false);\n    ERROR.set(true);\n    ERRORID.set(static_cast<UDINT_t>(0xffffffffu));\n    ACTIVE.set(false);\n  } else {\n    ecmcMcResetStatus fb_status{};\n    ecmcMcResetRun(handle, AXIS.AXISINDEX.get(), EXECUTE.get() ? 1 : 0, &fb_status);\n    DONE.set(fb_status.base.Done != 0);\n    BUSY.set(fb_status.base.Busy != 0);\n    ERROR.set(fb_status.base.Error != 0);\n    ERRORID.set(static_cast<UDINT_t>(fb_status.base.ErrorID));\n    ACTIVE.set(fb_status.base.Active != 0);\n  }\n}\nEND_FUNCTION_BLOCK\n\nFUNCTION_BLOCK MC_MoveAbsolute\nVAR_INPUT\n  Axis         : ECMC_AXIS_REF;\n  Execute      : BOOL;\n  Position     : LREAL;\n  Velocity     : LREAL;\n  Acceleration : LREAL;\n  Deceleration : LREAL;\nEND_VAR\nVAR_OUTPUT\n  Done            : BOOL;\n  Busy            : BOOL;\n  Active          : BOOL;\n  CommandAborted  : BOOL;\n  Error           : BOOL;\n  ErrorID         : UDINT;\nEND_VAR\nVAR\n  StatePtr : ULINT;\nEND_VAR\n{external\n  auto *handle = reinterpret_cast<ecmcMcMoveAbsoluteHandle *>(static_cast<uintptr_t>(STATEPTR.get()));\n  if (!handle) {\n    handle = ecmcMcMoveAbsoluteCreate();\n    STATEPTR.set(static_cast<ULINT_t>(reinterpret_cast<uintptr_t>(handle)));\n  }\n\n  if (!handle) {\n    DONE.set(false);\n    BUSY.set(false);\n    ACTIVE.set(false);\n    COMMANDABORTED.set(false);\n    ERROR.set(true);\n    ERRORID.set(static_cast<UDINT_t>(0xffffffffu));\n  } else {\n    ecmcMcMoveAbsoluteStatus fb_status{};\n    ecmcMcMoveAbsoluteRun(handle,\n                          AXIS.AXISINDEX.get(),\n                          EXECUTE.get() ? 1 : 0,\n                          POSITION.get(),\n                          VELOCITY.get(),\n                          ACCELERATION.get(),\n                          DECELERATION.get(),\n                          &fb_status);\n    DONE.set(fb_status.base.Done != 0);\n    BUSY.set(fb_status.base.Busy != 0);\n    ACTIVE.set(fb_status.base.Active != 0);\n    COMMANDABORTED.set(fb_status.base.CommandAborted != 0);\n    ERROR.set(fb_status.base.Error != 0);\n    ERRORID.set(static_cast<UDINT_t>(fb_status.base.ErrorID));\n  }\n}\nEND_FUNCTION_BLOCK\n\nFUNCTION_BLOCK MC_MoveRelative\nVAR_INPUT\n  Axis         : ECMC_AXIS_REF;\n  Execute      : BOOL;\n  Distance     : LREAL;\n  Velocity     : LREAL;\n  Acceleration : LREAL;\n  Deceleration : LREAL;\nEND_VAR\nVAR_OUTPUT\n  Done            : BOOL;\n  Busy            : BOOL;\n  Active          : BOOL;\n  CommandAborted  : BOOL;\n  Error           : BOOL;\n  ErrorID         : UDINT;\nEND_VAR\nVAR\n  StatePtr : ULINT;\nEND_VAR\n{external\n  auto *handle = reinterpret_cast<ecmcMcMoveRelativeHandle *>(static_cast<uintptr_t>(STATEPTR.get()));\n  if (!handle) {\n    handle = ecmcMcMoveRelativeCreate();\n    STATEPTR.set(static_cast<ULINT_t>(reinterpret_cast<uintptr_t>(handle)));\n  }\n\n  if (!handle) {\n    DONE.set(false);\n    BUSY.set(false);\n    ACTIVE.set(false);\n    COMMANDABORTED.set(false);\n    ERROR.set(true);\n    ERRORID.set(static_cast<UDINT_t>(0xffffffffu));\n  } else {\n    ecmcMcMoveRelativeStatus fb_status{};\n    ecmcMcMoveRelativeRun(handle,\n                          AXIS.AXISINDEX.get(),\n                          EXECUTE.get() ? 1 : 0,\n                          DISTANCE.get(),\n                          VELOCITY.get(),\n                          ACCELERATION.get(),\n                          DECELERATION.get(),\n                          &fb_status);\n    DONE.set(fb_status.base.Done != 0);\n    BUSY.set(fb_status.base.Busy != 0);\n    ACTIVE.set(fb_status.base.Active != 0);\n    COMMANDABORTED.set(fb_status.base.CommandAborted != 0);\n    ERROR.set(fb_status.base.Error != 0);\n    ERRORID.set(static_cast<UDINT_t>(fb_status.base.ErrorID));\n  }\n}\nEND_FUNCTION_BLOCK\n\nFUNCTION_BLOCK MC_MoveVelocity\nVAR_INPUT\n  Axis         : ECMC_AXIS_REF;\n  Execute      : BOOL;\n  Velocity     : LREAL;\n  Acceleration : LREAL;\n  Deceleration : LREAL;\nEND_VAR\nVAR_OUTPUT\n  InVelocity      : BOOL;\n  Busy            : BOOL;\n  Active          : BOOL;\n  CommandAborted  : BOOL;\n  Error           : BOOL;\n  ErrorID         : UDINT;\nEND_VAR\nVAR\n  StatePtr : ULINT;\nEND_VAR\n{external\n  auto *handle = reinterpret_cast<ecmcMcMoveVelocityHandle *>(static_cast<uintptr_t>(STATEPTR.get()));\n  if (!handle) {\n    handle = ecmcMcMoveVelocityCreate();\n    STATEPTR.set(static_cast<ULINT_t>(reinterpret_cast<uintptr_t>(handle)));\n  }\n\n  if (!handle) {\n    INVELOCITY.set(false);\n    BUSY.set(false);\n    ACTIVE.set(false);\n    COMMANDABORTED.set(false);\n    ERROR.set(true);\n    ERRORID.set(static_cast<UDINT_t>(0xffffffffu));\n  } else {\n    ecmcMcMoveVelocityStatus fb_status{};\n    ecmcMcMoveVelocityRun(handle,\n                          AXIS.AXISINDEX.get(),\n                          EXECUTE.get() ? 1 : 0,\n                          VELOCITY.get(),\n                          ACCELERATION.get(),\n                          DECELERATION.get(),\n                          &fb_status);\n    INVELOCITY.set(fb_status.InVelocity != 0);\n    BUSY.set(fb_status.base.Busy != 0);\n    ACTIVE.set(fb_status.base.Active != 0);\n    COMMANDABORTED.set(fb_status.base.CommandAborted != 0);\n    ERROR.set(fb_status.base.Error != 0);\n    ERRORID.set(static_cast<UDINT_t>(fb_status.base.ErrorID));\n  }\n}\nEND_FUNCTION_BLOCK\n\nFUNCTION_BLOCK MC_Home\nVAR_INPUT\n  Axis               : ECMC_AXIS_REF;\n  Execute            : BOOL;\n  SeqId              : DINT;\n  HomePosition       : LREAL;\n  VelocityTowardsCam : LREAL;\n  VelocityOffCam     : LREAL;\n  Acceleration       : LREAL;\n  Deceleration       : LREAL;\nEND_VAR\nVAR_OUTPUT\n  Done            : BOOL;\n  Busy            : BOOL;\n  Active          : BOOL;\n  CommandAborted  : BOOL;\n  Error           : BOOL;\n  ErrorID         : UDINT;\nEND_VAR\nVAR\n  StatePtr : ULINT;\nEND_VAR\n{external\n  auto *handle = reinterpret_cast<ecmcMcHomeHandle *>(static_cast<uintptr_t>(STATEPTR.get()));\n  if (!handle) {\n    handle = ecmcMcHomeCreate();\n    STATEPTR.set(static_cast<ULINT_t>(reinterpret_cast<uintptr_t>(handle)));\n  }\n\n  if (!handle) {\n    DONE.set(false);\n    BUSY.set(false);\n    ACTIVE.set(false);\n    COMMANDABORTED.set(false);\n    ERROR.set(true);\n    ERRORID.set(static_cast<UDINT_t>(0xffffffffu));\n  } else {\n    ecmcMcHomeStatus fb_status{};\n    ecmcMcHomeRun(handle,\n                  AXIS.AXISINDEX.get(),\n                  EXECUTE.get() ? 1 : 0,\n                  static_cast<int>(SEQID.get()),\n                  HOMEPOSITION.get(),\n                  VELOCITYTOWARDSCAM.get(),\n                  VELOCITYOFFCAM.get(),\n                  ACCELERATION.get(),\n                  DECELERATION.get(),\n                  &fb_status);\n    DONE.set(fb_status.base.Done != 0);\n    BUSY.set(fb_status.base.Busy != 0);\n    ACTIVE.set(fb_status.base.Active != 0);\n    COMMANDABORTED.set(fb_status.base.CommandAborted != 0);\n    ERROR.set(fb_status.base.Error != 0);\n    ERRORID.set(static_cast<UDINT_t>(fb_status.base.ErrorID));\n  }\n}\nEND_FUNCTION_BLOCK\n\nFUNCTION_BLOCK MC_Halt\nVAR_INPUT\n  Axis    : ECMC_AXIS_REF;\n  Execute : BOOL;\nEND_VAR\nVAR_OUTPUT\n  Done            : BOOL;\n  Busy            : BOOL;\n  Active          : BOOL;\n  CommandAborted  : BOOL;\n  Error           : BOOL;\n  ErrorID         : UDINT;\nEND_VAR\nVAR\n  StatePtr : ULINT;\nEND_VAR\n{external\n  auto *handle = reinterpret_cast<ecmcMcHaltHandle *>(static_cast<uintptr_t>(STATEPTR.get()));\n  if (!handle) {\n    handle = ecmcMcHaltCreate();\n    STATEPTR.set(static_cast<ULINT_t>(reinterpret_cast<uintptr_t>(handle)));\n  }\n\n  if (!handle) {\n    DONE.set(false);\n    BUSY.set(false);\n    ACTIVE.set(false);\n    COMMANDABORTED.set(false);\n    ERROR.set(true);\n    ERRORID.set(static_cast<UDINT_t>(0xffffffffu));\n  } else {\n    ecmcMcHaltStatus fb_status{};\n    ecmcMcHaltRun(handle, AXIS.AXISINDEX.get(), EXECUTE.get() ? 1 : 0, &fb_status);\n    DONE.set(fb_status.base.Done != 0);\n    BUSY.set(fb_status.base.Busy != 0);\n    ACTIVE.set(fb_status.base.Active != 0);\n    COMMANDABORTED.set(fb_status.base.CommandAborted != 0);\n    ERROR.set(fb_status.base.Error != 0);\n    ERRORID.set(static_cast<UDINT_t>(fb_status.base.ErrorID));\n  }\n}\nEND_FUNCTION_BLOCK\n\nFUNCTION_BLOCK MC_ReadStatus\nVAR_INPUT\n  Axis   : ECMC_AXIS_REF;\n  Enable : BOOL;\nEND_VAR\nVAR_OUTPUT\n  Valid              : BOOL;\n  Busy               : BOOL;\n  Error              : BOOL;\n  ErrorID            : UDINT;\n  ErrorStop          : BOOL;\n  Disabled           : BOOL;\n  Stopping           : BOOL;\n  Homing             : BOOL;\n  StandStill         : BOOL;\n  DiscreteMotion     : BOOL;\n  ContinuousMotion   : BOOL;\n  SynchronizedMotion : BOOL;\nEND_VAR\nVAR\n  StatePtr : ULINT;\nEND_VAR\n{external\n  auto *handle = reinterpret_cast<ecmcMcReadStatusHandle *>(static_cast<uintptr_t>(STATEPTR.get()));\n  if (!handle) {\n    handle = ecmcMcReadStatusCreate();\n    STATEPTR.set(static_cast<ULINT_t>(reinterpret_cast<uintptr_t>(handle)));\n  }\n\n  if (!handle) {\n    VALID.set(false);\n    BUSY.set(false);\n    ERROR.set(true);\n    ERRORID.set(static_cast<UDINT_t>(0xffffffffu));\n    ERRORSTOP.set(false);\n    DISABLED.set(false);\n    STOPPING.set(false);\n    HOMING.set(false);\n    STANDSTILL.set(false);\n    DISCRETEMOTION.set(false);\n    CONTINUOUSMOTION.set(false);\n    SYNCHRONIZEDMOTION.set(false);\n  } else {\n    ecmcMcReadStatusStatus fb_status{};\n    ecmcMcReadStatusRun(handle, AXIS.AXISINDEX.get(), ENABLE.get() ? 1 : 0, &fb_status);\n    VALID.set(fb_status.Valid != 0);\n    BUSY.set(fb_status.base.Busy != 0);\n    ERROR.set(fb_status.base.Error != 0);\n    ERRORID.set(static_cast<UDINT_t>(fb_status.base.ErrorID));\n    ERRORSTOP.set(fb_status.ErrorStop != 0);\n    DISABLED.set(fb_status.Disabled != 0);\n    STOPPING.set(fb_status.Stopping != 0);\n    HOMING.set(fb_status.Homing != 0);\n    STANDSTILL.set(fb_status.StandStill != 0);\n    DISCRETEMOTION.set(fb_status.DiscreteMotion != 0);\n    CONTINUOUSMOTION.set(fb_status.ContinuousMotion != 0);\n    SYNCHRONIZEDMOTION.set(fb_status.SynchronizedMotion != 0);\n  }\n}\nEND_FUNCTION_BLOCK\n\nFUNCTION_BLOCK MC_ReadActualPosition\nVAR_INPUT\n  Axis   : ECMC_AXIS_REF;\n  Enable : BOOL;\nEND_VAR\nVAR_OUTPUT\n  Valid    : BOOL;\n  Busy     : BOOL;\n  Error    : BOOL;\n  ErrorID  : UDINT;\n  Position : LREAL;\nEND_VAR\nVAR\n  StatePtr : ULINT;\nEND_VAR\n{external\n  auto *handle = reinterpret_cast<ecmcMcReadActualPositionHandle *>(static_cast<uintptr_t>(STATEPTR.get()));\n  if (!handle) {\n    handle = ecmcMcReadActualPositionCreate();\n    STATEPTR.set(static_cast<ULINT_t>(reinterpret_cast<uintptr_t>(handle)));\n  }\n\n  if (!handle) {\n    VALID.set(false);\n    BUSY.set(false);\n    ERROR.set(true);\n    ERRORID.set(static_cast<UDINT_t>(0xffffffffu));\n    POSITION.set(0.0);\n  } else {\n    ecmcMcReadActualPositionStatus fb_status{};\n    ecmcMcReadActualPositionRun(handle, AXIS.AXISINDEX.get(), ENABLE.get() ? 1 : 0, &fb_status);\n    VALID.set(fb_status.Valid != 0);\n    BUSY.set(fb_status.base.Busy != 0);\n    ERROR.set(fb_status.base.Error != 0);\n    ERRORID.set(static_cast<UDINT_t>(fb_status.base.ErrorID));\n    POSITION.set(fb_status.Position);\n  }\n}\nEND_FUNCTION_BLOCK\n\nFUNCTION_BLOCK MC_ReadActualVelocity\nVAR_INPUT\n  Axis   : ECMC_AXIS_REF;\n  Enable : BOOL;\nEND_VAR\nVAR_OUTPUT\n  Valid    : BOOL;\n  Busy     : BOOL;\n  Error    : BOOL;\n  ErrorID  : UDINT;\n  Velocity : LREAL;\nEND_VAR\nVAR\n  StatePtr : ULINT;\nEND_VAR\n{external\n  auto *handle = reinterpret_cast<ecmcMcReadActualVelocityHandle *>(static_cast<uintptr_t>(STATEPTR.get()));\n  if (!handle) {\n    handle = ecmcMcReadActualVelocityCreate();\n    STATEPTR.set(static_cast<ULINT_t>(reinterpret_cast<uintptr_t>(handle)));\n  }\n\n  if (!handle) {\n    VALID.set(false);\n    BUSY.set(false);\n    ERROR.set(true);\n    ERRORID.set(static_cast<UDINT_t>(0xffffffffu));\n    VELOCITY.set(0.0);\n  } else {\n    ecmcMcReadActualVelocityStatus fb_status{};\n    ecmcMcReadActualVelocityRun(handle, AXIS.AXISINDEX.get(), ENABLE.get() ? 1 : 0, &fb_status);\n    VALID.set(fb_status.Valid != 0);\n    BUSY.set(fb_status.base.Busy != 0);\n    ERROR.set(fb_status.base.Error != 0);\n    ERRORID.set(static_cast<UDINT_t>(fb_status.base.ErrorID));\n    VELOCITY.set(fb_status.Velocity);\n  }\n}\nEND_FUNCTION_BLOCK\n"
+    }
+  ]
+}

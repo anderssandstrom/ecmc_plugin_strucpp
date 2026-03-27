@@ -31,6 +31,38 @@ If you later need several independent ST logic modules in one IOC, the next
 step is to add an object-registration layer on top of this host. The installed
 ABI and wrapper headers already support that extension.
 
+## Bundled Motion Library
+
+This repo now ships a reusable ST motion library:
+
+- [`lib/ecmc_motion.st`](lib/ecmc_motion.st)
+- [`libs/ecmc-motion.stlib`](libs/ecmc-motion.stlib)
+
+Application repos can consume it directly with `-L $(ECMC_PLUGIN_STRUCPP)/libs`
+instead of rebuilding a private copy of the motion library.
+
+The first useful block set currently includes:
+
+- `MC_Power`
+- `MC_Reset`
+- `MC_MoveAbsolute`
+- `MC_MoveRelative`
+- `MC_MoveVelocity`
+- `MC_Home`
+- `MC_Halt`
+- `MC_ReadStatus`
+- `MC_ReadActualPosition`
+- `MC_ReadActualVelocity`
+
+If the ST source changes, rebuild the bundled `.stlib` with:
+
+```sh
+./scripts/build_motion_stlib_container.sh
+```
+
+That recompiles the library with `strucpp` in a container and reapplies the
+required `ecmcMcApi.h` header metadata.
+
 ## Host Config
 
 The host expects the normal `Cfg.LoadPlugin(...)` config string format:
@@ -149,6 +181,20 @@ power.run(axis1, true);
 move_vel.run(axis1, true, 1000.0, 10000.0, 10000.0);
 ```
 
+## Starter Templates
+
+For a new motion app, start from:
+
+- [`templates/mc_move_absolute_template.st`](templates/mc_move_absolute_template.st)
+- [`templates/motion_logic_wrapper_template.cpp`](templates/motion_logic_wrapper_template.cpp)
+
+That gives you the minimum ST program plus logic wrapper pattern. In most cases
+you only need to:
+
+1. set `axis.AxisIndex`
+2. adjust the `%I/%Q` located layout
+3. rename the program and wrapper identifiers
+
 ## Logic Library Shape
 
 Each logic library exports one symbol:
@@ -183,6 +229,9 @@ make STRUCPP=/path/to/strucpp
 ```
 
 If `STRUCPP` is not set, the makefile defaults to `../strucpp`.
+
+The bundled motion library is distributed with the repo, so normal users do not
+need Node or `strucpp` just to consume `MC_*` blocks from an application repo.
 
 ## Startup Helper
 
@@ -221,3 +270,13 @@ For a velocity-oriented ST motion-library sample using `MC_Power`,
 For a relative-move ST motion-library sample using `MC_Power`,
 `MC_MoveRelative`, `MC_ReadStatus`, and `MC_ReadActualPosition`, see
 [`examples/loadMcPowerMoveRelativeLibExample.cmd`](examples/loadMcPowerMoveRelativeLibExample.cmd).
+
+## Quick Start
+
+For a new app repo:
+
+1. compile your ST with `-L /path/to/ecmc_plugin_strucpp/libs`
+2. include [`src/ecmcStrucppLogicWrapper.hpp`](src/ecmcStrucppLogicWrapper.hpp)
+   in the tiny logic wrapper
+3. link the generated logic module against the `STruCpp` runtime headers and
+   `ecmcMcApi.h`
