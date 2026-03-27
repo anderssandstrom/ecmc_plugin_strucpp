@@ -25,6 +25,7 @@
 #include <cstring>
 #include <dlfcn.h>
 #include <fstream>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -91,6 +92,14 @@ std::vector<BoundAddressMapping> g_bound_mappings;
 LogicRuntime g_logic {};
 ecmcStrucppCompiledCopyPlan g_copy_plan {};
 
+constexpr double kPlcAreaInput = 0.0;
+constexpr double kPlcAreaOutput = 1.0;
+constexpr double kPlcAreaMemory = 2.0;
+
+double plcNaN() {
+  return std::numeric_limits<double>::quiet_NaN();
+}
+
 void logError(const char* fmt, ...) {
   va_list args;
   va_start(args, fmt);
@@ -107,6 +116,167 @@ void logInfo(const char* fmt, ...) {
   std::vfprintf(stdout, fmt, args);
   std::fprintf(stdout, "\n");
   va_end(args);
+}
+
+ecmcStrucppIoImageSpan* plcAreaImage(double area) {
+  if (area == kPlcAreaInput) {
+    return &g_images.input;
+  }
+  if (area == kPlcAreaOutput) {
+    return &g_images.output;
+  }
+  if (area == kPlcAreaMemory) {
+    return &g_images.memory;
+  }
+  return nullptr;
+}
+
+bool plcCheckByteRange(const ecmcStrucppIoImageSpan* span,
+                       size_t offset,
+                       size_t width) {
+  return span && span->data && width > 0 && offset <= span->size &&
+         width <= (span->size - offset);
+}
+
+bool plcCheckBitRange(const ecmcStrucppIoImageSpan* span,
+                      size_t byte_offset,
+                      size_t bit_index) {
+  return span && span->data && byte_offset < span->size && bit_index < 8;
+}
+
+template <typename T>
+double plcGetScalar(double area, double offset) {
+  ecmcStrucppIoImageSpan* const span = plcAreaImage(area);
+  if (!span || offset < 0.0) {
+    return plcNaN();
+  }
+
+  const size_t byte_offset = static_cast<size_t>(offset);
+  if (!plcCheckByteRange(span, byte_offset, sizeof(T))) {
+    return plcNaN();
+  }
+
+  T value {};
+  std::memcpy(&value, span->data + byte_offset, sizeof(T));
+  return static_cast<double>(value);
+}
+
+template <typename T>
+double plcSetScalar(double area, double offset, double value) {
+  ecmcStrucppIoImageSpan* const span = plcAreaImage(area);
+  if (!span || offset < 0.0) {
+    return plcNaN();
+  }
+
+  const size_t byte_offset = static_cast<size_t>(offset);
+  if (!plcCheckByteRange(span, byte_offset, sizeof(T))) {
+    return plcNaN();
+  }
+
+  const T typed_value = static_cast<T>(value);
+  std::memcpy(span->data + byte_offset, &typed_value, sizeof(T));
+  return static_cast<double>(typed_value);
+}
+
+double plcGetBit(double area, double byte_offset, double bit_index) {
+  ecmcStrucppIoImageSpan* const span = plcAreaImage(area);
+  if (!span || byte_offset < 0.0 || bit_index < 0.0) {
+    return plcNaN();
+  }
+
+  const size_t byte_index = static_cast<size_t>(byte_offset);
+  const size_t bit = static_cast<size_t>(bit_index);
+  if (!plcCheckBitRange(span, byte_index, bit)) {
+    return plcNaN();
+  }
+
+  return ((span->data[byte_index] >> bit) & 0x1u) ? 1.0 : 0.0;
+}
+
+double plcSetBit(double area, double byte_offset, double bit_index, double value) {
+  ecmcStrucppIoImageSpan* const span = plcAreaImage(area);
+  if (!span || byte_offset < 0.0 || bit_index < 0.0) {
+    return plcNaN();
+  }
+
+  const size_t byte_index = static_cast<size_t>(byte_offset);
+  const size_t bit = static_cast<size_t>(bit_index);
+  if (!plcCheckBitRange(span, byte_index, bit)) {
+    return plcNaN();
+  }
+
+  const uint8_t mask = static_cast<uint8_t>(1u << bit);
+  if (value != 0.0) {
+    span->data[byte_index] = static_cast<uint8_t>(span->data[byte_index] | mask);
+  } else {
+    span->data[byte_index] = static_cast<uint8_t>(span->data[byte_index] & ~mask);
+  }
+
+  return value != 0.0 ? 1.0 : 0.0;
+}
+
+double plcGetU8(double area, double offset) {
+  return plcGetScalar<uint8_t>(area, offset);
+}
+
+double plcSetU8(double area, double offset, double value) {
+  return plcSetScalar<uint8_t>(area, offset, value);
+}
+
+double plcGetS8(double area, double offset) {
+  return plcGetScalar<int8_t>(area, offset);
+}
+
+double plcSetS8(double area, double offset, double value) {
+  return plcSetScalar<int8_t>(area, offset, value);
+}
+
+double plcGetU16(double area, double offset) {
+  return plcGetScalar<uint16_t>(area, offset);
+}
+
+double plcSetU16(double area, double offset, double value) {
+  return plcSetScalar<uint16_t>(area, offset, value);
+}
+
+double plcGetS16(double area, double offset) {
+  return plcGetScalar<int16_t>(area, offset);
+}
+
+double plcSetS16(double area, double offset, double value) {
+  return plcSetScalar<int16_t>(area, offset, value);
+}
+
+double plcGetU32(double area, double offset) {
+  return plcGetScalar<uint32_t>(area, offset);
+}
+
+double plcSetU32(double area, double offset, double value) {
+  return plcSetScalar<uint32_t>(area, offset, value);
+}
+
+double plcGetS32(double area, double offset) {
+  return plcGetScalar<int32_t>(area, offset);
+}
+
+double plcSetS32(double area, double offset, double value) {
+  return plcSetScalar<int32_t>(area, offset, value);
+}
+
+double plcGetF32(double area, double offset) {
+  return plcGetScalar<float>(area, offset);
+}
+
+double plcSetF32(double area, double offset, double value) {
+  return plcSetScalar<float>(area, offset, value);
+}
+
+double plcGetF64(double area, double offset) {
+  return plcGetScalar<double>(area, offset);
+}
+
+double plcSetF64(double area, double offset, double value) {
+  return plcSetScalar<double>(area, offset, value);
 }
 
 std::string trim(std::string value) {
@@ -1476,15 +1646,127 @@ static struct ecmcPluginData pluginDataDef = {
   .desc = "Generic ecmc host plugin for loadable STruCpp logic libraries.",
   .optionDesc =
     "logic_lib=<path>;[mapping_file=<path>|input_item=<name>|input_bindings=<offset:item[@bytes],...>];"
-    "[mapping_file=<path>|output_item=<name>|output_bindings=<offset:item[@bytes],...>];memory_bytes=<n>",
+    "[mapping_file=<path>|output_item=<name>|output_bindings=<offset:item[@bytes],...>];memory_bytes=<n>\n"
+    "PLC consts: STRUCPP_AREA_I=0, STRUCPP_AREA_Q=1, STRUCPP_AREA_M=2\n"
+    "PLC funcs: strucpp_get_bit(a,b,bit), strucpp_set_bit(a,b,bit,v), "
+    "strucpp_get_u8(a,b), strucpp_set_u8(a,b,v), strucpp_get_s8(a,b), strucpp_set_s8(a,b,v), "
+    "strucpp_get_u16(a,b), strucpp_set_u16(a,b,v), strucpp_get_s16(a,b), strucpp_set_s16(a,b,v), "
+    "strucpp_get_u32(a,b), strucpp_set_u32(a,b,v), strucpp_get_s32(a,b), strucpp_set_s32(a,b,v), "
+    "strucpp_get_f32(a,b), strucpp_set_f32(a,b,v), "
+    "strucpp_get_f64(a,b), strucpp_set_f64(a,b,v)",
   .version = ECMC_PLUGIN_VERSION,
   .constructFnc = construct,
   .destructFnc = destruct,
   .realtimeEnterFnc = enterRealtime,
   .realtimeExitFnc = exitRealtime,
   .realtimeFnc = realtime,
-  .funcs[0] = {0},
-  .consts[0] = {0},
+  .funcs[0] = {
+    .funcName = "strucpp_get_bit",
+    .funcDesc = "Read one bit from the plugin image area: area(0=I,1=Q,2=M), byte_offset, bit_index.",
+    .funcArg3 = plcGetBit,
+  },
+  .funcs[1] = {
+    .funcName = "strucpp_set_bit",
+    .funcDesc = "Write one bit in the plugin image area: area(0=I,1=Q,2=M), byte_offset, bit_index, value.",
+    .funcArg4 = plcSetBit,
+  },
+  .funcs[2] = {
+    .funcName = "strucpp_get_u8",
+    .funcDesc = "Read one unsigned byte from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
+    .funcArg2 = plcGetU8,
+  },
+  .funcs[3] = {
+    .funcName = "strucpp_set_u8",
+    .funcDesc = "Write one unsigned byte in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
+    .funcArg3 = plcSetU8,
+  },
+  .funcs[4] = {
+    .funcName = "strucpp_get_s8",
+    .funcDesc = "Read one signed byte from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
+    .funcArg2 = plcGetS8,
+  },
+  .funcs[5] = {
+    .funcName = "strucpp_set_s8",
+    .funcDesc = "Write one signed byte in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
+    .funcArg3 = plcSetS8,
+  },
+  .funcs[6] = {
+    .funcName = "strucpp_get_u16",
+    .funcDesc = "Read one unsigned 16-bit word from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
+    .funcArg2 = plcGetU16,
+  },
+  .funcs[7] = {
+    .funcName = "strucpp_set_u16",
+    .funcDesc = "Write one unsigned 16-bit word in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
+    .funcArg3 = plcSetU16,
+  },
+  .funcs[8] = {
+    .funcName = "strucpp_get_s16",
+    .funcDesc = "Read one signed 16-bit word from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
+    .funcArg2 = plcGetS16,
+  },
+  .funcs[9] = {
+    .funcName = "strucpp_set_s16",
+    .funcDesc = "Write one signed 16-bit word in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
+    .funcArg3 = plcSetS16,
+  },
+  .funcs[10] = {
+    .funcName = "strucpp_get_u32",
+    .funcDesc = "Read one unsigned 32-bit value from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
+    .funcArg2 = plcGetU32,
+  },
+  .funcs[11] = {
+    .funcName = "strucpp_set_u32",
+    .funcDesc = "Write one unsigned 32-bit value in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
+    .funcArg3 = plcSetU32,
+  },
+  .funcs[12] = {
+    .funcName = "strucpp_get_s32",
+    .funcDesc = "Read one signed 32-bit value from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
+    .funcArg2 = plcGetS32,
+  },
+  .funcs[13] = {
+    .funcName = "strucpp_set_s32",
+    .funcDesc = "Write one signed 32-bit value in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
+    .funcArg3 = plcSetS32,
+  },
+  .funcs[14] = {
+    .funcName = "strucpp_get_f32",
+    .funcDesc = "Read one 32-bit float from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
+    .funcArg2 = plcGetF32,
+  },
+  .funcs[15] = {
+    .funcName = "strucpp_set_f32",
+    .funcDesc = "Write one 32-bit float in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
+    .funcArg3 = plcSetF32,
+  },
+  .funcs[16] = {
+    .funcName = "strucpp_get_f64",
+    .funcDesc = "Read one 64-bit float from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
+    .funcArg2 = plcGetF64,
+  },
+  .funcs[17] = {
+    .funcName = "strucpp_set_f64",
+    .funcDesc = "Write one 64-bit float in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
+    .funcArg3 = plcSetF64,
+  },
+  .funcs[18] = {0},
+  .consts[0] = {
+    .constName = "STRUCPP_AREA_I",
+    .constDesc = "Input image area selector for strucpp exprtk helper functions.",
+    .constValue = kPlcAreaInput,
+  },
+  .consts[1] = {
+    .constName = "STRUCPP_AREA_Q",
+    .constDesc = "Output image area selector for strucpp exprtk helper functions.",
+    .constValue = kPlcAreaOutput,
+  },
+  .consts[2] = {
+    .constName = "STRUCPP_AREA_M",
+    .constDesc = "Memory image area selector for strucpp exprtk helper functions.",
+    .constValue = kPlcAreaMemory,
+  },
+  .consts[3] = {0},
 };
 
 ecmc_plugin_register(pluginDataDef);

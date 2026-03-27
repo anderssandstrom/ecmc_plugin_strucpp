@@ -151,6 +151,50 @@ and emits the final startup-linked mapping file automatically. It also still
 accepts an external `VAR_NAME=ecmcDataItem` bindings file when you do not want
 to keep the metadata in the ST source.
 
+## PLC Functions
+
+The plugin also exports numeric-only exprtk PLC helper functions through the
+normal `ecmcPluginData.funcs[]` interface. These helpers operate directly on
+the plugin's linked `%I`, `%Q`, and `%M` byte images.
+
+Area selector values:
+
+- `0` = `%I`
+- `1` = `%Q`
+- `2` = `%M`
+
+Available functions:
+
+- `strucpp_get_bit(area, byte_offset, bit_index)`
+- `strucpp_set_bit(area, byte_offset, bit_index, value)`
+- `strucpp_get_u8(area, byte_offset)`
+- `strucpp_set_u8(area, byte_offset, value)`
+- `strucpp_get_s8(area, byte_offset)`
+- `strucpp_set_s8(area, byte_offset, value)`
+- `strucpp_get_u16(area, byte_offset)`
+- `strucpp_set_u16(area, byte_offset, value)`
+- `strucpp_get_s16(area, byte_offset)`
+- `strucpp_set_s16(area, byte_offset, value)`
+- `strucpp_get_u32(area, byte_offset)`
+- `strucpp_set_u32(area, byte_offset, value)`
+- `strucpp_get_s32(area, byte_offset)`
+- `strucpp_set_s32(area, byte_offset, value)`
+- `strucpp_get_f32(area, byte_offset)`
+- `strucpp_set_f32(area, byte_offset, value)`
+- `strucpp_get_f64(area, byte_offset)`
+- `strucpp_set_f64(area, byte_offset, value)`
+
+Example:
+
+```text
+var status;
+status := strucpp_get_u16(0, 0);   // read %IW0
+strucpp_set_u16(1, 0, 16);         // write %QW0
+strucpp_set_bit(2, 4, 0, 1);       // set %MX4.0
+```
+
+Out-of-range access returns `NaN`.
+
 ## Installed Public Headers
 
 The plugin installs these public headers from [`src`](src):
