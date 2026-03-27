@@ -125,9 +125,29 @@ The plugin installs these public headers from [`src`](src):
 
 - [`ecmcStrucppLogicIface.hpp`](src/ecmcStrucppLogicIface.hpp)
 - [`ecmcStrucppLogicWrapper.hpp`](src/ecmcStrucppLogicWrapper.hpp)
+- [`ecmcStrucppMcWrapper.hpp`](src/ecmcStrucppMcWrapper.hpp)
 
 Those are the only pieces an application-side logic library needs from this
 repo.
+
+`ecmcStrucppMcWrapper.hpp` is the first plugin-side bridge for the new
+PLCopen-style runtime now being added to `ecmc`. It exposes simple C++ wrapper
+objects like `ecmcStrucpp::mc::MC_Power`, `MC_MoveAbsolute`, and
+`MC_ReadStatus`, while the actual motion semantics remain in `ecmc` through
+`ecmcMcApi.h`.
+
+Example shape:
+
+```cpp
+#include "ecmcStrucppMcWrapper.hpp"
+
+ecmcStrucpp::mc::AxisRef axis1{0};
+ecmcStrucpp::mc::MC_Power power;
+ecmcStrucpp::mc::MC_MoveVelocity move_vel;
+
+power.run(axis1, true);
+move_vel.run(axis1, true, 1000.0, 10000.0, 10000.0);
+```
 
 ## Logic Library Shape
 
@@ -189,3 +209,7 @@ For a minimal EL7041 velocity-only sample that binds `%IW0` to
 For a motion-data sample that binds `%IL0` to `ax1.enc.actpos` and `%QL0` to
 `ax1.traj.targetpos`, see
 [`examples/loadMotionActposMirrorExample.cmd`](examples/loadMotionActposMirrorExample.cmd).
+
+For a real ST motion-library sample using `MC_Power`, `MC_MoveAbsolute`, and
+`MC_ReadActualPosition` through one contiguous input/output image, see
+[`examples/loadMcPowerMoveAbsoluteLibExample.cmd`](examples/loadMcPowerMoveAbsoluteLibExample.cmd).
