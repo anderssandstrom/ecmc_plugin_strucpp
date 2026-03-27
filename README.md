@@ -213,3 +213,11 @@ For a motion-data sample that binds `%IL0` to `ax1.enc.actpos` and `%QL0` to
 For a real ST motion-library sample using `MC_Power`, `MC_MoveAbsolute`, and
 `MC_ReadActualPosition` through one contiguous input/output image, see
 [`examples/loadMcPowerMoveAbsoluteLibExample.cmd`](examples/loadMcPowerMoveAbsoluteLibExample.cmd).
+
+For a velocity-oriented ST motion-library sample using `MC_Power`,
+`MC_MoveVelocity`, `MC_ReadStatus`, and `MC_ReadActualVelocity`, see
+[`examples/loadMcPowerMoveVelocityLibExample.cmd`](examples/loadMcPowerMoveVelocityLibExample.cmd).
+
+For a relative-move ST motion-library sample using `MC_Power`,
+`MC_MoveRelative`, `MC_ReadStatus`, and `MC_ReadActualPosition`, see
+[`examples/loadMcPowerMoveRelativeLibExample.cmd`](examples/loadMcPowerMoveRelativeLibExample.cmd).
