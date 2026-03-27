@@ -82,6 +82,16 @@ want explicit offset-to-item control without an external manifest. The EL6002
 example in this repo uses contiguous images. The EL7041 example uses
 `mapping_file`.
 
+In `mapping_file` mode the host now checks, at startup:
+
+- `%I` vs `%Q` direction against `ecmcDataItemInfo.dataDirection`
+- exact byte width for direct scalar mappings
+- compatible `ecmcEcDataType` family for the located width
+
+The current logic ABI still only exposes located width, not the full IEC scalar
+type, so the host can validate "64-bit compatible" but not distinguish `LREAL`
+from `LWORD` when both use `%IL`.
+
 The mapping-file format is intentionally small:
 
 ```text
@@ -93,6 +103,21 @@ The mapping-file format is intentionally small:
 
 The names in that file are literal `ecmcDataItem` names. The plugin reads the
 file directly, so IOC macro expansion does not happen inside the manifest.
+
+To avoid maintaining `%IW0` / `%QW2` addresses by hand, this repo also ships a
+small generator in [`scripts/strucpp_mapgen.py`](scripts/strucpp_mapgen.py).
+It reads the generated `STruCpp` header forwards and, preferably, inline ST
+annotations of the form:
+
+```text
+actual_position    AT %IW0 : INT;   // @ecmc ec0.s14.positionActual01
+drive_control      AT %QW0 : WORD;  // @ecmc ec0.s14.driveControl01
+velocity_setpoint  AT %QW2 : INT;   // @ecmc ec0.s14.velocitySetpoint01
+```
+
+and emits the final startup-linked mapping file automatically. It also still
+accepts an external `VAR_NAME=ecmcDataItem` bindings file when you do not want
+to keep the metadata in the ST source.
 
 ## Installed Public Headers
 
@@ -160,3 +185,7 @@ For a minimal EL7041 velocity-only sample that binds `%IW0` to
 `positionActual01`, `%QW0` to `driveControl01`, and `%QW2` to
 `velocitySetpoint01` through a startup-linked mapping file, see
 [`examples/loadEL7041VelocityExample.cmd`](examples/loadEL7041VelocityExample.cmd).
+
+For a motion-data sample that binds `%IL0` to `ax1.enc.actpos` and `%QL0` to
+`ax1.traj.targetpos`, see
+[`examples/loadMotionActposMirrorExample.cmd`](examples/loadMotionActposMirrorExample.cmd).

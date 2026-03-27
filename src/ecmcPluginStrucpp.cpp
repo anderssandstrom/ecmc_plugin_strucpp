@@ -40,6 +40,7 @@ struct ItemBindingSpec {
 struct BoundItemBinding {
   size_t offset {};
   ecmcStrucppIoImageSpan item;
+  ecmcDataItemInfo info {};
   size_t bytes {};
 };
 
@@ -58,6 +59,7 @@ struct AddressMappingSpec {
 struct BoundAddressMapping {
   LocatedAddressKey address;
   ecmcStrucppIoImageSpan item;
+  ecmcDataItemInfo info {};
 };
 
 struct PluginConfig {
@@ -161,6 +163,219 @@ std::string formatAddress(const LocatedAddressKey& address) {
 std::string formatAddress(const strucpp::LocatedVar& var) {
   LocatedAddressKey key {var.area, var.size, var.byte_index, var.bit_index};
   return formatAddress(key);
+}
+
+const char* dataDirectionName(ecmcDataDir direction) {
+  switch (direction) {
+  case ECMC_DIR_WRITE:
+    return "write";
+  case ECMC_DIR_READ:
+    return "read";
+  case ECMC_DIR_INVALID:
+  case ECMC_DIR_COUNT:
+    return "invalid";
+  }
+  return "unknown";
+}
+
+const char* dataTypeName(ecmcEcDataType type) {
+  switch (type) {
+  case ECMC_EC_NONE:
+    return "NONE";
+  case ECMC_EC_B1:
+    return "B1";
+  case ECMC_EC_B2:
+    return "B2";
+  case ECMC_EC_B3:
+    return "B3";
+  case ECMC_EC_B4:
+    return "B4";
+  case ECMC_EC_U8:
+    return "U8";
+  case ECMC_EC_S8:
+    return "S8";
+  case ECMC_EC_U16:
+    return "U16";
+  case ECMC_EC_S16:
+    return "S16";
+  case ECMC_EC_U32:
+    return "U32";
+  case ECMC_EC_S32:
+    return "S32";
+  case ECMC_EC_U64:
+    return "U64";
+  case ECMC_EC_S64:
+    return "S64";
+  case ECMC_EC_F32:
+    return "F32";
+  case ECMC_EC_F64:
+    return "F64";
+  case ECMC_EC_S8_TO_U8:
+    return "S8_TO_U8";
+  case ECMC_EC_S16_TO_U16:
+    return "S16_TO_U16";
+  case ECMC_EC_S32_TO_U32:
+    return "S32_TO_U32";
+  case ECMC_EC_S64_TO_U64:
+    return "S64_TO_U64";
+  }
+  return "UNKNOWN";
+}
+
+bool isIntegerLikeDataType(ecmcEcDataType type) {
+  switch (type) {
+  case ECMC_EC_B1:
+  case ECMC_EC_B2:
+  case ECMC_EC_B3:
+  case ECMC_EC_B4:
+  case ECMC_EC_U8:
+  case ECMC_EC_S8:
+  case ECMC_EC_U16:
+  case ECMC_EC_S16:
+  case ECMC_EC_U32:
+  case ECMC_EC_S32:
+  case ECMC_EC_U64:
+  case ECMC_EC_S64:
+  case ECMC_EC_S8_TO_U8:
+  case ECMC_EC_S16_TO_U16:
+  case ECMC_EC_S32_TO_U32:
+  case ECMC_EC_S64_TO_U64:
+    return true;
+  case ECMC_EC_NONE:
+  case ECMC_EC_F32:
+  case ECMC_EC_F64:
+    return false;
+  }
+  return false;
+}
+
+bool isCompatibleScalarType(strucpp::LocatedSize size, ecmcEcDataType type) {
+  switch (size) {
+  case strucpp::LocatedSize::Bit:
+    return isIntegerLikeDataType(type);
+  case strucpp::LocatedSize::Byte:
+    return type == ECMC_EC_U8 || type == ECMC_EC_S8 || type == ECMC_EC_S8_TO_U8;
+  case strucpp::LocatedSize::Word:
+    return type == ECMC_EC_U16 || type == ECMC_EC_S16 || type == ECMC_EC_S16_TO_U16;
+  case strucpp::LocatedSize::DWord:
+    return type == ECMC_EC_U32 || type == ECMC_EC_S32 ||
+           type == ECMC_EC_S32_TO_U32 || type == ECMC_EC_F32;
+  case strucpp::LocatedSize::LWord:
+    return type == ECMC_EC_U64 || type == ECMC_EC_S64 ||
+           type == ECMC_EC_S64_TO_U64 || type == ECMC_EC_F64;
+  }
+  return false;
+}
+
+bool validateDirectionForArea(strucpp::LocatedArea area,
+                              const ecmcDataItemInfo& info,
+                              const std::string& item_name,
+                              std::string* error_out) {
+  if (info.dataDirection == ECMC_DIR_INVALID) {
+    return true;
+  }
+
+  const ecmcDataDir expected =
+    area == strucpp::LocatedArea::Output ? ECMC_DIR_WRITE : ECMC_DIR_READ;
+  if (info.dataDirection != expected) {
+    if (error_out) {
+      std::ostringstream oss;
+      oss << "ecmcDataItem '" << item_name << "' has direction "
+          << dataDirectionName(info.dataDirection) << " but "
+          << (area == strucpp::LocatedArea::Output ? "%Q" : "%I")
+          << " expects " << dataDirectionName(expected);
+      *error_out = oss.str();
+    }
+    return false;
+  }
+  return true;
+}
+
+bool validateDirectMappedItemType(const strucpp::LocatedVar& var,
+                                  const ecmcDataItemInfo& info,
+                                  const std::string& item_name,
+                                  std::string* error_out) {
+  if (!validateDirectionForArea(var.area, info, item_name, error_out)) {
+    return false;
+  }
+
+  if (var.size == strucpp::LocatedSize::Bit) {
+    if (info.dataSize < 1) {
+      if (error_out) {
+        *error_out = "ecmcDataItem '" + item_name + "' is too small for " +
+                     formatAddress(var);
+      }
+      return false;
+    }
+
+    if (info.dataBitCount != 0 && var.bit_index >= info.dataBitCount) {
+      if (error_out) {
+        std::ostringstream oss;
+        oss << "ecmcDataItem '" << item_name << "' only exposes "
+            << info.dataBitCount << " bits but " << formatAddress(var)
+            << " requires bit index " << static_cast<int>(var.bit_index);
+        *error_out = oss.str();
+      }
+      return false;
+    }
+
+    if (info.dataType != ECMC_EC_NONE && !isCompatibleScalarType(var.size, info.dataType)) {
+      if (error_out) {
+        std::ostringstream oss;
+        oss << "ecmcDataItem '" << item_name << "' has incompatible type "
+            << dataTypeName(info.dataType) << " for " << formatAddress(var);
+        *error_out = oss.str();
+      }
+      return false;
+    }
+    return true;
+  }
+
+  const size_t expected_bytes = var.byte_size();
+  if (info.dataSize != expected_bytes) {
+    if (error_out) {
+      std::ostringstream oss;
+      oss << "ecmcDataItem '" << item_name << "' exposes " << info.dataSize
+          << " bytes but " << formatAddress(var) << " requires exactly "
+          << expected_bytes;
+      *error_out = oss.str();
+    }
+    return false;
+  }
+
+  if (info.dataElementSize != 0 && info.dataElementSize != expected_bytes) {
+    if (error_out) {
+      std::ostringstream oss;
+      oss << "ecmcDataItem '" << item_name << "' has element size "
+          << info.dataElementSize << " but " << formatAddress(var)
+          << " requires " << expected_bytes;
+      *error_out = oss.str();
+    }
+    return false;
+  }
+
+  if (info.dataType != ECMC_EC_NONE && !isCompatibleScalarType(var.size, info.dataType)) {
+    if (error_out) {
+      std::ostringstream oss;
+      oss << "ecmcDataItem '" << item_name << "' has incompatible type "
+          << dataTypeName(info.dataType) << " for " << formatAddress(var);
+      *error_out = oss.str();
+    }
+    return false;
+  }
+
+  if (info.dataBitCount != 0 && info.dataBitCount != expected_bytes * 8) {
+    if (error_out) {
+      std::ostringstream oss;
+      oss << "ecmcDataItem '" << item_name << "' reports " << info.dataBitCount
+          << " bits but " << formatAddress(var) << " requires "
+          << (expected_bytes * 8);
+      *error_out = oss.str();
+    }
+    return false;
+  }
+
+  return true;
 }
 
 bool addressesEqual(const LocatedAddressKey& lhs, const LocatedAddressKey& rhs) {
@@ -525,6 +740,7 @@ bool parseConfigString(const char* raw_config,
 
 bool bindItemSpan(const std::string& item_name,
                   ecmcStrucppIoImageSpan* out_span,
+                  ecmcDataItemInfo* out_info,
                   std::string* error_out) {
   if (!out_span) {
     if (error_out) {
@@ -556,6 +772,9 @@ bool bindItemSpan(const std::string& item_name,
   out_span->data = info->data;
   out_span->size = info->dataSize;
   out_span->name = item_name;
+  if (out_info) {
+    *out_info = *info;
+  }
   return true;
 }
 
@@ -598,7 +817,7 @@ bool resolveBindingSpecs(const std::vector<ItemBindingSpec>& specs,
 
   for (const auto& spec : specs) {
     BoundItemBinding bound {};
-    if (!bindItemSpan(spec.item_name, &bound.item, error_out)) {
+    if (!bindItemSpan(spec.item_name, &bound.item, &bound.info, error_out)) {
       return false;
     }
 
@@ -667,7 +886,7 @@ bool resolveAddressMappings(const std::vector<AddressMappingSpec>& specs,
   for (const auto& spec : specs) {
     BoundAddressMapping bound {};
     bound.address = spec.address;
-    if (!bindItemSpan(spec.item_name, &bound.item, error_out)) {
+    if (!bindItemSpan(spec.item_name, &bound.item, &bound.info, error_out)) {
       return false;
     }
     out_bindings->push_back(bound);
@@ -718,6 +937,17 @@ bool bindingCoversLocatedVars(const strucpp::LocatedVar* vars,
     }
   }
 
+  return true;
+}
+
+bool validateBindingDirections(const std::vector<BoundItemBinding>& bindings,
+                               strucpp::LocatedArea area,
+                               std::string* error_out) {
+  for (const auto& binding : bindings) {
+    if (!validateDirectionForArea(area, binding.info, binding.item.name, error_out)) {
+      return false;
+    }
+  }
   return true;
 }
 
@@ -785,6 +1015,10 @@ bool appendDirectMappedVar(const strucpp::LocatedVar& var,
     if (error_out) {
       *error_out = "No mapping entry for " + formatAddress(var);
     }
+    return false;
+  }
+
+  if (!validateDirectMappedItemType(var, mapping->info, mapping->item.name, error_out)) {
     return false;
   }
 
@@ -1050,6 +1284,7 @@ static void destruct(void) {
 
 static int enterRealtime(void) {
   std::string error;
+  ecmcDataItemInfo image_info {};
 
   const strucpp::LocatedVar* const vars = logicLocatedVars();
   const size_t var_count = logicLocatedVarCount();
@@ -1107,6 +1342,12 @@ static int enterRealtime(void) {
       logError("%s", error.c_str());
       return -1;
     }
+    if (!validateBindingDirections(g_bound_input_bindings,
+                                   strucpp::LocatedArea::Input,
+                                   &error)) {
+      logError("%s", error.c_str());
+      return -1;
+    }
     g_input_image.assign(std::max(required_input_bytes, binding_bytes), 0);
     g_images.input.data = g_input_image.empty() ? nullptr : g_input_image.data();
     g_images.input.size = g_input_image.size();
@@ -1121,7 +1362,14 @@ static int enterRealtime(void) {
       return -1;
     }
   } else if (!g_config.input_item.empty()) {
-    if (!bindItemSpan(g_config.input_item, &g_images.input, &error)) {
+    if (!bindItemSpan(g_config.input_item, &g_images.input, &image_info, &error)) {
+      logError("%s", error.c_str());
+      return -1;
+    }
+    if (!validateDirectionForArea(strucpp::LocatedArea::Input,
+                                  image_info,
+                                  g_images.input.name,
+                                  &error)) {
       logError("%s", error.c_str());
       return -1;
     }
@@ -1140,6 +1388,12 @@ static int enterRealtime(void) {
       logError("%s", error.c_str());
       return -1;
     }
+    if (!validateBindingDirections(g_bound_output_bindings,
+                                   strucpp::LocatedArea::Output,
+                                   &error)) {
+      logError("%s", error.c_str());
+      return -1;
+    }
     g_output_image.assign(std::max(required_output_bytes, binding_bytes), 0);
     g_images.output.data = g_output_image.empty() ? nullptr : g_output_image.data();
     g_images.output.size = g_output_image.size();
@@ -1154,7 +1408,14 @@ static int enterRealtime(void) {
       return -1;
     }
   } else if (!g_config.output_item.empty()) {
-    if (!bindItemSpan(g_config.output_item, &g_images.output, &error)) {
+    if (!bindItemSpan(g_config.output_item, &g_images.output, &image_info, &error)) {
+      logError("%s", error.c_str());
+      return -1;
+    }
+    if (!validateDirectionForArea(strucpp::LocatedArea::Output,
+                                  image_info,
+                                  g_images.output.name,
+                                  &error)) {
       logError("%s", error.c_str());
       return -1;
     }
