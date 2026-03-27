@@ -1,0 +1,6 @@
+O.*
+bin/
+lib/
+configure/
+autom4te.cache/
+.DS_Store
