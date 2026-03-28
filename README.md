@@ -510,6 +510,7 @@ Rules:
 - current support is for top-level scalar program variables:
   `BOOL`, `SINT`, `USINT`, `BYTE`, `INT`, `UINT`, `WORD`, `DINT`, `UDINT`,
   `DWORD`, `REAL`, `LREAL`
+- duplicate exported names are rejected at startup with a clear error
 
 The application repo runs
 [`scripts/strucpp_epics_exportgen.py`](scripts/strucpp_epics_exportgen.py) to

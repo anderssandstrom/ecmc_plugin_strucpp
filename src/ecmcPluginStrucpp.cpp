@@ -31,6 +31,7 @@
 #include <limits>
 #include <mutex>
 #include <sstream>
+#include <set>
 #include <string>
 #include <sys/resource.h>
 #if defined(__linux__)
@@ -664,6 +665,31 @@ bool exportTypeInfo(uint32_t export_type,
   }
 }
 
+const char* exportTypeName(uint32_t export_type) {
+  switch (export_type) {
+  case ECMC_STRUCPP_EXPORT_BOOL:
+    return "BOOL";
+  case ECMC_STRUCPP_EXPORT_S8:
+    return "S8";
+  case ECMC_STRUCPP_EXPORT_U8:
+    return "U8";
+  case ECMC_STRUCPP_EXPORT_S16:
+    return "S16";
+  case ECMC_STRUCPP_EXPORT_U16:
+    return "U16";
+  case ECMC_STRUCPP_EXPORT_S32:
+    return "S32";
+  case ECMC_STRUCPP_EXPORT_U32:
+    return "U32";
+  case ECMC_STRUCPP_EXPORT_F32:
+    return "F32";
+  case ECMC_STRUCPP_EXPORT_F64:
+    return "F64";
+  default:
+    return "UNKNOWN";
+  }
+}
+
 const ecmcStrucppExportedVar* logicExportedVars() {
   if (!g_logic.api || !g_logic.instance || !g_logic.api->get_exported_vars) {
     return nullptr;
@@ -707,6 +733,7 @@ bool bindExportedVars(std::string* error_out) {
     return false;
   }
 
+  std::set<std::string> seen_names;
   for (size_t i = 0; i < count; ++i) {
     const auto& export_var = vars[i];
     if (!export_var.name || !export_var.name[0]) {
@@ -728,6 +755,14 @@ bool bindExportedVars(std::string* error_out) {
     if (!exportTypeInfo(export_var.type, &asyn_type, &bytes)) {
       if (error_out) {
         *error_out = std::string("Unsupported exported ST variable type for '") +
+                     export_var.name + "'";
+      }
+      return false;
+    }
+
+    if (!seen_names.insert(export_var.name).second) {
+      if (error_out) {
+        *error_out = std::string("Duplicate exported ST variable name: '") +
                      export_var.name + "'";
       }
       return false;
@@ -755,6 +790,23 @@ bool bindExportedVars(std::string* error_out) {
   g_asyn_port->syncExportedParams(&g_exported_params, true, false);
 
   return true;
+}
+
+std::string describeExportedVars() {
+  if (g_exported_params.empty()) {
+    return "<none>";
+  }
+
+  std::ostringstream oss;
+  for (size_t i = 0; i < g_exported_params.size(); ++i) {
+    if (i != 0) {
+      oss << ",";
+    }
+    const auto& binding = g_exported_params[i];
+    oss << binding.name << "[" << exportTypeName(binding.type) << ","
+        << (binding.writable != 0 ? "rw" : "ro") << "]";
+  }
+  return oss.str();
 }
 
 bool ensureAsynPort(std::string* error_out) {
@@ -1976,6 +2028,7 @@ static int construct(char* configStr) {
           g_config.output_item.empty() ? "<none>" : g_config.output_item.c_str(),
           output_bindings.c_str(),
           g_config.memory_bytes);
+  logInfo("exported_vars=%s", describeExportedVars().c_str());
   return 0;
 }
 
@@ -2036,6 +2089,9 @@ static int enterRealtime(void) {
             g_config.mapping_file.c_str(),
             g_bound_mappings.size(),
             g_images.memory.size);
+    logInfo("mapping_summary direct_mappings=%zu exports=%zu",
+            g_bound_mappings.size(),
+            g_exported_params.size());
     return 0;
   }
 
@@ -2146,6 +2202,12 @@ static int enterRealtime(void) {
   if (!g_exported_params.empty()) {
     logInfo("published %zu ST variables to asyn", g_exported_params.size());
   }
+  logInfo("binding_summary mode=%s exports=%zu",
+          (!g_config.input_bindings.empty() || !g_config.output_bindings.empty()) ?
+            "explicit_bindings" :
+            ((g_config.input_item.empty() && g_config.output_item.empty()) ? "none" :
+             "contiguous_image"),
+          g_exported_params.size());
   return 0;
 }
 
