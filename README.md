@@ -179,6 +179,19 @@ The scaffold only picks the smallest default shape. The generated
 - `WRAPPER_CPP := custom_wrapper.cpp`
 - `EXTRA_CPP_SOURCES := helper.cpp`
 
+The same helper now also generates:
+
+- `${LOGIC_LIB}.summary.txt`
+
+and supports a dry-run validation target:
+
+```sh
+make validate
+```
+
+That validation step checks the generated header, mapping file, and
+substitutions file against the bundled ST source before runtime.
+
 ## Host Config
 
 The host expects the normal `Cfg.LoadPlugin(...)` config string format:
@@ -269,6 +282,14 @@ file directly, so IOC macro expansion does not happen inside the manifest.
 
 To avoid maintaining `%IW0` / `%QW2` addresses by hand, this repo also ships a
 small generator in [`scripts/strucpp_mapgen.py`](scripts/strucpp_mapgen.py).
+
+The generators now also perform stronger checks before runtime, including:
+
+- malformed `@ecmc` / `@epics` annotations
+- duplicate located addresses in generated forwards
+- duplicate `@epics` export names
+- conflicting mapping entries
+- summary warnings for overlapping located addresses
 It reads the generated `STruCpp` header forwards and, preferably, inline ST
 annotations of the form:
 

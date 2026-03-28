@@ -19,6 +19,7 @@ EXPORTGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_epics_exportgen.py
 SUBSTGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_epics_substgen.py
 WRAPPERGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_logic_wrappergen.py
 BUNDLEGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_bundle_st.py
+REPORTGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_logic_report.py
 
 CXX ?= c++
 CXXFLAGS += -std=c++17 -fPIC -Wall -Wextra
@@ -48,21 +49,23 @@ WRAPPER_CPP ?= $(GENERATED_WRAPPER_CPP)
 LOGIC_LIB := $(ODIR)/$(LOGIC_NAME).$(LIBEXT)
 MAP_FILE := $(LOGIC_LIB).map
 SUBST_FILE := $(LOGIC_LIB).substitutions
+SUMMARY_FILE := $(LOGIC_LIB).summary.txt
 
 STAGED_LOGIC_LIB := $(PROJECT_BIN_DIR)/$(LOGIC_NAME).$(LIBEXT)
 STAGED_MAP_FILE := $(STAGED_LOGIC_LIB).map
 STAGED_SUBST_FILE := $(STAGED_LOGIC_LIB).substitutions
+STAGED_SUMMARY_FILE := $(STAGED_LOGIC_LIB).summary.txt
 
 EXTRA_OBJS := $(patsubst %.cpp,$(ODIR)/%.o,$(EXTRA_CPP_SOURCES))
 PROGRAM_OBJ := $(ODIR)/$(PROGRAM)_program.o
 WRAPPER_OBJ := $(ODIR)/$(LOGIC_NAME)_wrapper.o
 OBJS := $(PROGRAM_OBJ) $(WRAPPER_OBJ) $(EXTRA_OBJS)
 
-.PHONY: all clean regen maps stage
+.PHONY: all clean regen maps stage validate
 
-all: $(LOGIC_LIB) $(MAP_FILE) $(SUBST_FILE)
+all: $(LOGIC_LIB) $(MAP_FILE) $(SUBST_FILE) $(SUMMARY_FILE)
 
-stage: all $(STAGED_LOGIC_LIB) $(STAGED_MAP_FILE) $(STAGED_SUBST_FILE)
+stage: all $(STAGED_LOGIC_LIB) $(STAGED_MAP_FILE) $(STAGED_SUBST_FILE) $(STAGED_SUMMARY_FILE)
 
 regen: $(GEN_CPP)
 
@@ -90,6 +93,10 @@ $(MAP_FILE): $(GEN_HPP) $(ST_BUNDLE) $(MAPGEN)
 $(SUBST_FILE): $(ST_BUNDLE) $(SUBSTGEN)
 	mkdir -p $(ODIR)
 	$(PYTHON) $(SUBSTGEN) --st-source $(ST_BUNDLE) --output $@
+
+$(SUMMARY_FILE): $(GEN_HPP) $(MAP_FILE) $(SUBST_FILE) $(ST_BUNDLE) $(REPORTGEN)
+	mkdir -p $(ODIR)
+	$(PYTHON) $(REPORTGEN) --st-source $(ST_BUNDLE) --header $(GEN_HPP) --map $(MAP_FILE) --substitutions $(SUBST_FILE) --logic-lib $(LOGIC_LIB) --output $@
 
 $(PROGRAM_OBJ): $(GEN_CPP)
 	mkdir -p $(ODIR)
@@ -119,7 +126,14 @@ $(STAGED_SUBST_FILE): $(SUBST_FILE)
 	mkdir -p $(PROJECT_BIN_DIR)
 	cp $< $@
 
+$(STAGED_SUMMARY_FILE): $(SUMMARY_FILE)
+	mkdir -p $(PROJECT_BIN_DIR)
+	cp $< $@
+
 maps: $(MAP_FILE) $(SUBST_FILE)
+
+validate: $(GEN_HPP) $(MAP_FILE) $(SUBST_FILE) $(ST_BUNDLE) $(REPORTGEN)
+	$(PYTHON) $(REPORTGEN) --st-source $(ST_BUNDLE) --header $(GEN_HPP) --map $(MAP_FILE) --substitutions $(SUBST_FILE) --logic-lib $(LOGIC_LIB) --validate-only
 
 clean:
 	rm -rf $(ODIR) $(GEN_DIR) $(PROJECT_BIN_DIR)

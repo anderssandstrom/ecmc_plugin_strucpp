@@ -53,6 +53,7 @@ def normalize_name(name):
 def parse_forwards(header_text):
     located = []
     seen_names = set()
+    seen_addresses = {}
     for match in FORWARD_RE.finditer(header_text):
         source_name = match.group(1)
         name = normalize_name(source_name)
@@ -61,6 +62,13 @@ def parse_forwards(header_text):
         if name in seen_names:
             raise SystemExit(f"error: duplicate located variable name in generated header: {source_name}")
         seen_names.add(name)
+        prior_name = seen_addresses.get(address)
+        if prior_name is not None:
+            raise SystemExit(
+                f"error: duplicate located address in generated header: {address} used by "
+                f"{prior_name} and {source_name}"
+            )
+        seen_addresses[address] = source_name
         located.append((name, address, area, source_name))
     return located
 
@@ -101,6 +109,10 @@ def parse_st_source_annotations(text, source_path):
         line_no += 1
         match = ST_ECMC_RE.match(raw_line)
         if not match:
+            if "@ecmc" in raw_line:
+                raise SystemExit(
+                    f"error: malformed @ecmc annotation in {source_path} line {line_no}"
+                )
             continue
         key = normalize_name(match.group(1))
         value = match.group(2).strip()
@@ -176,12 +188,20 @@ def main():
         )
 
     mappings = []
+    mapped_addresses = {}
     for name, address, area, source_name in located:
         if area not in ("I", "Q"):
             continue
         item_name = bindings.get(name)
         if item_name is None:
             continue
+        prior_item = mapped_addresses.get(address)
+        if prior_item is not None and prior_item != item_name:
+            raise SystemExit(
+                f"error: conflicting item bindings for address {address}: "
+                f"'{prior_item}' and '{item_name}'"
+            )
+        mapped_addresses[address] = item_name
         mappings.append((address, item_name, source_name))
 
     mappings.sort(key=lambda row: address_sort_key(row[0]))

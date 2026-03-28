@@ -48,9 +48,13 @@ def parse_program_class(header_path: pathlib.Path):
 
 def parse_exports(st_path: pathlib.Path):
     exports = []
+    seen_source_names = set()
+    seen_export_names = set()
     for line_no, line in enumerate(st_path.read_text(encoding="utf-8").splitlines(), start=1):
         match = VAR_RE.match(line)
         if not match:
+            if "@epics" in line:
+                raise RuntimeError(f"Malformed @epics annotation in {st_path}:{line_no}")
             continue
 
         var_name = match.group(1)
@@ -69,6 +73,16 @@ def parse_exports(st_path: pathlib.Path):
         export_name = " ".join(tokens).strip()
         if not export_name:
             export_name = var_name
+        if var_name in seen_source_names:
+            raise RuntimeError(
+                f"Duplicate @epics source variable '{var_name}' in {st_path}:{line_no}"
+            )
+        if export_name in seen_export_names:
+            raise RuntimeError(
+                f"Duplicate @epics export name '{export_name}' in {st_path}:{line_no}"
+            )
+        seen_source_names.add(var_name)
+        seen_export_names.add(export_name)
 
         exports.append(
             {
