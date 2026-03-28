@@ -172,6 +172,56 @@ The generated ST source uses direct EL7041 item mapping as a concrete example.
 Adjust the `// @ecmc ...` lines to match the real slave and PDO items for your
 machine.
 
+## Declaration Generator
+
+To reduce the remaining manual work for direct mapping, this repo also ships a
+small declaration generator:
+
+- [`scripts/strucpp_declgen.py`](scripts/strucpp_declgen.py)
+- [`templates/strucpp_declgen.manifest`](templates/strucpp_declgen.manifest)
+
+It takes a small manifest like:
+
+```text
+I   INT   actual_position    ec0.s14.positionActual01
+Q   WORD  drive_control      ec0.s14.driveControl01
+Q   INT   velocity_setpoint  ec0.s14.velocitySetpoint01
+M   INT   cycle_counter
+VAR INT   manual_velocity
+```
+
+and generates ST declarations with automatic `%I/%Q/%M` addresses:
+
+```sh
+python3 /path/to/ecmc_plugin_strucpp/scripts/strucpp_declgen.py \
+  --input my_axis.manifest \
+  --output main.st \
+  --program MAIN
+```
+
+That produces:
+
+```iecst
+PROGRAM MAIN
+VAR
+  actual_position   AT %IW0 : INT;   // @ecmc ec0.s14.positionActual01
+  drive_control     AT %QW0 : WORD;  // @ecmc ec0.s14.driveControl01
+  velocity_setpoint AT %QW2 : INT;   // @ecmc ec0.s14.velocitySetpoint01
+  cycle_counter     AT %MW0 : INT;
+  manual_velocity   : INT;
+END_VAR
+
+// Generated from my_axis.manifest. Add logic below.
+END_PROGRAM
+```
+
+Current behavior:
+
+- `%I/%Q/%M` addresses are assigned automatically
+- `BOOL` values are bit-packed as `%IXn.m` / `%QXn.m` / `%MXn.m`
+- wider scalar types are byte-aligned and naturally aligned by width
+- `VAR` entries generate plain non-located ST variables
+
 The scaffold only picks the smallest default shape. The generated
 `src/Makefile` still uses the shared helper, so you can later extend it with:
 
