@@ -30,4 +30,4 @@ epicsEnvSet(STRUCPP_LOGIC_LIB,"/absolute/path/to/mc_power_move_velocity_lib_logi
 epicsEnvSet(STRUCPP_INPUT_ITEM,"<32-byte-input-item>")
 epicsEnvSet(STRUCPP_OUTPUT_ITEM,"<16-byte-output-item>")
 
-${SCRIPTEXEC} $(ecmc_plugin_strucpp_DIR)startup.cmd, "PLUGIN_ID=0,LOGIC_LIB=${STRUCPP_LOGIC_LIB},INPUT_ITEM=${STRUCPP_INPUT_ITEM},OUTPUT_ITEM=${STRUCPP_OUTPUT_ITEM},MEMORY_BYTES=16,REPORT=1"
+require ecmc_plugin_strucpp sandst_a "PLUGIN_ID=0,LOGIC_LIB=${STRUCPP_LOGIC_LIB},INPUT_ITEM=${STRUCPP_INPUT_ITEM},OUTPUT_ITEM=${STRUCPP_OUTPUT_ITEM},MEMORY_BYTES=16,REPORT=1"

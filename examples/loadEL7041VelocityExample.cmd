@@ -14,4 +14,4 @@ epicsEnvSet(STRUCPP_LOGIC_LIB,"/absolute/path/to/el7041_velocity_logic.so")
 epicsEnvSet(STRUCPP_MAPPING_FILE,"/absolute/path/to/el7041_velocity.map")
 
 ${SCRIPTEXEC} ${ecmccfg_DIR}addSlave.cmd, "SLAVE_ID=14,HW_DESC=EL7041-0052"
-${SCRIPTEXEC} $(ecmc_plugin_strucpp_DIR)startup.cmd, "PLUGIN_ID=0,LOGIC_LIB=${STRUCPP_LOGIC_LIB},MAPPING_FILE=${STRUCPP_MAPPING_FILE},MEMORY_BYTES=16,REPORT=1"
+require ecmc_plugin_strucpp sandst_a "PLUGIN_ID=0,LOGIC_LIB=${STRUCPP_LOGIC_LIB},MAPPING_FILE=${STRUCPP_MAPPING_FILE},MEMORY_BYTES=16,REPORT=1"

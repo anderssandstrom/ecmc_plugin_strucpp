@@ -342,7 +342,17 @@ need Node or `strucpp` just to consume `MC_*` blocks from an application repo.
 
 ## Startup Helper
 
-Use [`startup.cmd`](startup.cmd) to load the host plugin. It accepts:
+Load the plugin through `require`, like the other `ecmc_plugin_*` modules.
+That makes `$(ecmc_plugin_strucpp_DIR)` available and auto-executes
+[`startup.cmd`](startup.cmd) with the macro string from the `require` line.
+
+Example:
+
+```iocsh
+require ecmc_plugin_strucpp sandst_a "PLUGIN_ID=0,LOGIC_LIB=/absolute/path/to/machine_logic.so,INPUT_ITEM=ec0.s2.mm.inputDataArray01,OUTPUT_ITEM=ec0.s2.mm.outputDataArray01,MEMORY_BYTES=64,REPORT=1"
+```
+
+The startup helper accepts:
 
 - `PLUGIN_ID`
 - `LOGIC_LIB`
@@ -361,7 +371,7 @@ Use [`startup.cmd`](startup.cmd) to load the host plugin. It accepts:
 There is also a concrete IOC example in
 [`examples/loadPluginExample.cmd`](examples/loadPluginExample.cmd).
 
-If `EPICS_SUBST` is provided, `startup.cmd` now also calls `dbLoadTemplate(...)`
+If `EPICS_SUBST` is provided, `startup.cmd` also calls `dbLoadTemplate(...)`
 automatically after the plugin is loaded. The standard macro set passed by the
 helper is:
 
