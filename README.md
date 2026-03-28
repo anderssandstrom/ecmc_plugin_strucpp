@@ -381,7 +381,8 @@ ${LOGIC_LIB}.map
 ```
 
 That is the preferred convention. App repos should generate the map next to the
-logic library so the normal startup path only needs `LOGIC_LIB`.
+logic library so the normal startup path needs no extra mapping macro, and in
+the standard IOC layout can omit `LOGIC_LIB` too.
 
 In `mapping_file` mode the host now checks, at startup:
 
@@ -638,6 +639,19 @@ That makes `$(ecmc_plugin_strucpp_DIR)` available and auto-executes
 Example:
 
 ```iocsh
+require ecmc_plugin_strucpp sandst_a "REPORT=1"
+```
+
+That is the standard IOC-layout case:
+
+- `bin/main.so`
+- `bin/main.so.map`
+- `bin/main.so.substitutions`
+
+When your project uses a different logic-library path or explicit contiguous
+images, add the corresponding macros explicitly, for example:
+
+```iocsh
 require ecmc_plugin_strucpp sandst_a "PLUGIN_ID=0,LOGIC_LIB=/absolute/path/to/machine_logic.so,INPUT_ITEM=ec0.s2.mm.inputDataArray01,OUTPUT_ITEM=ec0.s2.mm.outputDataArray01,MEMORY_BYTES=64,REPORT=1"
 ```
 
@@ -680,7 +694,8 @@ ${LOGIC_LIB}.substitutions
 
 That is the preferred convention. Application repos should generate the
 substitutions file next to the logic library so the normal startup path only
-needs `LOGIC_LIB` plus the desired database macros.
+needs database macros, or only `LOGIC_LIB` when using a non-default library
+path.
 
 `EPICS_SUBST` remains the explicit override when you want to load a different
 record file.
