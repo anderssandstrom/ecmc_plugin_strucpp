@@ -36,6 +36,7 @@
 #include <set>
 #include <string>
 #include <sys/resource.h>
+#include <time.h>
 #if defined(__linux__)
 #  include <sys/syscall.h>
 #endif
@@ -105,7 +106,9 @@ struct ExportedParamBinding {
   bool initialized {false};
 };
 
-ExportedParamBinding* exportedBindingForReason(int reason);
+ExportedParamBinding* paramBindingForReason(int reason);
+bool applyRuntimeSampleRateMs(double requested_ms, std::string* error_out);
+bool syncBuiltinParams(bool force, bool defer_callbacks);
 
 class StrucppAsynPort : public asynPortDriver {
  public:
@@ -163,6 +166,17 @@ class StrucppAsynPort : public asynPortDriver {
     ExportedParamBinding* const binding = bindingForReason(pasynUser ? pasynUser->reason : -1);
     if (!binding || binding->writable == 0 || !binding->data) {
       return asynError;
+    }
+
+    if (binding->name == kBuiltinControlWordName) {
+      const uint32_t control_word = static_cast<uint32_t>(value);
+      applyControlWord(control_word);
+      binding->last_value.assign(reinterpret_cast<const uint8_t*>(&g_control_word),
+                                 reinterpret_cast<const uint8_t*>(&g_control_word) + sizeof(g_control_word));
+      binding->initialized = true;
+      setIntegerParam(binding->param_id, g_control_word);
+      syncBuiltinParams(false, false);
+      return asynSuccess;
     }
 
     switch (binding->type) {
@@ -231,6 +245,16 @@ class StrucppAsynPort : public asynPortDriver {
       return asynError;
     }
 
+    if (binding->name == kBuiltinSampleRateName) {
+      std::string error;
+      if (!applyRuntimeSampleRateMs(static_cast<double>(value), &error)) {
+        logError("%s", error.c_str());
+        return asynError;
+      }
+      syncBuiltinParams(false, false);
+      return asynSuccess;
+    }
+
     switch (binding->type) {
     case ECMC_STRUCPP_EXPORT_F32: {
       const float typed = static_cast<float>(value);
@@ -269,7 +293,7 @@ class StrucppAsynPort : public asynPortDriver {
 
  private:
   ExportedParamBinding* bindingForReason(int reason) {
-    return exportedBindingForReason(reason);
+    return paramBindingForReason(reason);
   }
 
   asynStatus writeScalar(ExportedParamBinding* binding,
@@ -297,6 +321,11 @@ class StrucppAsynPort : public asynPortDriver {
 
   bool syncOneParam(ExportedParamBinding* binding, bool force) {
     if (!binding || binding->param_id < 0 || !binding->data || binding->bytes == 0) {
+      return false;
+    }
+
+    if (!force && binding->name == kBuiltinExecuteCountName &&
+        !g_execute_count_publish_due) {
       return false;
     }
 
@@ -428,15 +457,35 @@ std::vector<AddressMappingSpec> g_mapping_specs;
 std::vector<BoundAddressMapping> g_bound_mappings;
 LogicRuntime g_logic {};
 ecmcStrucppCompiledCopyPlan g_copy_plan {};
+std::vector<ExportedParamBinding> g_builtin_params;
 std::vector<ExportedParamBinding> g_exported_params;
 StrucppAsynPort* g_asyn_port = nullptr;
 size_t g_runtime_execute_divider = 1;
 size_t g_execute_divider_counter = 0;
+int32_t g_control_word = 1;
+uint8_t g_execution_enabled = 1;
+uint8_t g_measure_exec_time_enabled = 0;
+double g_requested_sample_rate_ms = 0.0;
+double g_actual_sample_rate_ms = 0.0;
+double g_last_exec_time_ms = 0.0;
+int32_t g_execute_divider_pv = 1;
+int32_t g_execute_count = 0;
+size_t g_execute_count_publish_divider = 1;
+size_t g_execute_count_publish_counter = 0;
+bool g_execute_count_publish_due = false;
 
 constexpr double kPlcAreaInput = 0.0;
 constexpr double kPlcAreaOutput = 1.0;
 constexpr double kPlcAreaMemory = 2.0;
 constexpr const char* kDefaultAsynPortName = "PLUGIN.STRUCPP0";
+constexpr const char* kBuiltinControlWordName = "plugin.strucpp0.ctrl.word";
+constexpr const char* kBuiltinSampleRateName = "plugin.strucpp0.ctrl.rate_ms";
+constexpr const char* kBuiltinActualSampleRateName = "plugin.strucpp0.stat.rate_ms";
+constexpr const char* kBuiltinLastExecTimeName = "plugin.strucpp0.stat.exec_ms";
+constexpr const char* kBuiltinExecuteDividerName = "plugin.strucpp0.stat.div";
+constexpr const char* kBuiltinExecuteCountName = "plugin.strucpp0.stat.count";
+constexpr uint32_t kControlWordEnableExecutionBit = 1u << 0;
+constexpr uint32_t kControlWordMeasureExecTimeBit = 1u << 1;
 
 double plcNaN() {
   return std::numeric_limits<double>::quiet_NaN();
@@ -709,17 +758,60 @@ size_t logicExportedVarCount() {
   return static_cast<size_t>(g_logic.api->get_exported_var_count(g_logic.instance));
 }
 
-ExportedParamBinding* exportedBindingForReason(int reason) {
-  if (reason < 0) {
-    return nullptr;
+bool bindBuiltinVars(std::string* error_out) {
+  g_builtin_params.clear();
+
+  if (!createBoundParam(kBuiltinControlWordName,
+                        ECMC_STRUCPP_EXPORT_S32,
+                        1,
+                        &g_control_word,
+                        &g_builtin_params,
+                        error_out)) {
+    return false;
+  }
+  if (!createBoundParam(kBuiltinSampleRateName,
+                        ECMC_STRUCPP_EXPORT_F64,
+                        1,
+                        &g_requested_sample_rate_ms,
+                        &g_builtin_params,
+                        error_out)) {
+    return false;
+  }
+  if (!createBoundParam(kBuiltinActualSampleRateName,
+                        ECMC_STRUCPP_EXPORT_F64,
+                        0,
+                        &g_actual_sample_rate_ms,
+                        &g_builtin_params,
+                        error_out)) {
+    return false;
+  }
+  if (!createBoundParam(kBuiltinLastExecTimeName,
+                        ECMC_STRUCPP_EXPORT_F64,
+                        0,
+                        &g_last_exec_time_ms,
+                        &g_builtin_params,
+                        error_out)) {
+    return false;
+  }
+  if (!createBoundParam(kBuiltinExecuteDividerName,
+                        ECMC_STRUCPP_EXPORT_S32,
+                        0,
+                        &g_execute_divider_pv,
+                        &g_builtin_params,
+                        error_out)) {
+    return false;
+  }
+  if (!createBoundParam(kBuiltinExecuteCountName,
+                        ECMC_STRUCPP_EXPORT_S32,
+                        0,
+                        &g_execute_count,
+                        &g_builtin_params,
+                        error_out)) {
+    return false;
   }
 
-  for (auto& binding : g_exported_params) {
-    if (binding.param_id == reason) {
-      return &binding;
-    }
-  }
-  return nullptr;
+  syncBuiltinParams(true, false);
+  return true;
 }
 
 bool bindExportedVars(std::string* error_out) {
@@ -795,6 +887,21 @@ bool bindExportedVars(std::string* error_out) {
   g_asyn_port->syncExportedParams(&g_exported_params, true, false);
 
   return true;
+}
+
+std::string describeBuiltinVars() {
+  if (g_builtin_params.empty()) {
+    return "<none>";
+  }
+
+  std::ostringstream oss;
+  for (size_t i = 0; i < g_builtin_params.size(); ++i) {
+    if (i != 0) {
+      oss << ",";
+    }
+    oss << g_builtin_params[i].name;
+  }
+  return oss.str();
 }
 
 std::string describeExportedVars() {
@@ -922,16 +1029,19 @@ bool resolveExecuteDivider(const PluginConfig& config,
   }
 
   *out_divider = 1;
+  const double base_sample_time_ms = getEcmcSampleTimeMS();
+  const bool base_sample_time_valid =
+    std::isfinite(base_sample_time_ms) && base_sample_time_ms > 0.0;
+
   if (out_sample_time_ms) {
-    *out_sample_time_ms = 0.0;
+    *out_sample_time_ms = base_sample_time_valid ? base_sample_time_ms : 0.0;
   }
 
   if (config.sample_rate_ms <= 0.0) {
     return true;
   }
 
-  const double base_sample_time_ms = getEcmcSampleTimeMS();
-  if (!std::isfinite(base_sample_time_ms) || base_sample_time_ms <= 0.0) {
+  if (!base_sample_time_valid) {
     if (error_out) {
       *error_out =
         "Cannot resolve sample_rate_ms because ecmc sample time is not available";
@@ -944,10 +1054,114 @@ bool resolveExecuteDivider(const PluginConfig& config,
     static_cast<size_t>(std::max(1.0, std::ceil(ratio - 1e-12)));
 
   *out_divider = divider;
-  if (out_sample_time_ms) {
-    *out_sample_time_ms = base_sample_time_ms;
-  }
   return true;
+}
+
+void applyControlWord(uint32_t control_word) {
+  g_control_word = static_cast<int32_t>(control_word);
+  g_execution_enabled =
+    (control_word & kControlWordEnableExecutionBit) != 0 ? 1u : 0u;
+  g_measure_exec_time_enabled =
+    (control_word & kControlWordMeasureExecTimeBit) != 0 ? 1u : 0u;
+  if (!g_measure_exec_time_enabled) {
+    g_last_exec_time_ms = 0.0;
+  }
+}
+
+bool applyRuntimeSampleRateMs(double requested_ms,
+                              std::string* error_out) {
+  PluginConfig temp = g_config;
+  temp.sample_rate_ms = requested_ms;
+
+  size_t divider = 1;
+  double base_sample_time_ms = 0.0;
+  if (!resolveExecuteDivider(temp, &divider, &base_sample_time_ms, error_out)) {
+    return false;
+  }
+
+  g_requested_sample_rate_ms = requested_ms;
+  g_runtime_execute_divider = divider;
+  g_actual_sample_rate_ms = base_sample_time_ms * static_cast<double>(divider);
+  g_execute_divider_pv = static_cast<int32_t>(divider);
+  if (g_actual_sample_rate_ms > 0.0) {
+    g_execute_count_publish_divider = static_cast<size_t>(
+      std::max(1.0, std::ceil(100.0 / g_actual_sample_rate_ms - 1e-12)));
+  } else {
+    g_execute_count_publish_divider = 1;
+  }
+  g_execute_count_publish_counter = 0;
+  g_execute_count_publish_due = true;
+  return true;
+}
+
+bool createBoundParam(const char* name,
+                      uint32_t type,
+                      uint32_t writable,
+                      void* data,
+                      std::vector<ExportedParamBinding>* out_bindings,
+                      std::string* error_out) {
+  if (!name || !data || !out_bindings) {
+    if (error_out) {
+      *error_out = "Invalid built-in parameter configuration";
+    }
+    return false;
+  }
+
+  if (!g_asyn_port) {
+    if (error_out) {
+      *error_out = "Plugin asyn port is not initialized";
+    }
+    return false;
+  }
+
+  asynParamType asyn_type = asynParamNotDefined;
+  size_t bytes = 0;
+  if (!exportTypeInfo(type, &asyn_type, &bytes)) {
+    if (error_out) {
+      *error_out = std::string("Unsupported built-in parameter type for '") + name + "'";
+    }
+    return false;
+  }
+
+  int param_id = -1;
+  if (g_asyn_port->createParam(0, name, asyn_type, &param_id) != asynSuccess) {
+    if (error_out) {
+      *error_out = std::string("Failed to create asyn parameter '") + name + "'";
+    }
+    return false;
+  }
+
+  out_bindings->push_back(
+    {name, param_id, type, writable, data, bytes, {}, false});
+  return true;
+}
+
+ExportedParamBinding* findBindingForReason(std::vector<ExportedParamBinding>* bindings,
+                                           int reason) {
+  if (!bindings || reason < 0) {
+    return nullptr;
+  }
+
+  for (auto& binding : *bindings) {
+    if (binding.param_id == reason) {
+      return &binding;
+    }
+  }
+  return nullptr;
+}
+
+ExportedParamBinding* paramBindingForReason(int reason) {
+  if (auto* binding = findBindingForReason(&g_builtin_params, reason)) {
+    return binding;
+  }
+  return findBindingForReason(&g_exported_params, reason);
+}
+
+bool syncBuiltinParams(bool force, bool defer_callbacks) {
+  if (!g_asyn_port || g_builtin_params.empty()) {
+    return true;
+  }
+  return g_asyn_port->syncExportedParams(&g_builtin_params, force, defer_callbacks);
 }
 
 std::string formatAddress(const LocatedAddressKey& address) {
@@ -2127,12 +2341,26 @@ static int construct(char* configStr) {
     return -1;
   }
 
+  applyControlWord(kControlWordEnableExecutionBit);
+  g_execute_count = 0;
+  if (!applyRuntimeSampleRateMs(g_config.sample_rate_ms, &error)) {
+    logError("%s", error.c_str());
+    return -1;
+  }
+
   if (!loadLogicRuntime(g_config.logic_lib, &error)) {
     logError("%s", error.c_str());
     return -1;
   }
 
   if (!ensureAsynPort(&error)) {
+    unloadLogicRuntime();
+    logError("%s", error.c_str());
+    return -1;
+  }
+
+  if (!bindBuiltinVars(&error)) {
+    destroyAsynPort();
     unloadLogicRuntime();
     logError("%s", error.c_str());
     return -1;
@@ -2165,17 +2393,30 @@ static int construct(char* configStr) {
             g_config.sample_rate_ms,
             base_sample_time_ms * static_cast<double>(g_runtime_execute_divider));
   }
+  logInfo("builtin_vars=%s", describeBuiltinVars().c_str());
   logInfo("exported_vars=%s", describeExportedVars().c_str());
   return 0;
 }
 
 static void destruct(void) {
+  g_builtin_params.clear();
   g_exported_params.clear();
   unloadLogicRuntime();
   clearRuntimeState();
   destroyAsynPort();
   g_config = PluginConfig {};
   g_runtime_execute_divider = 1;
+  g_control_word = static_cast<int32_t>(kControlWordEnableExecutionBit);
+  g_execution_enabled = 1;
+  g_measure_exec_time_enabled = 0;
+  g_requested_sample_rate_ms = 0.0;
+  g_actual_sample_rate_ms = 0.0;
+  g_last_exec_time_ms = 0.0;
+  g_execute_divider_pv = 1;
+  g_execute_count = 0;
+  g_execute_count_publish_divider = 1;
+  g_execute_count_publish_counter = 0;
+  g_execute_count_publish_due = false;
   alreadyLoaded = 0;
 }
 
@@ -2194,6 +2435,10 @@ static int enterRealtime(void) {
 
   clearRuntimeState();
   g_execute_divider_counter = 0;
+  g_execute_count = 0;
+  g_execute_count_publish_counter = 0;
+  g_execute_count_publish_due = true;
+  syncBuiltinParams(true, false);
 
   g_memory_image.assign(std::max(g_config.memory_bytes, required_memory_bytes), 0);
   g_images.memory.data = g_memory_image.data();
@@ -2362,6 +2607,18 @@ static int realtime(int) {
     return 0;
   }
 
+  if (g_execution_enabled == 0u) {
+    syncBuiltinParams(false, true);
+    return 0;
+  }
+
+  timespec exec_start {};
+  timespec exec_end {};
+  const bool measure_exec_time = g_measure_exec_time_enabled != 0u;
+  if (measure_exec_time) {
+    clock_gettime(CLOCK_MONOTONIC, &exec_start);
+  }
+
   if (!g_bound_input_bindings.empty()) {
     zeroImage(&g_images.input);
     gatherBindings(g_bound_input_bindings, &g_images.input);
@@ -2376,6 +2633,27 @@ static int realtime(int) {
   ecmcStrucppExecuteMemoryPreCopyPlan(g_copy_plan);
 
   g_logic.api->run_cycle(g_logic.instance);
+  if (g_execute_count < std::numeric_limits<int32_t>::max()) {
+    g_execute_count += 1;
+  }
+  if (measure_exec_time) {
+    clock_gettime(CLOCK_MONOTONIC, &exec_end);
+    const int64_t start_ns =
+      static_cast<int64_t>(exec_start.tv_sec) * 1000000000ll + exec_start.tv_nsec;
+    const int64_t end_ns =
+      static_cast<int64_t>(exec_end.tv_sec) * 1000000000ll + exec_end.tv_nsec;
+    g_last_exec_time_ms =
+      static_cast<double>(end_ns - start_ns) / 1000000.0;
+  } else {
+    g_last_exec_time_ms = 0.0;
+  }
+  g_execute_count_publish_counter += 1;
+  if (g_execute_count_publish_counter >= g_execute_count_publish_divider) {
+    g_execute_count_publish_counter = 0;
+    g_execute_count_publish_due = true;
+  } else {
+    g_execute_count_publish_due = false;
+  }
 
   ecmcStrucppExecuteMemoryPostCopyPlan(g_copy_plan);
   ecmcStrucppExecuteOutputCopyPlan(g_copy_plan);
@@ -2383,6 +2661,9 @@ static int realtime(int) {
   if (!g_bound_output_bindings.empty()) {
     scatterBindings(g_images.output, g_bound_output_bindings);
   }
+
+  syncBuiltinParams(false, true);
+  g_execute_count_publish_due = false;
 
   if (g_asyn_port && !g_exported_params.empty()) {
     g_asyn_port->syncExportedParams(&g_exported_params, false, true);

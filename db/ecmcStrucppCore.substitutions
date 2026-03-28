@@ -1,0 +1,23 @@
+# Auto-generated static control/status records for ecmc_plugin_strucpp.
+
+file "ecmcStrucppLongOut.template" {
+pattern { P, PORT, ADDR, TIMEOUT, REC, ASYN, DESC }
+{ "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", "plugin.strucpp0.ctrl.word", "plugin.strucpp0.ctrl.word", "Control word: bit0 enable, bit1 exec-time measure" }
+}
+
+file "ecmcStrucppAo.template" {
+pattern { P, PORT, ADDR, TIMEOUT, REC, ASYN, DESC, EGU, PREC }
+{ "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", "plugin.strucpp0.ctrl.rate_ms", "plugin.strucpp0.ctrl.rate_ms", "Requested ST sample period", "ms", "3" }
+}
+
+file "ecmcStrucppAi.template" {
+pattern { P, PORT, ADDR, TIMEOUT, REC, ASYN, DESC, EGU, PREC }
+{ "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", "plugin.strucpp0.stat.rate_ms", "plugin.strucpp0.stat.rate_ms", "Actual ST sample period", "ms", "3" }
+{ "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", "plugin.strucpp0.stat.exec_ms", "plugin.strucpp0.stat.exec_ms", "Last ST execution time", "ms", "3" }
+}
+
+file "ecmcStrucppLongIn.template" {
+pattern { P, PORT, ADDR, TIMEOUT, REC, ASYN, DESC }
+{ "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", "plugin.strucpp0.stat.div", "plugin.strucpp0.stat.div", "Derived ST execute divider" }
+{ "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", "plugin.strucpp0.stat.count", "plugin.strucpp0.stat.count", "Executed ST cycles" }
+}

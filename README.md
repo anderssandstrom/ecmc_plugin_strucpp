@@ -554,10 +554,37 @@ main `ecmc` asyn driver. Exported values are updated on change, and callback
 flushing is deferred out of the RT loop through a small low-priority worker
 thread in the plugin.
 
+The plugin also publishes a small built-in control/status set on the same port:
+
+- `plugin.strucpp0.ctrl.word`
+- `plugin.strucpp0.ctrl.rate_ms`
+- `plugin.strucpp0.stat.rate_ms`
+- `plugin.strucpp0.stat.exec_ms`
+- `plugin.strucpp0.stat.div`
+- `plugin.strucpp0.stat.count`
+
+`ctrl.word` uses:
+
+- bit 0: enable ST execution
+- bit 1: enable execution-time measurement
+
+`stat.exec_ms` is the last measured ST execution time and is only updated while
+the measurement bit is enabled.
+
+`stat.count` is intentionally rate-limited to a maximum PV update rate of
+10 Hz.
+
 This repo also ships macro-based EPICS database templates in [`db`](db) and a
 generator,
 [`scripts/strucpp_epics_substgen.py`](scripts/strucpp_epics_substgen.py),
 that turns the same `// @epics ...` annotations into a `.substitutions` file.
+
+In addition, the repo ships a default built-in substitutions file:
+
+- [`db/ecmcStrucppCore.substitutions`](db/ecmcStrucppCore.substitutions)
+
+`startup.cmd` loads that built-in substitutions file by default unless
+`LOAD_DEFAULT_PVS=0` is passed in the `require` macro string.
 
 That lets an application repo keep the ST source as the single source of truth
 for both:
@@ -704,6 +731,7 @@ The startup helper accepts:
 - `OUTPUT_BINDINGS`
 - `MEMORY_BYTES`
 - `SAMPLE_RATE_MS`
+- `LOAD_DEFAULT_PVS`
 - `EPICS_SUBST`
 - `DB_PREFIX`
 - `DB_MACROS`
