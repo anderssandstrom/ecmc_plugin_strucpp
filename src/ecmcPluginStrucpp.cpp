@@ -21,14 +21,17 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdarg>
+#include <condition_variable>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <dlfcn.h>
 #include <fstream>
 #include <limits>
+#include <mutex>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace {
@@ -102,13 +105,29 @@ class StrucppAsynPort : public asynPortDriver {
                      asynInt32Mask | asynUInt32DigitalMask | asynFloat64Mask |
                        asynDrvUserMask,
                      asynInt32Mask | asynUInt32DigitalMask | asynFloat64Mask |
-                       asynDrvUserMask,
+                     asynDrvUserMask,
                      0,
                      1,
                      0,
-                     0) {}
+                     0) {
+    callback_thread_ = std::thread([this]() { callbackWorker(); });
+  }
 
-  bool syncExportedParams(std::vector<ExportedParamBinding>* bindings, bool force) {
+  ~StrucppAsynPort() override {
+    {
+      std::lock_guard<std::mutex> lock(callback_mutex_);
+      stop_callback_thread_ = true;
+      callback_pending_ = true;
+    }
+    callback_cv_.notify_one();
+    if (callback_thread_.joinable()) {
+      callback_thread_.join();
+    }
+  }
+
+  bool syncExportedParams(std::vector<ExportedParamBinding>* bindings,
+                          bool force,
+                          bool defer_callbacks) {
     if (!bindings) {
       return false;
     }
@@ -121,7 +140,11 @@ class StrucppAsynPort : public asynPortDriver {
     }
 
     if (any_changed) {
-      callParamCallbacks();
+      if (defer_callbacks) {
+        scheduleCallbacks();
+      } else {
+        callParamCallbacks();
+      }
     }
     return true;
   }
@@ -177,6 +200,11 @@ class StrucppAsynPort : public asynPortDriver {
     uint32_t typed = 0;
     std::memcpy(&typed, binding->data, sizeof(typed));
     typed = (typed & ~mask) | (static_cast<uint32_t>(value) & mask);
+    if (binding->initialized &&
+        binding->last_value.size() == sizeof(typed) &&
+        std::memcmp(binding->last_value.data(), &typed, sizeof(typed)) == 0) {
+      return asynSuccess;
+    }
     std::memcpy(binding->data, &typed, sizeof(typed));
 
     binding->last_value.assign(reinterpret_cast<const uint8_t*>(&typed),
@@ -196,6 +224,11 @@ class StrucppAsynPort : public asynPortDriver {
     switch (binding->type) {
     case ECMC_STRUCPP_EXPORT_F32: {
       const float typed = static_cast<float>(value);
+      if (binding->initialized &&
+          binding->last_value.size() == sizeof(typed) &&
+          std::memcmp(binding->last_value.data(), &typed, sizeof(typed)) == 0) {
+        return asynSuccess;
+      }
       std::memcpy(binding->data, &typed, sizeof(typed));
       binding->last_value.assign(reinterpret_cast<const uint8_t*>(&typed),
                                  reinterpret_cast<const uint8_t*>(&typed) + sizeof(typed));
@@ -206,6 +239,11 @@ class StrucppAsynPort : public asynPortDriver {
     }
     case ECMC_STRUCPP_EXPORT_F64: {
       const double typed = static_cast<double>(value);
+      if (binding->initialized &&
+          binding->last_value.size() == sizeof(typed) &&
+          std::memcmp(binding->last_value.data(), &typed, sizeof(typed)) == 0) {
+        return asynSuccess;
+      }
       std::memcpy(binding->data, &typed, sizeof(typed));
       binding->last_value.assign(reinterpret_cast<const uint8_t*>(&typed),
                                  reinterpret_cast<const uint8_t*>(&typed) + sizeof(typed));
@@ -230,6 +268,12 @@ class StrucppAsynPort : public asynPortDriver {
                          epicsInt32 readback) {
     if (!binding || !value || !binding->data || binding->bytes != bytes) {
       return asynError;
+    }
+
+    if (binding->initialized &&
+        binding->last_value.size() == bytes &&
+        std::memcmp(binding->last_value.data(), value, bytes) == 0) {
+      return asynSuccess;
     }
 
     std::memcpy(binding->data, value, bytes);
@@ -314,6 +358,38 @@ class StrucppAsynPort : public asynPortDriver {
       return false;
     }
   }
+
+  void scheduleCallbacks() {
+    {
+      std::lock_guard<std::mutex> lock(callback_mutex_);
+      callback_pending_ = true;
+    }
+    callback_cv_.notify_one();
+  }
+
+  void callbackWorker() {
+    std::unique_lock<std::mutex> lock(callback_mutex_);
+    for (;;) {
+      callback_cv_.wait(lock, [this]() {
+        return callback_pending_ || stop_callback_thread_;
+      });
+
+      if (stop_callback_thread_) {
+        return;
+      }
+
+      callback_pending_ = false;
+      lock.unlock();
+      callParamCallbacks();
+      lock.lock();
+    }
+  }
+
+  std::mutex callback_mutex_;
+  std::condition_variable callback_cv_;
+  std::thread callback_thread_;
+  bool callback_pending_ {false};
+  bool stop_callback_thread_ {false};
 };
 
 static int alreadyLoaded = 0;
@@ -656,7 +732,7 @@ bool bindExportedVars(std::string* error_out) {
                                  false});
   }
 
-  g_asyn_port->syncExportedParams(&g_exported_params, true);
+  g_asyn_port->syncExportedParams(&g_exported_params, true, false);
 
   return true;
 }
@@ -2082,7 +2158,7 @@ static int realtime(int) {
   }
 
   if (g_asyn_port && !g_exported_params.empty()) {
-    g_asyn_port->syncExportedParams(&g_exported_params, false);
+    g_asyn_port->syncExportedParams(&g_exported_params, false, true);
   }
   return 0;
 }

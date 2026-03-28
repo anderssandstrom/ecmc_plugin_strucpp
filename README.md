@@ -349,7 +349,7 @@ logic_lib=/abs/path/to/el7041_velocity_logic.so;input_bindings=0:ec0.s14.positio
   path to a startup-linked manifest that maps exact STruCpp addresses like
   `%IW0` or `%QW2` to literal `ecmcDataItem` names
 - `asyn_port`
-  dedicated asyn port owned by `ecmc_plugin_strucpp`, defaults to
+  dedicated plain `asynPortDriver` port owned by `ecmc_plugin_strucpp`, defaults to
   `PLUGIN.STRUCPP0`
 - `input_item`
   `ecmcDataItem` used as one contiguous `%I*` byte image
@@ -516,6 +516,11 @@ The application repo runs
 turn those annotations into a small generated export header. The logic library
 then exposes that export table through the logic ABI, and the host creates
 matching asyn parameters at startup on the configured `asyn_port`.
+
+The current implementation uses a plugin-owned plain `asynPortDriver`, not the
+main `ecmc` asyn driver. Exported values are updated on change, and callback
+flushing is deferred out of the RT loop through a small worker thread in the
+plugin.
 
 This repo also ships macro-based EPICS database templates in [`db`](db) and a
 generator,
