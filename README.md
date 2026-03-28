@@ -63,6 +63,38 @@ If the ST source changes, rebuild the bundled `.stlib` with:
 That recompiles the library with `strucpp` in a container and reapplies the
 required `ecmcMcApi.h` header metadata.
 
+## App Build Helper
+
+This repo now also ships a reusable IOC/app-side build helper:
+
+- [`templates/strucpp_ioc_logic.make`](templates/strucpp_ioc_logic.make)
+- [`scripts/strucpp_logic_wrappergen.py`](scripts/strucpp_logic_wrappergen.py)
+
+The intent is to remove most per-IOC boilerplate. A small `src/Makefile` can
+now usually be just:
+
+```make
+PROGRAM := machine
+ECMC_PLUGIN_STRUCPP ?= ../../../ecmc_plugin_strucpp
+include $(ECMC_PLUGIN_STRUCPP)/templates/strucpp_ioc_logic.make
+```
+
+That common include handles:
+
+- `strucpp` code generation
+- export header generation from `// @epics ...`
+- mapping file generation from `// @ecmc ...`
+- substitutions generation from `// @epics ...`
+- logic wrapper generation
+- logic library build
+- staging of `bin/<logic>.so`, `.map`, and `.substitutions`
+
+So the IOC project usually only needs:
+
+- one ST source file
+- one short `src/Makefile`
+- one startup script with `require ecmc_plugin_strucpp ...`
+
 ## Host Config
 
 The host expects the normal `Cfg.LoadPlugin(...)` config string format:
