@@ -1,0 +1,10 @@
+record(bo,"$(P)$(REC)"){
+  info(asyn:READBACK,"1")
+  field(DESC, "${DESC=}")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1000))$(ASYN)")
+  field(ZNAM, "${ZNAM=FALSE}")
+  field(ONAM, "${ONAM=TRUE}")
+  field(DOL, "0")
+  field(VAL, "0")
+}

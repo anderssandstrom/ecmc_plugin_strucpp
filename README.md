@@ -227,6 +227,33 @@ turn those annotations into a small generated export header. The logic library
 then exposes that export table through the logic ABI, and the host creates
 matching asyn parameters at startup on the configured `asyn_port`.
 
+This repo also ships macro-based EPICS database templates in [`db`](db) and a
+generator,
+[`scripts/strucpp_epics_substgen.py`](scripts/strucpp_epics_substgen.py),
+that turns the same `// @epics ...` annotations into a `.substitutions` file.
+
+That lets an application repo keep the ST source as the single source of truth
+for both:
+
+- exported plugin-owned asyn parameters
+- EPICS records connected to those parameters
+
+Typical generated output is loaded like:
+
+```iocsh
+dbLoadTemplate("/absolute/path/to/machine_logic.so.substitutions",
+               "P=IOC:,PORT=PLUGIN.STRUCPP0")
+```
+
+The generated substitutions reference these generic templates:
+
+- [`db/ecmcStrucppBi.template`](db/ecmcStrucppBi.template)
+- [`db/ecmcStrucppBo.template`](db/ecmcStrucppBo.template)
+- [`db/ecmcStrucppLongIn.template`](db/ecmcStrucppLongIn.template)
+- [`db/ecmcStrucppLongOut.template`](db/ecmcStrucppLongOut.template)
+- [`db/ecmcStrucppAi.template`](db/ecmcStrucppAi.template)
+- [`db/ecmcStrucppAo.template`](db/ecmcStrucppAo.template)
+
 ## Installed Public Headers
 
 The plugin installs these public headers from [`src`](src):
@@ -270,6 +297,10 @@ you only need to:
 1. set `axis.AxisIndex`
 2. adjust the `%I/%Q` located layout
 3. rename the program and wrapper identifiers
+
+If a generated `generated/<program>_epics_exports.hpp` file exists, the wrapper
+template now picks it up automatically and switches to the export-aware logic
+ABI without any extra hand edit in the wrapper.
 
 ## Logic Library Shape
 
@@ -315,16 +346,45 @@ Use [`startup.cmd`](startup.cmd) to load the host plugin. It accepts:
 
 - `PLUGIN_ID`
 - `LOGIC_LIB`
+- `ASYN_PORT`
 - `MAPPING_FILE`
 - `INPUT_ITEM`
 - `OUTPUT_ITEM`
 - `INPUT_BINDINGS`
 - `OUTPUT_BINDINGS`
 - `MEMORY_BYTES`
+- `EPICS_SUBST`
+- `DB_PREFIX`
+- `DB_MACROS`
 - `REPORT`
 
 There is also a concrete IOC example in
 [`examples/loadPluginExample.cmd`](examples/loadPluginExample.cmd).
+
+If `EPICS_SUBST` is provided, `startup.cmd` now also calls `dbLoadTemplate(...)`
+automatically after the plugin is loaded. The standard macro set passed by the
+helper is:
+
+- `P=$(DB_PREFIX)`
+- `PORT=$(ASYN_PORT)`
+
+and `DB_MACROS` is appended unchanged if you need extra template macros.
+
+If `DB_PREFIX` is omitted, it defaults to `$(IOC)`.
+
+If `EPICS_SUBST` is not provided, but `DB_PREFIX` or `DB_MACROS` is set,
+`startup.cmd` defaults to:
+
+```text
+${LOGIC_LIB}.substitutions
+```
+
+That is the preferred convention. Application repos should generate the
+substitutions file next to the logic library so the normal startup path only
+needs `LOGIC_LIB` plus the desired database macros.
+
+`EPICS_SUBST` remains the explicit override when you want to load a different
+record file.
 
 For a minimal EL7041 velocity-only sample that binds `%IW0` to
 `positionActual01`, `%QW0` to `driveControl01`, and `%QW2` to

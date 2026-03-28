@@ -29,12 +29,14 @@ BASE_DIR = .
 SRC_DIR = $(BASE_DIR)/src
 SCRIPTS_DIR = $(BASE_DIR)/scripts
 EXAMPLES_DIR = $(BASE_DIR)/examples
+DB_DIR = $(BASE_DIR)/db
 LIB_DIR = $(BASE_DIR)/lib
 LIBS_DIR = $(BASE_DIR)/libs
 TEMPLATES_DIR = $(BASE_DIR)/templates
 
 SOURCES += $(SRC_DIR)/ecmcPluginStrucpp.cpp
 SOURCES += $(SRC_DIR)/ecmcStrucppBridge.cpp
+TEMPLATES += $(wildcard $(DB_DIR)/*.template)
 
 HEADERS += $(foreach d,${SRC_DIR}, $(wildcard $d/*.h) $(wildcard $d/*.hpp))
 SCRIPTS += $(BASE_DIR)/startup.cmd
@@ -42,6 +44,7 @@ SCRIPTS += $(wildcard $(SCRIPTS_DIR)/*.cmd)
 SCRIPTS += $(wildcard $(SCRIPTS_DIR)/*.py)
 SCRIPTS += $(wildcard $(SCRIPTS_DIR)/*.sh)
 SCRIPTS += $(wildcard $(EXAMPLES_DIR)/*.cmd)
+SCRIPTS += $(wildcard $(DB_DIR)/*.template)
 SCRIPTS += $(wildcard $(LIB_DIR)/*.st)
 SCRIPTS += $(wildcard $(LIBS_DIR)/*.stlib)
 SCRIPTS += $(wildcard $(TEMPLATES_DIR)/*)

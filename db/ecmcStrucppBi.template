@@ -1,0 +1,10 @@
+record(bi,"$(P)$(REC)"){
+  field(DESC, "${DESC=}")
+  field(PINI, "1")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1000))$(ASYN)")
+  field(SCAN, "I/O Intr")
+  field(TSE,  "0")
+  field(ZNAM, "${ZNAM=FALSE}")
+  field(ONAM, "${ONAM=TRUE}")
+}
