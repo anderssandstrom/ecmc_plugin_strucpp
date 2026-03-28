@@ -222,6 +222,40 @@ Current behavior:
 - wider scalar types are byte-aligned and naturally aligned by width
 - `VAR` entries generate plain non-located ST variables
 
+## App Tool
+
+For a single front-door entry point, this repo now also ships:
+
+- [`scripts/strucpp_app_tool.py`](scripts/strucpp_app_tool.py)
+
+It wraps the common workflows behind subcommands:
+
+```sh
+python3 /path/to/ecmc_plugin_strucpp/scripts/strucpp_app_tool.py new-ioc my_ioc
+python3 /path/to/ecmc_plugin_strucpp/scripts/strucpp_app_tool.py declgen --input axis.manifest --output src/main.st
+python3 /path/to/ecmc_plugin_strucpp/scripts/strucpp_app_tool.py build --project my_ioc
+python3 /path/to/ecmc_plugin_strucpp/scripts/strucpp_app_tool.py validate --project my_ioc
+```
+
+Behavior:
+
+- `new-ioc`
+  wraps [`strucpp_new_ioc.py`](scripts/strucpp_new_ioc.py)
+- `declgen`
+  wraps [`strucpp_declgen.py`](scripts/strucpp_declgen.py)
+- `build`
+  runs `make <target>` in the chosen project directory
+- `validate`
+  runs the helper's `make validate`, defaulting to `<project>/src` when that
+  layout exists
+
+Useful options:
+
+- `--dry-run`
+  passes `-n` to `make`
+- `--make-arg STRUCPP=/path/to/strucpp`
+  forwards extra make variable assignments
+
 The scaffold only picks the smallest default shape. The generated
 `src/Makefile` still uses the shared helper, so you can later extend it with:
 
