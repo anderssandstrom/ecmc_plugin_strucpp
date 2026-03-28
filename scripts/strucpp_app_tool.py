@@ -9,6 +9,7 @@ import sys
 SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
 NEW_IOC_SCRIPT = SCRIPT_DIR / "strucpp_new_ioc.py"
 DECLGEN_SCRIPT = SCRIPT_DIR / "strucpp_declgen.py"
+MANIFESTGEN_SCRIPT = SCRIPT_DIR / "strucpp_manifestgen.py"
 
 
 def run(cmd, cwd=None):
@@ -38,6 +39,14 @@ def parse_args():
     declgen.add_argument("--output", required=True)
     declgen.add_argument("--program", default="MAIN")
     declgen.add_argument("--var-block-only", action="store_true")
+
+    manifest = subparsers.add_parser(
+        "manifest",
+        help="Generate a first-draft manifest from ecmc item names",
+    )
+    manifest.add_argument("--input")
+    manifest.add_argument("--item", action="append", default=[])
+    manifest.add_argument("--output", required=True)
 
     build = subparsers.add_parser("build", help="Build an app or IOC project with make")
     build.add_argument("--project", default=".", help="Project directory, default: .")
@@ -125,6 +134,15 @@ def main():
         cmd.extend(args.make_arg)
         cmd.append(args.target)
         run(cmd, cwd=cwd)
+        return
+
+    if args.command == "manifest":
+        cmd = [sys.executable, str(MANIFESTGEN_SCRIPT), "--output", args.output]
+        if args.input:
+            cmd += ["--input", args.input]
+        for item in args.item:
+            cmd += ["--item", item]
+        run(cmd)
         return
 
     if args.command == "validate":

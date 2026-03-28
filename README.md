@@ -222,6 +222,43 @@ Current behavior:
 - wider scalar types are byte-aligned and naturally aligned by width
 - `VAR` entries generate plain non-located ST variables
 
+## Manifest Generator
+
+To reduce the manual work even before `declgen`, this repo also ships:
+
+- [`scripts/strucpp_manifestgen.py`](scripts/strucpp_manifestgen.py)
+
+It takes a short list of `ecmc` item names and creates a first-draft manifest
+for `strucpp_declgen.py`.
+
+Example input:
+
+```text
+ec0.s14.positionActual01
+ec0.s14.driveControl01
+ec0.s14.velocitySetpoint01
+```
+
+Example command:
+
+```sh
+python3 /path/to/ecmc_plugin_strucpp/scripts/strucpp_manifestgen.py \
+  --input items.txt \
+  --output axis.manifest
+```
+
+Example output:
+
+```text
+# AREA TYPE   NAME              ECMC_ITEM
+I  INT   actual_position    ec0.s14.positionActual01
+Q  WORD  drive_control      ec0.s14.driveControl01
+Q  INT   velocity_setpoint  ec0.s14.velocitySetpoint01
+```
+
+The generator is heuristic by design. It is meant to produce a useful first
+draft that you edit as needed, not a perfect type inference engine.
+
 ## App Tool
 
 For a single front-door entry point, this repo now also ships:
@@ -232,6 +269,7 @@ It wraps the common workflows behind subcommands:
 
 ```sh
 python3 /path/to/ecmc_plugin_strucpp/scripts/strucpp_app_tool.py new-ioc my_ioc
+python3 /path/to/ecmc_plugin_strucpp/scripts/strucpp_app_tool.py manifest --input items.txt --output axis.manifest
 python3 /path/to/ecmc_plugin_strucpp/scripts/strucpp_app_tool.py declgen --input axis.manifest --output src/main.st
 python3 /path/to/ecmc_plugin_strucpp/scripts/strucpp_app_tool.py build --project my_ioc
 python3 /path/to/ecmc_plugin_strucpp/scripts/strucpp_app_tool.py validate --project my_ioc
@@ -243,6 +281,8 @@ Behavior:
   wraps [`strucpp_new_ioc.py`](scripts/strucpp_new_ioc.py)
 - `declgen`
   wraps [`strucpp_declgen.py`](scripts/strucpp_declgen.py)
+- `manifest`
+  wraps [`strucpp_manifestgen.py`](scripts/strucpp_manifestgen.py)
 - `build`
   runs `make <target>` in the chosen project directory
 - `validate`
