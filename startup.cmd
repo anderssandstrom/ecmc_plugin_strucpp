@@ -16,6 +16,7 @@
 #- INPUT_BINDINGS  : Optional direct %I bindings, <offset>:<item>[@bytes],...
 #- OUTPUT_BINDINGS : Optional direct %Q bindings, <offset>:<item>[@bytes],...
 #- MEMORY_BYTES : Optional %M image size, default 256
+#- SAMPLE_RATE_MS : Optional ST logic sample period in milliseconds
 #- EPICS_SUBST  : Optional generated EPICS substitutions file to load
 #- DB_PREFIX    : Optional record prefix for dbLoadTemplate, default ${IOC}
 #- DB_MACROS    : Optional extra dbLoadTemplate macros, comma-separated
@@ -27,7 +28,7 @@ epicsEnvSet(ECMC_PLUGIN_FILENAME,"$(ecmc_plugin_strucpp_DIR)lib/${EPICS_HOST_ARC
 epicsEnvSet(ECMC_STRUCPP_LOGIC_LIB,"${LOGIC_LIB=bin/main.so}")
 epicsEnvSet(ECMC_STRUCPP_DB_MACROS_BASE,"P=${DB_PREFIX=$(IOC=)},PORT=${ASYN_PORT=PLUGIN.STRUCPP0}")
 epicsEnvSet(ECMC_STRUCPP_DEFAULT_EPICS_SUBST,"${ECMC_STRUCPP_LOGIC_LIB}.substitutions")
-epicsEnvSet(ECMC_STRUCPP_PLUGIN_CONFIG,"logic_lib=${ECMC_STRUCPP_LOGIC_LIB};asyn_port=${ASYN_PORT=PLUGIN.STRUCPP0};mapping_file=${MAPPING_FILE=};input_item=${INPUT_ITEM=};output_item=${OUTPUT_ITEM=};input_bindings=${INPUT_BINDINGS=};output_bindings=${OUTPUT_BINDINGS=};memory_bytes=${MEMORY_BYTES=256}")
+epicsEnvSet(ECMC_STRUCPP_PLUGIN_CONFIG,"logic_lib=${ECMC_STRUCPP_LOGIC_LIB};asyn_port=${ASYN_PORT=PLUGIN.STRUCPP0};mapping_file=${MAPPING_FILE=};input_item=${INPUT_ITEM=};output_item=${OUTPUT_ITEM=};input_bindings=${INPUT_BINDINGS=};output_bindings=${OUTPUT_BINDINGS=};memory_bytes=${MEMORY_BYTES=256};sample_rate_ms=${SAMPLE_RATE_MS=}")
 
 ecmcIf("${PLUGIN_ID=-1}=-1")
 ${IF_TRUE}${SCRIPTEXEC} ${ecmccfg_DIR}loadPlugin.cmd, "FILE='${ECMC_PLUGIN_FILENAME}',CONFIG='${ECMC_STRUCPP_PLUGIN_CONFIG}',REPORT=${REPORT=1}"

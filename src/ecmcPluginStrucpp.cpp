@@ -22,6 +22,7 @@
 #include <pthread.h>
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdarg>
 #include <condition_variable>
 #include <cstdio>
@@ -84,6 +85,7 @@ struct PluginConfig {
   std::vector<ItemBindingSpec> input_bindings;
   std::vector<ItemBindingSpec> output_bindings;
   size_t memory_bytes {256};
+  double sample_rate_ms {0.0};
 };
 
 struct LogicRuntime {
@@ -428,6 +430,8 @@ LogicRuntime g_logic {};
 ecmcStrucppCompiledCopyPlan g_copy_plan {};
 std::vector<ExportedParamBinding> g_exported_params;
 StrucppAsynPort* g_asyn_port = nullptr;
+size_t g_runtime_execute_divider = 1;
+size_t g_execute_divider_counter = 0;
 
 constexpr double kPlcAreaInput = 0.0;
 constexpr double kPlcAreaOutput = 1.0;
@@ -879,6 +883,70 @@ bool parseSizeToken(const std::string& text,
   }
 
   *out_value = static_cast<size_t>(parsed);
+  return true;
+}
+
+bool parseDoubleToken(const std::string& text,
+                      const char* field_name,
+                      double* out_value,
+                      std::string* error_out) {
+  if (!out_value) {
+    if (error_out) {
+      *error_out = std::string("Output pointer is null for ") + field_name;
+    }
+    return false;
+  }
+
+  char* end_ptr = nullptr;
+  const double parsed = std::strtod(text.c_str(), &end_ptr);
+  if (!end_ptr || *end_ptr != '\0' || !std::isfinite(parsed)) {
+    if (error_out) {
+      *error_out = std::string("Invalid ") + field_name + " value: '" + text + "'";
+    }
+    return false;
+  }
+
+  *out_value = parsed;
+  return true;
+}
+
+bool resolveExecuteDivider(const PluginConfig& config,
+                           size_t* out_divider,
+                           double* out_sample_time_ms,
+                           std::string* error_out) {
+  if (!out_divider) {
+    if (error_out) {
+      *error_out = "Output divider pointer is null";
+    }
+    return false;
+  }
+
+  *out_divider = 1;
+  if (out_sample_time_ms) {
+    *out_sample_time_ms = 0.0;
+  }
+
+  if (config.sample_rate_ms <= 0.0) {
+    return true;
+  }
+
+  const double base_sample_time_ms = getEcmcSampleTimeMS();
+  if (!std::isfinite(base_sample_time_ms) || base_sample_time_ms <= 0.0) {
+    if (error_out) {
+      *error_out =
+        "Cannot resolve sample_rate_ms because ecmc sample time is not available";
+    }
+    return false;
+  }
+
+  const double ratio = config.sample_rate_ms / base_sample_time_ms;
+  const size_t divider =
+    static_cast<size_t>(std::max(1.0, std::ceil(ratio - 1e-12)));
+
+  *out_divider = divider;
+  if (out_sample_time_ms) {
+    *out_sample_time_ms = base_sample_time_ms;
+  }
   return true;
 }
 
@@ -1423,6 +1491,16 @@ bool parseConfigString(const char* raw_config,
         if (out_config->memory_bytes == 0) {
           if (error_out) {
             *error_out = "Invalid memory_bytes value: '" + value + "'";
+          }
+          return false;
+        }
+      } else if (key == "sample_rate_ms") {
+        if (!parseDoubleToken(value, "sample_rate_ms", &out_config->sample_rate_ms, error_out)) {
+          return false;
+        }
+        if (out_config->sample_rate_ms <= 0.0) {
+          if (error_out) {
+            *error_out = "Invalid sample_rate_ms value: '" + value + "'";
           }
           return false;
         }
@@ -2040,6 +2118,15 @@ static int construct(char* configStr) {
     return -1;
   }
 
+  double base_sample_time_ms = 0.0;
+  if (!resolveExecuteDivider(g_config,
+                             &g_runtime_execute_divider,
+                             &base_sample_time_ms,
+                             &error)) {
+    logError("%s", error.c_str());
+    return -1;
+  }
+
   if (!loadLogicRuntime(g_config.logic_lib, &error)) {
     logError("%s", error.c_str());
     return -1;
@@ -2061,7 +2148,7 @@ static int construct(char* configStr) {
   alreadyLoaded = 1;
   const std::string input_bindings = describeBindingSpecs(g_config.input_bindings);
   const std::string output_bindings = describeBindingSpecs(g_config.output_bindings);
-  logInfo("configured logic_lib=%s asyn_port=%s mapping_file=%s input_item=%s input_bindings=%s output_item=%s output_bindings=%s memory_bytes=%zu",
+  logInfo("configured logic_lib=%s asyn_port=%s mapping_file=%s input_item=%s input_bindings=%s output_item=%s output_bindings=%s memory_bytes=%zu sample_rate_ms=%g execute_divider=%zu",
           g_config.logic_lib.c_str(),
           g_config.asyn_port_name.c_str(),
           g_config.mapping_file.empty() ? "<none>" : g_config.mapping_file.c_str(),
@@ -2069,7 +2156,15 @@ static int construct(char* configStr) {
           input_bindings.c_str(),
           g_config.output_item.empty() ? "<none>" : g_config.output_item.c_str(),
           output_bindings.c_str(),
-          g_config.memory_bytes);
+          g_config.memory_bytes,
+          g_config.sample_rate_ms,
+          g_runtime_execute_divider);
+  if (g_config.sample_rate_ms > 0.0) {
+    logInfo("sample_rate base_ms=%g requested_ms=%g actual_ms=%g",
+            base_sample_time_ms,
+            g_config.sample_rate_ms,
+            base_sample_time_ms * static_cast<double>(g_runtime_execute_divider));
+  }
   logInfo("exported_vars=%s", describeExportedVars().c_str());
   return 0;
 }
@@ -2080,6 +2175,7 @@ static void destruct(void) {
   clearRuntimeState();
   destroyAsynPort();
   g_config = PluginConfig {};
+  g_runtime_execute_divider = 1;
   alreadyLoaded = 0;
 }
 
@@ -2097,6 +2193,7 @@ static int enterRealtime(void) {
     requiredBytesForArea(vars, var_count, strucpp::LocatedArea::Memory);
 
   clearRuntimeState();
+  g_execute_divider_counter = 0;
 
   g_memory_image.assign(std::max(g_config.memory_bytes, required_memory_bytes), 0);
   g_images.memory.data = g_memory_image.data();
@@ -2259,6 +2356,12 @@ static int exitRealtime(void) {
 }
 
 static int realtime(int) {
+  const bool execute_now = (g_execute_divider_counter == 0);
+  g_execute_divider_counter = (g_execute_divider_counter + 1) % g_runtime_execute_divider;
+  if (!execute_now) {
+    return 0;
+  }
+
   if (!g_bound_input_bindings.empty()) {
     zeroImage(&g_images.input);
     gatherBindings(g_bound_input_bindings, &g_images.input);
@@ -2293,7 +2396,7 @@ static struct ecmcPluginData pluginDataDef = {
   .desc = "Generic ecmc host plugin for loadable STruCpp logic libraries.",
   .optionDesc =
     "logic_lib=<path>;asyn_port=<plugin-port>;[mapping_file=<path>|input_item=<name>|input_bindings=<offset:item[@bytes],...>];"
-    "[mapping_file=<path>|output_item=<name>|output_bindings=<offset:item[@bytes],...>];memory_bytes=<n>\n"
+    "[mapping_file=<path>|output_item=<name>|output_bindings=<offset:item[@bytes],...>];memory_bytes=<n>;sample_rate_ms=<n>\n"
     "PLC consts: STRUCPP_AREA_I=0, STRUCPP_AREA_Q=1, STRUCPP_AREA_M=2\n"
     "PLC funcs: strucpp_get_bit(a,b,bit), strucpp_set_bit(a,b,bit,v), "
     "strucpp_get_u8(a,b), strucpp_set_u8(a,b,v), strucpp_get_s8(a,b), strucpp_set_s8(a,b,v), "

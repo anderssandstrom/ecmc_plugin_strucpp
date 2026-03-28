@@ -323,7 +323,7 @@ substitutions file against the bundled ST source before runtime.
 The host expects the normal `Cfg.LoadPlugin(...)` config string format:
 
 ```text
-logic_lib=<path>;asyn_port=<plugin asyn port>;[mapping_file=<path>|input_item=<ecmc data item>|input_bindings=<offset:item[@bytes],...>];[output_item=<ecmc data item>|output_bindings=<offset:item[@bytes],...>];memory_bytes=<n>
+logic_lib=<path>;asyn_port=<plugin asyn port>;[mapping_file=<path>|input_item=<ecmc data item>|input_bindings=<offset:item[@bytes],...>];[output_item=<ecmc data item>|output_bindings=<offset:item[@bytes],...>];memory_bytes=<n>;sample_rate_ms=<n>
 ```
 
 Startup-linked mapping example:
@@ -362,6 +362,9 @@ logic_lib=/abs/path/to/el7041_velocity_logic.so;input_bindings=0:ec.s14.position
   direct `%Q*` bindings in the form `<offset>:<item>[@bytes],...`
 - `memory_bytes`
   optional `%M*` backing store size, defaults to `256`
+- `sample_rate_ms`
+  requested ST logic sample period in milliseconds, defaults to the full
+  EtherCAT/plugin rate
 
 Use `mapping_file` when you want the plugin to inspect the current ST code at
 startup, verify every used `%I/%Q` address, and link it directly to final
@@ -372,6 +375,12 @@ want explicit offset-to-item control without an external manifest. The EL6002
 example in this repo intentionally uses contiguous images. The EL7041 example
 and the IOC project examples use `mapping_file` and are the preferred default
 pattern for new projects.
+
+`sample_rate_ms` lets the host derive an integer execute divider from the
+current `ecmc` sample time before realtime starts. The EtherCAT master still
+runs at full rate, but the ST logic is only sampled/copied/run every Nth
+cycle. For example, with a 1 ms EtherCAT period and `sample_rate_ms=10`, the
+host derives `execute_divider=10` and the ST logic runs every 10 ms.
 
 If `MAPPING_FILE` is not provided and none of `INPUT_ITEM`, `OUTPUT_ITEM`,
 `INPUT_BINDINGS`, or `OUTPUT_BINDINGS` are set, the plugin defaults the
@@ -694,10 +703,14 @@ The startup helper accepts:
 - `INPUT_BINDINGS`
 - `OUTPUT_BINDINGS`
 - `MEMORY_BYTES`
+- `SAMPLE_RATE_MS`
 - `EPICS_SUBST`
 - `DB_PREFIX`
 - `DB_MACROS`
 - `REPORT`
+
+`SAMPLE_RATE_MS` is forwarded by [`startup.cmd`](startup.cmd) as
+`sample_rate_ms=<n>` in the plugin config string.
 
 There is also a concrete IOC example in
 [`examples/loadPluginExample.cmd`](examples/loadPluginExample.cmd).
