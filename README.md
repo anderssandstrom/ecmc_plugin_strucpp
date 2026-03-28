@@ -111,7 +111,7 @@ include $(ECMC_PLUGIN_STRUCPP)/templates/strucpp_ioc_logic.make
   compiles extra handwritten C++ translation units into the same logic library
 
 The sample IOC project in
-[`../ecmc_strucpp_app_example/ioc_project_example`](../ecmc_strucpp_app_example/ioc_project_example)
+[`examples/app_examples/ioc_project_example`](examples/app_examples/ioc_project_example)
 now includes concrete opt-in files for this path:
 
 - `src/Makefile.with_cpp`
@@ -527,9 +527,9 @@ counter       : INT;    // @epics
 manual_target : INT;    // @epics rw
 special_name  : INT;    // @epics custom.path.value
 other_name    : INT;    // @epics custom.path.value rw
-named_rec     : INT;    // @epics rec_full=MyIOC:Main-NamedRec
+named_rec     : INT;    // @epics rec_full=$(IOC):Main-NamedRec
 named_suffix  : INT;    // @epics rec_suffix=Main-NamedSuffix
-full_override : INT;    // @epics custom.path.value rec_full=MyIOC:Main-FullOverride rw
+full_override : INT;    // @epics custom.path.value rec_full=$(IOC):Main-FullOverride rw
 ```
 
 Rules:
@@ -543,6 +543,8 @@ Rules:
   substitutions file with one full explicit PV name, without prepending `P`
 - `rec_suffix=<record-suffix>` optionally overrides the record suffix while
   still using the normal `P` prefix
+- if you want the IOC prefix in `rec_full`, write it explicitly, for example
+  `rec_full=$(IOC):Main-Value`
 - optional final token `rw` makes the parameter writable from EPICS
 - default is read-only
 - current support is for top-level scalar program variables:

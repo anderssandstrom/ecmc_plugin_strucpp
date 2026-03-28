@@ -1,0 +1,14 @@
+FUNCTION_BLOCK COUNTER_FB
+VAR_INPUT
+  Enable : BOOL;
+END_VAR
+VAR_OUTPUT
+  Value : INT;
+END_VAR
+
+IF Enable THEN
+  Value := Value + 1;
+ELSE
+  Value := 0;
+END_IF;
+END_FUNCTION_BLOCK
