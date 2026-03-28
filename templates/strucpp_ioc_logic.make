@@ -73,7 +73,7 @@ regen: $(GEN_CPP)
 
 $(ST_BUNDLE): $(ST_SOURCES) $(BUNDLEGEN)
 	mkdir -p $(GEN_DIR)
-	$(PYTHON) $(BUNDLEGEN) --output $@ $(ST_SOURCES)
+	$(PYTHON) $(BUNDLEGEN) $(ANNOTATION_DEFINE_ARGS) --output $@ $(ST_SOURCES)
 
 $(GEN_CPP): $(ST_BUNDLE)
 	mkdir -p $(GEN_DIR)

@@ -2,6 +2,10 @@
 
 import argparse
 import pathlib
+import re
+
+
+PLACEHOLDER_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)(?:=([^}]*))?\}")
 
 
 def parse_args():
@@ -9,14 +13,51 @@ def parse_args():
         description="Bundle multiple ST source files into one generated ST file."
     )
     parser.add_argument("--output", required=True, help="Bundled ST output path")
+    parser.add_argument(
+        "--define",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="Placeholder definition used while expanding bundled ST sources",
+    )
     parser.add_argument("inputs", nargs="+", help="Ordered ST input files")
     return parser.parse_args()
+
+
+def parse_definitions(items):
+    definitions = {}
+    for item in items:
+        if "=" not in item:
+            raise SystemExit(f"error: invalid --define '{item}', expected KEY=VALUE")
+        key, value = item.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if not key:
+            raise SystemExit(f"error: invalid --define '{item}', expected KEY=VALUE")
+        definitions[key] = value
+    return definitions
+
+
+def expand_placeholders(text, definitions, source_path):
+    def replace(match):
+        key = match.group(1)
+        default_value = match.group(2)
+        if key in definitions:
+            return definitions[key]
+        if default_value is not None:
+            return default_value
+        raise SystemExit(
+            f"error: undefined placeholder '{key}' in bundled ST source {source_path}"
+        )
+
+    return PLACEHOLDER_RE.sub(replace, text)
 
 
 def main():
     args = parse_args()
     output_path = pathlib.Path(args.output)
     input_paths = [pathlib.Path(item) for item in args.inputs]
+    definitions = parse_definitions(args.define)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -27,7 +68,9 @@ def main():
 
     for path in input_paths:
         parts.append(f"(* BEGIN {path.name} *)")
-        parts.append(path.read_text(encoding="utf-8").rstrip())
+        parts.append(
+            expand_placeholders(path.read_text(encoding="utf-8"), definitions, path).rstrip()
+        )
         parts.append(f"(* END {path.name} *)")
         parts.append("")
 

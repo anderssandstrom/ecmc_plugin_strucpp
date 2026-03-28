@@ -90,7 +90,8 @@ include $(ECMC_PLUGIN_STRUCPP)/templates/strucpp_ioc_logic.make
 
 The helper bundles those files into one generated ST source before running
 `strucpp`, so helper FBs, types, and the final `PROGRAM` can live in separate
-files.
+files. The same `${NAME}` and `${NAME=default}` placeholder syntax can be
+expanded across all bundled ST source files before code generation.
 
 If you need handwritten C++ in the same logic library, the helper also supports
 two escape hatches:
@@ -420,8 +421,8 @@ The generators now also perform stronger checks before runtime, including:
 - conflicting mapping entries
 - summary warnings for overlapping located addresses
 
-`ANNOTATION_DEFINES` is intended for reusable ST annotations. For example,
-motion samples can use:
+`ANNOTATION_DEFINES` is applied while bundling ST source files and while
+processing generated annotation metadata. For example, motion samples can use:
 
 ```iecst
 actual_position AT %IL0 : LREAL; // @ecmc ax${AXIS_INDEX}.enc.actpos
