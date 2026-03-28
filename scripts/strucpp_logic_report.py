@@ -105,9 +105,6 @@ def parse_st_source(st_path, definitions):
         if "@epics" in raw_line:
             if not var_match:
                 raise RuntimeError(f"Malformed @epics annotation in {st_path}:{line_no}")
-            annotation = raw_line.split("@epics", 1)[1].strip()
-            if not annotation:
-                raise RuntimeError(f"Empty @epics annotation in {st_path}:{line_no}")
 
         if located_match:
             name = located_match.group(1)
@@ -139,18 +136,36 @@ def parse_st_source(st_path, definitions):
             name = var_match.group(1)
             type_name = var_match.group(2).upper()
             annotation = var_match.group(3).split("@epics", 1)[1].strip()
-            tokens = annotation.split()
             writable = False
-            if tokens and tokens[-1].lower() in ("rw", "ro"):
-                writable = tokens[-1].lower() == "rw"
-                tokens = tokens[:-1]
-            export_name = " ".join(tokens).strip() or name
+            record_name = None
+            export_tokens = []
+            for token in annotation.split():
+                lower = token.lower()
+                if lower in ("rw", "ro"):
+                    writable = lower == "rw"
+                elif token.startswith("rec_w_prefix="):
+                    record_name = token[len("rec_w_prefix="):]
+                    if not record_name:
+                        raise RuntimeError(f"Empty @epics record name override in {st_path}:{line_no}")
+                elif token.startswith("rec_wo_prefix="):
+                    suffix = token[len("rec_wo_prefix="):]
+                    if not suffix:
+                        raise RuntimeError(f"Empty @epics record name suffix override in {st_path}:{line_no}")
+                    record_name = f"Plg-ST0-{suffix}"
+                elif token.startswith("rec="):
+                    record_name = token[4:]
+                    if not record_name:
+                        raise RuntimeError(f"Empty @epics record name override in {st_path}:{line_no}")
+                else:
+                    export_tokens.append(token)
+            export_name = " ".join(export_tokens).strip() or name
             exports.append(
                 {
                     "name": name,
                     "norm_name": normalize_name(name),
                     "type_name": type_name,
                     "export_name": export_name,
+                    "record_name": record_name,
                     "writable": writable,
                     "line_no": line_no,
                 }
@@ -277,10 +292,15 @@ def validate(program_name, located, exports, forwards, mappings, subst_exports, 
                 )
 
     seen_export_names = set()
+    seen_record_names = set()
     for export in exports:
         if export["export_name"] in seen_export_names:
             errors.append(f"Duplicate @epics export name in ST: {export['export_name']}")
         seen_export_names.add(export["export_name"])
+        if export["record_name"]:
+            if export["record_name"] in seen_record_names:
+                errors.append(f"Duplicate @epics record name in ST: {export['record_name']}")
+            seen_record_names.add(export["record_name"])
         if paths["substitutions"] and export["export_name"] not in subst_exports:
             errors.append(f"Export missing from substitutions file: {export['export_name']}")
 
@@ -327,7 +347,8 @@ def build_summary(program_name, located, exports, mappings, errors, warnings, pa
         lines.append("EPICS Exports:")
         for export in exports:
             mode = "rw" if export["writable"] else "ro"
-            lines.append(f"  {export['export_name']} ({export['name']}, {export['type_name']}, {mode})")
+            rec_suffix = f", rec={export['record_name']}" if export["record_name"] else ""
+            lines.append(f"  {export['export_name']} ({export['name']}, {export['type_name']}, {mode}{rec_suffix})")
         lines.append("")
 
     if warnings:

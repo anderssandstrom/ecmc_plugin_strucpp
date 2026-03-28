@@ -51,6 +51,29 @@ def derive_export_name(program_class: str, var_name: str):
     return f"plugin.strucpp0.{program_name}.{var_name}"
 
 
+def parse_epics_annotation(annotation: str):
+    tokens = annotation.split()
+    writable = "0"
+    export_tokens = []
+    for token in tokens:
+        lower = token.lower()
+        if lower in ("rw", "ro"):
+            writable = "1" if lower == "rw" else "0"
+        elif token.startswith("rec_w_prefix="):
+            if token == "rec_w_prefix=":
+                raise RuntimeError("Empty @epics record name override")
+        elif token.startswith("rec_wo_prefix="):
+            if token == "rec_wo_prefix=":
+                raise RuntimeError("Empty @epics record name suffix override")
+        elif token.startswith("rec="):
+            if token == "rec=":
+                raise RuntimeError("Empty @epics record name override")
+        else:
+            export_tokens.append(token)
+    export_name = " ".join(export_tokens).strip()
+    return export_name, writable
+
+
 def parse_exports(st_path: pathlib.Path, program_class: str):
     exports = []
     seen_source_names = set()
@@ -70,12 +93,7 @@ def parse_exports(st_path: pathlib.Path, program_class: str):
                 f"Unsupported @epics type '{type_name}' for variable {var_name} in {st_path}:{line_no}"
             )
 
-        tokens = annotation.split()
-        writable = "0"
-        if tokens and tokens[-1].lower() in ("rw", "ro"):
-            writable = "1" if tokens[-1].lower() == "rw" else "0"
-            tokens = tokens[:-1]
-        export_name = " ".join(tokens).strip()
+        export_name, writable = parse_epics_annotation(annotation)
         if not export_name:
             export_name = derive_export_name(program_class, var_name)
         if var_name in seen_source_names:
