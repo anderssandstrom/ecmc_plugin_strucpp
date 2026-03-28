@@ -8,6 +8,5 @@
 #   %QL0 -> ax1.traj.targetpos
 
 epicsEnvSet(STRUCPP_LOGIC_LIB,"/absolute/path/to/motion_actpos_mirror_logic.so")
-epicsEnvSet(STRUCPP_MAPPING_FILE,"/absolute/path/to/motion_actpos_mirror.map")
 
-require ecmc_plugin_strucpp sandst_a "PLUGIN_ID=0,LOGIC_LIB=${STRUCPP_LOGIC_LIB},MAPPING_FILE=${STRUCPP_MAPPING_FILE},MEMORY_BYTES=16,REPORT=1"
+require ecmc_plugin_strucpp sandst_a "PLUGIN_ID=0,LOGIC_LIB=${STRUCPP_LOGIC_LIB},MEMORY_BYTES=16,REPORT=1"

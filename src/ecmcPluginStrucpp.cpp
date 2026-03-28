@@ -1108,6 +1108,12 @@ bool parseConfigString(const char* raw_config,
     return false;
   }
 
+  if (out_config->mapping_file.empty() && out_config->input_item.empty() &&
+      out_config->output_item.empty() && out_config->input_bindings.empty() &&
+      out_config->output_bindings.empty()) {
+    out_config->mapping_file = out_config->logic_lib + ".map";
+  }
+
   return true;
 }
 

@@ -74,7 +74,7 @@ logic_lib=<path>;asyn_port=<plugin asyn port>;[mapping_file=<path>|input_item=<e
 Startup-linked mapping example:
 
 ```text
-logic_lib=/abs/path/to/el7041_velocity_logic.so;asyn_port=PLUGIN.STRUCPP0;mapping_file=/abs/path/to/el7041_velocity.map;memory_bytes=16
+logic_lib=/abs/path/to/el7041_velocity_logic.so;asyn_port=PLUGIN.STRUCPP0;mapping_file=/abs/path/to/el7041_velocity_logic.so.map;memory_bytes=16
 ```
 
 Contiguous image example:
@@ -116,6 +116,17 @@ example an existing memmap. Use `input_bindings` / `output_bindings` when you
 want explicit offset-to-item control without an external manifest. The EL6002
 example in this repo uses contiguous images. The EL7041 example uses
 `mapping_file`.
+
+If `MAPPING_FILE` is not provided and none of `INPUT_ITEM`, `OUTPUT_ITEM`,
+`INPUT_BINDINGS`, or `OUTPUT_BINDINGS` are set, the plugin defaults the
+mapping file to:
+
+```text
+${LOGIC_LIB}.map
+```
+
+That is the preferred convention. App repos should generate the map next to the
+logic library so the normal startup path only needs `LOGIC_LIB`.
 
 In `mapping_file` mode the host now checks, at startup:
 
