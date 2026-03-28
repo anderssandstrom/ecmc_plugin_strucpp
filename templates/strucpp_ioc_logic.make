@@ -2,6 +2,7 @@ PROGRAM ?= machine
 LOGIC_NAME ?= $(PROGRAM)_logic
 ST_SOURCE ?= $(PROGRAM).st
 ST_SOURCES ?= $(ST_SOURCE)
+ANNOTATION_DEFINES ?=
 EXTRA_CPP_SOURCES ?=
 PROJECT_BIN_DIR ?= ../bin
 GEN_DIR ?= generated
@@ -20,6 +21,7 @@ SUBSTGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_epics_substgen.py
 WRAPPERGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_logic_wrappergen.py
 BUNDLEGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_bundle_st.py
 REPORTGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_logic_report.py
+ANNOTATION_DEFINE_ARGS := $(foreach def,$(ANNOTATION_DEFINES),--define $(def))
 
 CXX ?= c++
 CXXFLAGS += -std=c++17 -fPIC -Wall -Wextra
@@ -88,7 +90,7 @@ $(GENERATED_WRAPPER_CPP): $(ST_BUNDLE) $(WRAPPERGEN)
 
 $(MAP_FILE): $(GEN_HPP) $(ST_BUNDLE) $(MAPGEN)
 	mkdir -p $(ODIR)
-	$(PYTHON) $(MAPGEN) --header $(GEN_HPP) --st-source $(ST_BUNDLE) --output $@
+	$(PYTHON) $(MAPGEN) $(ANNOTATION_DEFINE_ARGS) --header $(GEN_HPP) --st-source $(ST_BUNDLE) --output $@
 
 $(SUBST_FILE): $(ST_BUNDLE) $(SUBSTGEN)
 	mkdir -p $(ODIR)
@@ -96,7 +98,7 @@ $(SUBST_FILE): $(ST_BUNDLE) $(SUBSTGEN)
 
 $(SUMMARY_FILE): $(GEN_HPP) $(MAP_FILE) $(SUBST_FILE) $(ST_BUNDLE) $(REPORTGEN)
 	mkdir -p $(ODIR)
-	$(PYTHON) $(REPORTGEN) --st-source $(ST_BUNDLE) --header $(GEN_HPP) --map $(MAP_FILE) --substitutions $(SUBST_FILE) --logic-lib $(LOGIC_LIB) --output $@
+	$(PYTHON) $(REPORTGEN) $(ANNOTATION_DEFINE_ARGS) --st-source $(ST_BUNDLE) --header $(GEN_HPP) --map $(MAP_FILE) --substitutions $(SUBST_FILE) --logic-lib $(LOGIC_LIB) --output $@
 
 $(PROGRAM_OBJ): $(GEN_CPP)
 	mkdir -p $(ODIR)
@@ -133,7 +135,7 @@ $(STAGED_SUMMARY_FILE): $(SUMMARY_FILE)
 maps: $(MAP_FILE) $(SUBST_FILE)
 
 validate: $(GEN_HPP) $(MAP_FILE) $(SUBST_FILE) $(ST_BUNDLE) $(REPORTGEN)
-	$(PYTHON) $(REPORTGEN) --st-source $(ST_BUNDLE) --header $(GEN_HPP) --map $(MAP_FILE) --substitutions $(SUBST_FILE) --logic-lib $(LOGIC_LIB) --validate-only
+	$(PYTHON) $(REPORTGEN) $(ANNOTATION_DEFINE_ARGS) --st-source $(ST_BUNDLE) --header $(GEN_HPP) --map $(MAP_FILE) --substitutions $(SUBST_FILE) --logic-lib $(LOGIC_LIB) --validate-only
 
 clean:
 	rm -rf $(ODIR) $(GEN_DIR) $(PROJECT_BIN_DIR)

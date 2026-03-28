@@ -178,6 +178,7 @@ The scaffold only picks the smallest default shape. The generated
 - `ST_SOURCES := types.st fbs.st main.st`
 - `WRAPPER_CPP := custom_wrapper.cpp`
 - `EXTRA_CPP_SOURCES := helper.cpp`
+- `ANNOTATION_DEFINES := AXIS_INDEX=2`
 
 The same helper now also generates:
 
@@ -290,6 +291,21 @@ The generators now also perform stronger checks before runtime, including:
 - duplicate `@epics` export names
 - conflicting mapping entries
 - summary warnings for overlapping located addresses
+
+`ANNOTATION_DEFINES` is intended for reusable ST annotations. For example,
+motion samples can use:
+
+```iecst
+actual_position AT %IL0 : LREAL; // @ecmc ax${AXIS_INDEX}.enc.actpos
+```
+
+and the build helper can supply:
+
+```make
+ANNOTATION_DEFINES := AXIS_INDEX=2
+```
+
+so the generated map resolves to `ax2.enc.actpos` without editing the ST code.
 It reads the generated `STruCpp` header forwards and, preferably, inline ST
 annotations of the form:
 

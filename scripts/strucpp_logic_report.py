@@ -19,6 +19,7 @@ VAR_RE = re.compile(
 )
 PROGRAM_RE = re.compile(r"^\s*PROGRAM\s+([A-Za-z_][A-Za-z0-9_]*)\s*$", re.IGNORECASE)
 QUOTED_RE = re.compile(r'"([^"]*)"')
+PLACEHOLDER_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
 
 WIDTH_BYTES = {"B": 1, "W": 2, "D": 4, "L": 8}
 
@@ -34,11 +35,44 @@ def parse_args():
     parser.add_argument("--logic-lib", help="Logic library path to mention in the report")
     parser.add_argument("--output", help="Summary output path")
     parser.add_argument("--validate-only", action="store_true", help="Validate and print summary to stdout")
+    parser.add_argument(
+        "--define",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="Placeholder definition used in @ecmc annotations, for example AXIS_INDEX=1",
+    )
     return parser.parse_args()
 
 
 def normalize_name(text):
     return text.strip().upper()
+
+
+def parse_definitions(items):
+    definitions = {}
+    for item in items:
+        if "=" not in item:
+            raise RuntimeError(f"Invalid --define '{item}', expected KEY=VALUE")
+        key, value = item.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if not key:
+            raise RuntimeError(f"Invalid --define '{item}', expected KEY=VALUE")
+        definitions[key] = value
+    return definitions
+
+
+def expand_placeholders(value, definitions, source_path, line_no, annotation_name):
+    def replace(match):
+        key = match.group(1)
+        if key not in definitions:
+            raise RuntimeError(
+                f"Undefined placeholder '{key}' in {annotation_name} annotation at {source_path}:{line_no}"
+            )
+        return definitions[key]
+
+    return PLACEHOLDER_RE.sub(replace, value)
 
 
 def parse_program_name(text, path):
@@ -49,7 +83,7 @@ def parse_program_name(text, path):
     raise RuntimeError(f"Failed to find PROGRAM declaration in {path}")
 
 
-def parse_st_source(st_path):
+def parse_st_source(st_path, definitions):
     text = st_path.read_text(encoding="utf-8")
     program_name = parse_program_name(text, st_path)
     located = []
@@ -78,7 +112,13 @@ def parse_st_source(st_path):
             comment = located_match.group(4) or ""
             ecmc_item = None
             if "@ecmc" in comment:
-                ecmc_item = comment.split("@ecmc", 1)[1].strip()
+                ecmc_item = expand_placeholders(
+                    comment.split("@ecmc", 1)[1].strip(),
+                    definitions,
+                    st_path,
+                    line_no,
+                    "@ecmc",
+                )
             located.append(
                 {
                     "name": name,
@@ -310,7 +350,8 @@ def main():
     map_path = pathlib.Path(args.map_path) if args.map_path else None
     subst_path = pathlib.Path(args.substitutions) if args.substitutions else None
 
-    program_name, located, exports = parse_st_source(st_path)
+    definitions = parse_definitions(args.define)
+    program_name, located, exports = parse_st_source(st_path, definitions)
     forwards = parse_header_forwards(header_path)
     mappings = parse_map_file(map_path)
     subst_exports = parse_substitutions(subst_path)

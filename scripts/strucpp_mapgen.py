@@ -13,6 +13,7 @@ ST_ECMC_RE = re.compile(
     re.IGNORECASE,
 )
 ADDRESS_RE = re.compile(r"^(%[IQM][XBWDL]\d+(?:\.\d+)?)$")
+PLACEHOLDER_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
 
 
 def parse_args():
@@ -31,6 +32,13 @@ def parse_args():
     )
     parser.add_argument("--output", required=True, help="Output mapping file path")
     parser.add_argument(
+        "--define",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="Placeholder definition used in @ecmc annotations, for example AXIS_INDEX=1",
+    )
+    parser.add_argument(
         "--allow-partial",
         action="store_true",
         help="Allow missing bindings for some used %I/%Q variables",
@@ -48,6 +56,33 @@ def read_text(path_str):
 
 def normalize_name(name):
     return name.strip().upper()
+
+
+def parse_definitions(items):
+    definitions = {}
+    for item in items:
+        if "=" not in item:
+            raise SystemExit(f"error: invalid --define '{item}', expected KEY=VALUE")
+        key, value = item.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if not key:
+            raise SystemExit(f"error: invalid --define '{item}', expected KEY=VALUE")
+        definitions[key] = value
+    return definitions
+
+
+def expand_placeholders(value, definitions, source_path, line_no, annotation_name):
+    def replace(match):
+        key = match.group(1)
+        if key not in definitions:
+            raise SystemExit(
+                f"error: undefined placeholder '{key}' in {annotation_name} annotation "
+                f"at {source_path} line {line_no}"
+            )
+        return definitions[key]
+
+    return PLACEHOLDER_RE.sub(replace, value)
 
 
 def parse_forwards(header_text):
@@ -102,7 +137,7 @@ def parse_binding_file(text, source_path):
     return bindings
 
 
-def parse_st_source_annotations(text, source_path):
+def parse_st_source_annotations(text, source_path, definitions):
     bindings = {}
     line_no = 0
     for raw_line in text.splitlines():
@@ -124,6 +159,7 @@ def parse_st_source_annotations(text, source_path):
             raise SystemExit(
                 f"error: empty @ecmc annotation for variable {key} in {source_path} line {line_no}"
             )
+        value = expand_placeholders(value, definitions, source_path, line_no, "@ecmc")
         bindings[key] = value
     return bindings
 
@@ -162,12 +198,17 @@ def main():
     header_text = read_text(args.header)
     st_text = read_text(args.st_source) if args.st_source else ""
     binding_text = read_text(args.bindings) if args.bindings else ""
+    definitions = parse_definitions(args.define)
 
     located = parse_forwards(header_text)
     if not located:
         raise SystemExit(f"error: found no located variable forwards in {args.header}")
 
-    st_bindings = parse_st_source_annotations(st_text, args.st_source) if args.st_source else {}
+    st_bindings = (
+        parse_st_source_annotations(st_text, args.st_source, definitions)
+        if args.st_source
+        else {}
+    )
     file_bindings = parse_binding_file(binding_text, args.bindings) if args.bindings else {}
     bindings = merge_bindings(st_bindings, file_bindings)
 
