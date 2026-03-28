@@ -19,7 +19,7 @@ VAR_RE = re.compile(
 )
 PROGRAM_RE = re.compile(r"^\s*PROGRAM\s+([A-Za-z_][A-Za-z0-9_]*)\s*$", re.IGNORECASE)
 QUOTED_RE = re.compile(r'"([^"]*)"')
-PLACEHOLDER_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
+PLACEHOLDER_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)(?:=([^}]*))?\}")
 
 WIDTH_BYTES = {"B": 1, "W": 2, "D": 4, "L": 8}
 
@@ -66,11 +66,15 @@ def parse_definitions(items):
 def expand_placeholders(value, definitions, source_path, line_no, annotation_name):
     def replace(match):
         key = match.group(1)
+        default_value = match.group(2)
+        if key in definitions:
+            return definitions[key]
+        if default_value is not None:
+            return default_value
         if key not in definitions:
             raise RuntimeError(
                 f"Undefined placeholder '{key}' in {annotation_name} annotation at {source_path}:{line_no}"
             )
-        return definitions[key]
 
     return PLACEHOLDER_RE.sub(replace, value)
 

@@ -2,9 +2,9 @@
 # library.
 #
 # This example uses the startup-linked mapping-file mode:
-#   %IW0 -> ec0.s14.positionActual01
-#   %QW0 -> ec0.s14.driveControl01
-#   %QW2 -> ec0.s14.velocitySetpoint01
+#   %IW0 -> ec.s14.positionActual01
+#   %QW0 -> ec.s14.driveControl01
+#   %QW2 -> ec.s14.velocitySetpoint01
 #
 # The default startup flow expects the generated mapping file next to the logic
 # library as ${LOGIC_LIB}.map.

@@ -183,9 +183,9 @@ small declaration generator:
 It takes a small manifest like:
 
 ```text
-I   INT   actual_position    ec0.s14.positionActual01
-Q   WORD  drive_control      ec0.s14.driveControl01
-Q   INT   velocity_setpoint  ec0.s14.velocitySetpoint01
+I   INT   actual_position    ec.s14.positionActual01
+Q   WORD  drive_control      ec.s14.driveControl01
+Q   INT   velocity_setpoint  ec.s14.velocitySetpoint01
 M   INT   cycle_counter
 VAR INT   manual_velocity
 ```
@@ -204,9 +204,9 @@ That produces:
 ```iecst
 PROGRAM MAIN
 VAR
-  actual_position   AT %IW0 : INT;   // @ecmc ec0.s14.positionActual01
-  drive_control     AT %QW0 : WORD;  // @ecmc ec0.s14.driveControl01
-  velocity_setpoint AT %QW2 : INT;   // @ecmc ec0.s14.velocitySetpoint01
+  actual_position   AT %IW0 : INT;   // @ecmc ec.s14.positionActual01
+  drive_control     AT %QW0 : WORD;  // @ecmc ec.s14.driveControl01
+  velocity_setpoint AT %QW2 : INT;   // @ecmc ec.s14.velocitySetpoint01
   cycle_counter     AT %MW0 : INT;
   manual_velocity   : INT;
 END_VAR
@@ -234,9 +234,9 @@ for `strucpp_declgen.py`.
 Example input:
 
 ```text
-ec0.s14.positionActual01
-ec0.s14.driveControl01
-ec0.s14.velocitySetpoint01
+ec.s14.positionActual01
+ec.s14.driveControl01
+ec.s14.velocitySetpoint01
 ```
 
 Example command:
@@ -251,9 +251,9 @@ Example output:
 
 ```text
 # AREA TYPE   NAME              ECMC_ITEM
-I  INT   actual_position    ec0.s14.positionActual01
-Q  WORD  drive_control      ec0.s14.driveControl01
-Q  INT   velocity_setpoint  ec0.s14.velocitySetpoint01
+I  INT   actual_position    ec.s14.positionActual01
+Q  WORD  drive_control      ec.s14.driveControl01
+Q  INT   velocity_setpoint  ec.s14.velocitySetpoint01
 ```
 
 The generator is heuristic by design. It is meant to produce a useful first
@@ -340,14 +340,14 @@ logic_lib=/abs/path/to/machine_logic.so;input_item=ec0.s2.mm.inputDataArray01;ou
 Direct scalar binding example:
 
 ```text
-logic_lib=/abs/path/to/el7041_velocity_logic.so;input_bindings=0:ec0.s14.positionActual01@2;output_bindings=0:ec0.s14.driveControl01@2,2:ec0.s14.velocitySetpoint01@2;memory_bytes=16
+logic_lib=/abs/path/to/el7041_velocity_logic.so;input_bindings=0:ec.s14.positionActual01@2;output_bindings=0:ec.s14.driveControl01@2,2:ec.s14.velocitySetpoint01@2;memory_bytes=16
 ```
 
 - `logic_lib`
   absolute path to the loadable logic library
 - `mapping_file`
   path to a startup-linked manifest that maps exact STruCpp addresses like
-  `%IW0` or `%QW2` to literal `ecmcDataItem` names
+  `%IW0` or `%QW2` to `ecmcDataItem` names
 - `asyn_port`
   dedicated plain `asynPortDriver` port owned by `ecmc_plugin_strucpp`, defaults to
   `PLUGIN.STRUCPP0`
@@ -398,13 +398,16 @@ The mapping-file format is intentionally small:
 
 ```text
 # comments are allowed
-%IW0=ec0.s14.positionActual01
-%QW0=ec0.s14.driveControl01
-%QW2=ec0.s14.velocitySetpoint01
+%IW0=ec.s14.positionActual01
+%QW0=ec.s14.driveControl01
+%QW2=ec.s14.velocitySetpoint01
 ```
 
-The names in that file are literal `ecmcDataItem` names. The plugin reads the
-file directly, so IOC macro expansion does not happen inside the manifest.
+The names in that file are read directly by the plugin. A leading `ec.s...`
+means "use the current/default EtherCAT master index from ecmc before
+realtime", so `ec.s14.positionActual01` resolves to `ec0.s14.positionActual01`
+or `ec1.s14.positionActual01` depending on the configured master. Explicit
+names like `ec0.s14...` and `ec1.s14...` remain valid and are not rewritten.
 
 To avoid maintaining `%IW0` / `%QW2` addresses by hand, this repo also ships a
 small generator in [`scripts/strucpp_mapgen.py`](scripts/strucpp_mapgen.py).
@@ -431,13 +434,26 @@ ANNOTATION_DEFINES := AXIS_INDEX=2
 ```
 
 so the generated map resolves to `ax2.enc.actpos` without editing the ST code.
+Inline defaults are also supported in annotations, for example:
+
+```iecst
+actual_position   AT %IW0 : INT;  // @ecmc ec.s${SLAVE=14}.positionActual01
+drive_control     AT %QW0 : WORD; // @ecmc ec${MASTER=0}.s${SLAVE=14}.driveControl01
+```
+
+and values from `ANNOTATION_DEFINES` still override those defaults:
+
+```make
+ANNOTATION_DEFINES := SLAVE=18 MASTER=1
+```
+
 It reads the generated `STruCpp` header forwards and, preferably, inline ST
 annotations of the form:
 
 ```text
-actual_position    AT %IW0 : INT;   // @ecmc ec0.s14.positionActual01
-drive_control      AT %QW0 : WORD;  // @ecmc ec0.s14.driveControl01
-velocity_setpoint  AT %QW2 : INT;   // @ecmc ec0.s14.velocitySetpoint01
+actual_position    AT %IW0 : INT;   // @ecmc ec.s14.positionActual01
+drive_control      AT %QW0 : WORD;  // @ecmc ec.s14.driveControl01
+velocity_setpoint  AT %QW2 : INT;   // @ecmc ec.s14.velocitySetpoint01
 ```
 
 and emits the final startup-linked mapping file automatically. It also still

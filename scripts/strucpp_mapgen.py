@@ -13,7 +13,7 @@ ST_ECMC_RE = re.compile(
     re.IGNORECASE,
 )
 ADDRESS_RE = re.compile(r"^(%[IQM][XBWDL]\d+(?:\.\d+)?)$")
-PLACEHOLDER_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
+PLACEHOLDER_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)(?:=([^}]*))?\}")
 
 
 def parse_args():
@@ -41,7 +41,7 @@ def parse_args():
     parser.add_argument(
         "--allow-partial",
         action="store_true",
-        help="Allow missing bindings for some used %I/%Q variables",
+        help="Allow missing bindings for some used %%I/%%Q variables",
     )
     return parser.parse_args()
 
@@ -75,12 +75,16 @@ def parse_definitions(items):
 def expand_placeholders(value, definitions, source_path, line_no, annotation_name):
     def replace(match):
         key = match.group(1)
+        default_value = match.group(2)
+        if key in definitions:
+            return definitions[key]
+        if default_value is not None:
+            return default_value
         if key not in definitions:
             raise SystemExit(
                 f"error: undefined placeholder '{key}' in {annotation_name} annotation "
                 f"at {source_path} line {line_no}"
             )
-        return definitions[key]
 
     return PLACEHOLDER_RE.sub(replace, value)
 

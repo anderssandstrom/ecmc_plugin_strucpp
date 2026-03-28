@@ -1,6 +1,6 @@
 # AREA TYPE  NAME              ECMC_ITEM
-I     INT   actual_position    ec0.s14.positionActual01
-Q     WORD  drive_control      ec0.s14.driveControl01
-Q     INT   velocity_setpoint  ec0.s14.velocitySetpoint01
+I     INT   actual_position    ec.s14.positionActual01
+Q     WORD  drive_control      ec.s14.driveControl01
+Q     INT   velocity_setpoint  ec.s14.velocitySetpoint01
 M     INT   cycle_counter
 VAR   INT   manual_velocity

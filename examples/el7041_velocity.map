@@ -1,6 +1,6 @@
 # Literal STruCpp address to ecmcDataItem bindings for the EL7041-0052 example.
 # This file is read directly by ecmc_plugin_strucpp at startup.
 
-%IW0=ec0.s14.positionActual01
-%QW0=ec0.s14.driveControl01
-%QW2=ec0.s14.velocitySetpoint01
+%IW0=ec.s14.positionActual01
+%QW0=ec.s14.driveControl01
+%QW2=ec.s14.velocitySetpoint01

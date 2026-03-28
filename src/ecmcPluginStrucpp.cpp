@@ -15,6 +15,7 @@
 
 #include "asynPortDriver.h"
 #include "ecmcDataItem.h"
+#include "ecmcEc.h"
 #include "ecmcPluginClient.h"
 #include "ecmcPluginDefs.h"
 
@@ -1479,6 +1480,39 @@ bool parseConfigString(const char* raw_config,
   return true;
 }
 
+int currentMasterIndex() {
+  auto* master = static_cast<ecmcEc*>(getEcMaster());
+  return master ? master->getMasterIndex() : -1;
+}
+
+bool resolveItemName(const std::string& item_name,
+                     std::string* resolved_name,
+                     std::string* error_out) {
+  if (!resolved_name) {
+    if (error_out) {
+      *error_out = "Resolved item name output is null";
+    }
+    return false;
+  }
+
+  *resolved_name = item_name;
+  if (item_name.rfind("ec.s", 0) != 0) {
+    return true;
+  }
+
+  const int master_index = currentMasterIndex();
+  if (master_index < 0) {
+    if (error_out) {
+      *error_out = "Cannot resolve default EtherCAT master for shorthand item '" +
+                   item_name + "'";
+    }
+    return false;
+  }
+
+  *resolved_name = "ec" + std::to_string(master_index) + item_name.substr(2);
+  return true;
+}
+
 bool bindItemSpan(const std::string& item_name,
                   ecmcStrucppIoImageSpan* out_span,
                   ecmcDataItemInfo* out_info,
@@ -1490,13 +1524,21 @@ bool bindItemSpan(const std::string& item_name,
     return false;
   }
 
-  std::vector<char> mutable_name(item_name.begin(), item_name.end());
+  std::string resolved_name;
+  if (!resolveItemName(item_name, &resolved_name, error_out)) {
+    return false;
+  }
+
+  std::vector<char> mutable_name(resolved_name.begin(), resolved_name.end());
   mutable_name.push_back('\0');
 
   auto* item = static_cast<ecmcDataItem*>(getEcmcDataItem(mutable_name.data()));
   if (!item) {
     if (error_out) {
-      *error_out = "Could not find ecmcDataItem '" + item_name + "'";
+      *error_out = "Could not find ecmcDataItem '" + resolved_name + "'";
+      if (resolved_name != item_name) {
+        *error_out += " (resolved from '" + item_name + "')";
+      }
     }
     return false;
   }
@@ -1504,7 +1546,7 @@ bool bindItemSpan(const std::string& item_name,
   ecmcDataItemInfo* info = item->getDataItemInfo();
   if (!info || !info->dataPointerValid || !info->data || info->dataSize == 0) {
     if (error_out) {
-      *error_out = "ecmcDataItem '" + item_name +
+      *error_out = "ecmcDataItem '" + resolved_name +
                    "' does not expose a valid data buffer";
     }
     return false;
@@ -1512,7 +1554,7 @@ bool bindItemSpan(const std::string& item_name,
 
   out_span->data = info->data;
   out_span->size = info->dataSize;
-  out_span->name = item_name;
+  out_span->name = resolved_name;
   if (out_info) {
     *out_info = *info;
   }
