@@ -75,27 +75,29 @@ def parse_epics_annotation(annotation: str):
     writable = False
     export_tokens = []
     record_name = ""
+    record_prefix = "$(P=)"
     for token in tokens:
         lower = token.lower()
         if lower in ("rw", "ro"):
             writable = lower == "rw"
-        elif token.startswith("rec_w_prefix="):
-            record_name = token[len("rec_w_prefix="):]
+        elif token.startswith("rec_full="):
+            record_name = token[len("rec_full="):]
             if not record_name:
                 raise RuntimeError("Empty @epics record name override")
-        elif token.startswith("rec_wo_prefix="):
-            suffix = token[len("rec_wo_prefix="):]
-            if not suffix:
+            record_prefix = ""
+        elif token.startswith("rec_suffix="):
+            record_name = token[len("rec_suffix="):]
+            if not record_name:
                 raise RuntimeError("Empty @epics record name suffix override")
-            record_name = f"Plg-ST0-{suffix}"
         elif token.startswith("rec="):
             record_name = token[4:]
             if not record_name:
                 raise RuntimeError("Empty @epics record name override")
+            record_prefix = ""
         else:
             export_tokens.append(token)
     export_name = " ".join(export_tokens).strip()
-    return export_name, record_name, writable
+    return export_name, record_name, record_prefix, writable
 
 
 def parse_exports(st_path: pathlib.Path):
@@ -114,11 +116,12 @@ def parse_exports(st_path: pathlib.Path):
         source_name = match.group(1)
         type_name = match.group(2).upper()
         annotation = (match.group(3) or "").strip()
-        export_name, record_name, writable = parse_epics_annotation(annotation)
+        export_name, record_name, record_prefix, writable = parse_epics_annotation(annotation)
         if not export_name:
             export_name = derive_export_name(program_name, source_name)
         if not record_name:
             record_name = derive_record_name(program_name, source_name, writable)
+            record_prefix = "$(P=)"
         if source_name in seen_source_names:
             raise RuntimeError(
                 f"Duplicate @epics source variable '{source_name}' in {st_path}:{line_no}"
@@ -147,6 +150,7 @@ def parse_exports(st_path: pathlib.Path):
                 "type_name": type_name,
                 "export_name": export_name,
                 "record_name": record_name,
+                "record_prefix": record_prefix,
                 "template": template,
                 "writable": writable,
             }
@@ -158,24 +162,30 @@ def parse_exports(st_path: pathlib.Path):
 def substitution_block(template_name, rows):
     lines = [f'file "{template_name}" {{']
     if template_name in ("ecmcStrucppAi.template", "ecmcStrucppAo.template"):
-        lines.append("pattern { P, PORT, ADDR, TIMEOUT, REC, ASYN, DESC, EGU, PREC }")
+        lines.append("pattern { P, REC_PREFIX, PORT, ADDR, TIMEOUT, REC, ASYN, DESC, EGU, PREC }")
         for row in rows:
             lines.append(
-                '{ "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", '
+                '{ "$(P=)", '
+                f'"{row["record_prefix"]}", '
+                '"$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", '
                 f'"{row["record_name"]}", "{row["export_name"]}", "{row["source_name"]}", "", "3" }}'
             )
     elif template_name in ("ecmcStrucppBi.template", "ecmcStrucppBo.template"):
-        lines.append("pattern { P, PORT, ADDR, TIMEOUT, REC, ASYN, DESC, ZNAM, ONAM }")
+        lines.append("pattern { P, REC_PREFIX, PORT, ADDR, TIMEOUT, REC, ASYN, DESC, ZNAM, ONAM }")
         for row in rows:
             lines.append(
-                '{ "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", '
+                '{ "$(P=)", '
+                f'"{row["record_prefix"]}", '
+                '"$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", '
                 f'"{row["record_name"]}", "{row["export_name"]}", "{row["source_name"]}", "FALSE", "TRUE" }}'
             )
     else:
-        lines.append("pattern { P, PORT, ADDR, TIMEOUT, REC, ASYN, DESC }")
+        lines.append("pattern { P, REC_PREFIX, PORT, ADDR, TIMEOUT, REC, ASYN, DESC }")
         for row in rows:
             lines.append(
-                '{ "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", '
+                '{ "$(P=)", '
+                f'"{row["record_prefix"]}", '
+                '"$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", '
                 f'"{row["record_name"]}", "{row["export_name"]}", "{row["source_name"]}" }}'
             )
     lines.append("}")

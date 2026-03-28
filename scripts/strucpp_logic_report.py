@@ -138,24 +138,26 @@ def parse_st_source(st_path, definitions):
             annotation = var_match.group(3).split("@epics", 1)[1].strip()
             writable = False
             record_name = None
+            record_prefix = "$(P=)"
             export_tokens = []
             for token in annotation.split():
                 lower = token.lower()
                 if lower in ("rw", "ro"):
                     writable = lower == "rw"
-                elif token.startswith("rec_w_prefix="):
-                    record_name = token[len("rec_w_prefix="):]
+                elif token.startswith("rec_full="):
+                    record_name = token[len("rec_full="):]
                     if not record_name:
                         raise RuntimeError(f"Empty @epics record name override in {st_path}:{line_no}")
-                elif token.startswith("rec_wo_prefix="):
-                    suffix = token[len("rec_wo_prefix="):]
-                    if not suffix:
+                    record_prefix = ""
+                elif token.startswith("rec_suffix="):
+                    record_name = token[len("rec_suffix="):]
+                    if not record_name:
                         raise RuntimeError(f"Empty @epics record name suffix override in {st_path}:{line_no}")
-                    record_name = f"Plg-ST0-{suffix}"
                 elif token.startswith("rec="):
                     record_name = token[4:]
                     if not record_name:
                         raise RuntimeError(f"Empty @epics record name override in {st_path}:{line_no}")
+                    record_prefix = ""
                 else:
                     export_tokens.append(token)
             export_name = " ".join(export_tokens).strip() or name
@@ -166,6 +168,7 @@ def parse_st_source(st_path, definitions):
                     "type_name": type_name,
                     "export_name": export_name,
                     "record_name": record_name,
+                    "record_prefix": record_prefix,
                     "writable": writable,
                     "line_no": line_no,
                 }
@@ -347,7 +350,10 @@ def build_summary(program_name, located, exports, mappings, errors, warnings, pa
         lines.append("EPICS Exports:")
         for export in exports:
             mode = "rw" if export["writable"] else "ro"
-            rec_suffix = f", rec={export['record_name']}" if export["record_name"] else ""
+            rec_suffix = ""
+            if export["record_name"]:
+                key = "rec_full" if export["record_prefix"] == "" else "rec_suffix"
+                rec_suffix = f", {key}={export['record_name']}"
             lines.append(f"  {export['export_name']} ({export['name']}, {export['type_name']}, {mode}{rec_suffix})")
         lines.append("")
 

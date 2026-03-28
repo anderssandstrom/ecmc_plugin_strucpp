@@ -1,4 +1,4 @@
-record(longout,"$(P)$(REC)"){
+record(longout,"$(REC_PREFIX=$(P))$(REC)"){
   info(asyn:READBACK,"1")
   field(DESC, "${DESC=}")
   field(DTYP, "asynInt32")

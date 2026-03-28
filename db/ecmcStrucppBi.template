@@ -1,4 +1,4 @@
-record(bi,"$(P)$(REC)"){
+record(bi,"$(REC_PREFIX=$(P))$(REC)"){
   field(DESC, "${DESC=}")
   field(PINI, "1")
   field(DTYP, "asynInt32")

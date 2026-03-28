@@ -527,9 +527,9 @@ counter       : INT;    // @epics
 manual_target : INT;    // @epics rw
 special_name  : INT;    // @epics custom.path.value
 other_name    : INT;    // @epics custom.path.value rw
-named_rec     : INT;    // @epics rec_w_prefix=Plg-ST0-Main-NamedRec
-named_suffix  : INT;    // @epics rec_wo_prefix=Main-NamedSuffix
-full_override : INT;    // @epics custom.path.value rec_w_prefix=Plg-ST0-Main-FullOverride rw
+named_rec     : INT;    // @epics rec_full=MyIOC:Main-NamedRec
+named_suffix  : INT;    // @epics rec_suffix=Main-NamedSuffix
+full_override : INT;    // @epics custom.path.value rec_full=MyIOC:Main-FullOverride rw
 ```
 
 Rules:
@@ -539,10 +539,10 @@ Rules:
   `plugin.strucpp0.<program>.<variable>`
 - the first token after `@epics`, when present, is the explicit exported asyn
   parameter name override
-- `rec_w_prefix=<PV-name>` optionally overrides the generated record name in
-  the substitutions file with a full explicit value
-- `rec_wo_prefix=<suffix>` optionally overrides just the suffix and keeps the
-  normal `Plg-ST0-` record prefix
+- `rec_full=<PV-name>` optionally overrides the generated record name in the
+  substitutions file with one full explicit PV name, without prepending `P`
+- `rec_suffix=<record-suffix>` optionally overrides the record suffix while
+  still using the normal `P` prefix
 - optional final token `rw` makes the parameter writable from EPICS
 - default is read-only
 - current support is for top-level scalar program variables:
