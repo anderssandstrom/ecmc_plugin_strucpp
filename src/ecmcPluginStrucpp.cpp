@@ -18,6 +18,7 @@
 #include "ecmcPluginClient.h"
 #include "ecmcPluginDefs.h"
 
+#include <pthread.h>
 #include <algorithm>
 #include <cctype>
 #include <cstdarg>
@@ -31,7 +32,12 @@
 #include <mutex>
 #include <sstream>
 #include <string>
+#include <sys/resource.h>
+#if defined(__linux__)
+#  include <sys/syscall.h>
+#endif
 #include <thread>
+#include <unistd.h>
 #include <vector>
 
 namespace {
@@ -368,6 +374,7 @@ class StrucppAsynPort : public asynPortDriver {
   }
 
   void callbackWorker() {
+    lowerCurrentThreadPriority();
     std::unique_lock<std::mutex> lock(callback_mutex_);
     for (;;) {
       callback_cv_.wait(lock, [this]() {
@@ -383,6 +390,19 @@ class StrucppAsynPort : public asynPortDriver {
       callParamCallbacks();
       lock.lock();
     }
+  }
+
+  static void lowerCurrentThreadPriority() {
+#if defined(__APPLE__)
+    pthread_set_qos_class_self_np(QOS_CLASS_BACKGROUND, 0);
+#elif defined(__linux__)
+    sched_param sched {};
+    pthread_setschedparam(pthread_self(), SCHED_OTHER, &sched);
+    setpriority(PRIO_PROCESS, static_cast<id_t>(syscall(SYS_gettid)), 10);
+#else
+    sched_param sched {};
+    pthread_setschedparam(pthread_self(), SCHED_OTHER, &sched);
+#endif
   }
 
   std::mutex callback_mutex_;

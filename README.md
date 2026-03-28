@@ -519,8 +519,8 @@ matching asyn parameters at startup on the configured `asyn_port`.
 
 The current implementation uses a plugin-owned plain `asynPortDriver`, not the
 main `ecmc` asyn driver. Exported values are updated on change, and callback
-flushing is deferred out of the RT loop through a small worker thread in the
-plugin.
+flushing is deferred out of the RT loop through a small low-priority worker
+thread in the plugin.
 
 This repo also ships macro-based EPICS database templates in [`db`](db) and a
 generator,
