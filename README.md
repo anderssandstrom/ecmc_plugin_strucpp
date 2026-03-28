@@ -92,6 +92,34 @@ The helper bundles those files into one generated ST source before running
 `strucpp`, so helper FBs, types, and the final `PROGRAM` can live in separate
 files.
 
+If you need handwritten C++ in the same logic library, the helper also supports
+two escape hatches:
+
+```make
+PROGRAM := machine
+ST_SOURCES := machine_fbs.st machine.st
+WRAPPER_CPP := custom_logic_wrapper.cpp
+EXTRA_CPP_SOURCES := helper.cpp adapters/custom_fb.cpp
+ECMC_PLUGIN_STRUCPP ?= ../../../ecmc_plugin_strucpp
+include $(ECMC_PLUGIN_STRUCPP)/templates/strucpp_ioc_logic.make
+```
+
+- `WRAPPER_CPP`
+  overrides the generated wrapper with your own C++ wrapper
+- `EXTRA_CPP_SOURCES`
+  compiles extra handwritten C++ translation units into the same logic library
+
+The sample IOC project in
+[`../ecmc_strucpp_app_example/ioc_project_example`](../ecmc_strucpp_app_example/ioc_project_example)
+now includes concrete opt-in files for this path:
+
+- `src/Makefile.with_cpp`
+- `src/custom_logic_wrapper.cpp`
+- `src/machine_helper.cpp`
+
+When `WRAPPER_CPP` points at your own file, the helper stops generating the
+default wrapper and compiles the provided source instead.
+
 That common include handles:
 
 - ordered ST source bundling
@@ -108,6 +136,9 @@ So the IOC project usually only needs:
 - one ST source file
 - one short `src/Makefile`
 - one startup script with `require ecmc_plugin_strucpp ...`
+
+and only drops to handwritten C++ when you explicitly opt into one of the
+escape hatches above.
 
 ## Host Config
 

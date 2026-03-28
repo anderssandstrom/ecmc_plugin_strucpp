@@ -2,6 +2,7 @@ PROGRAM ?= machine
 LOGIC_NAME ?= $(PROGRAM)_logic
 ST_SOURCE ?= $(PROGRAM).st
 ST_SOURCES ?= $(ST_SOURCE)
+EXTRA_CPP_SOURCES ?=
 PROJECT_BIN_DIR ?= ../bin
 GEN_DIR ?= generated
 
@@ -41,7 +42,8 @@ ST_BUNDLE := $(GEN_DIR)/$(PROGRAM)_bundle.st
 GEN_CPP := $(GEN_DIR)/$(PROGRAM).cpp
 GEN_HPP := $(GEN_DIR)/$(PROGRAM).hpp
 EXPORTS_HPP := $(GEN_DIR)/$(PROGRAM)_epics_exports.hpp
-WRAPPER_CPP := $(GEN_DIR)/$(LOGIC_NAME).cpp
+GENERATED_WRAPPER_CPP := $(GEN_DIR)/$(LOGIC_NAME).cpp
+WRAPPER_CPP ?= $(GENERATED_WRAPPER_CPP)
 
 LOGIC_LIB := $(ODIR)/$(LOGIC_NAME).$(LIBEXT)
 MAP_FILE := $(LOGIC_LIB).map
@@ -51,7 +53,8 @@ STAGED_LOGIC_LIB := $(PROJECT_BIN_DIR)/$(LOGIC_NAME).$(LIBEXT)
 STAGED_MAP_FILE := $(STAGED_LOGIC_LIB).map
 STAGED_SUBST_FILE := $(STAGED_LOGIC_LIB).substitutions
 
-OBJS := $(ODIR)/$(PROGRAM).o $(ODIR)/$(LOGIC_NAME).o
+EXTRA_OBJS := $(patsubst %.cpp,$(ODIR)/%.o,$(EXTRA_CPP_SOURCES))
+OBJS := $(ODIR)/$(PROGRAM).o $(ODIR)/$(LOGIC_NAME).o $(EXTRA_OBJS)
 
 .PHONY: all clean regen maps stage
 
@@ -74,7 +77,7 @@ $(GEN_HPP): $(GEN_CPP)
 $(EXPORTS_HPP): $(GEN_HPP) $(ST_BUNDLE) $(EXPORTGEN)
 	$(PYTHON) $(EXPORTGEN) --st-source $(ST_BUNDLE) --header $(GEN_HPP) --header-include $(GEN_DIR)/$(PROGRAM).hpp --output $@
 
-$(WRAPPER_CPP): $(ST_BUNDLE) $(WRAPPERGEN)
+$(GENERATED_WRAPPER_CPP): $(ST_BUNDLE) $(WRAPPERGEN)
 	mkdir -p $(GEN_DIR)
 	$(PYTHON) $(WRAPPERGEN) --st-source $(ST_BUNDLE) --logic-name $(LOGIC_NAME) --header-include $(GEN_DIR)/$(PROGRAM).hpp --exports-include $(GEN_DIR)/$(PROGRAM)_epics_exports.hpp --output $@
 
@@ -92,6 +95,10 @@ $(ODIR)/$(PROGRAM).o: $(GEN_CPP)
 
 $(ODIR)/$(LOGIC_NAME).o: $(WRAPPER_CPP) $(EXPORTS_HPP)
 	mkdir -p $(ODIR)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
+$(ODIR)/%.o: %.cpp
+	mkdir -p $(dir $@)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 $(LOGIC_LIB): $(OBJS)
