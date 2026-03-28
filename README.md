@@ -140,6 +140,45 @@ So the IOC project usually only needs:
 and only drops to handwritten C++ when you explicitly opt into one of the
 escape hatches above.
 
+## IOC Scaffold
+
+For the smoothest default path, this repo also ships a small scaffold tool:
+
+- [`scripts/strucpp_new_ioc.py`](scripts/strucpp_new_ioc.py)
+
+Example:
+
+```sh
+python3 /path/to/ecmc_plugin_strucpp/scripts/strucpp_new_ioc.py my_ioc
+```
+
+That creates a minimal IOC project with:
+
+- `src/main.st`
+- `src/Makefile`
+- `<IOC_NAME>_startup.script`
+- `<IOC_NAME>_parameters.yaml`
+- a top-level `Makefile`
+
+The generated scaffold follows the shortest current convention:
+
+- `PROGRAM := main`
+- `LOGIC_NAME := main`
+- startup loads `bin/main.so`
+- mapping defaults to `bin/main.so.map`
+- EPICS substitutions default to `bin/main.so.substitutions`
+
+The generated ST source uses direct EL7041 item mapping as a concrete example.
+Adjust the `// @ecmc ...` lines to match the real slave and PDO items for your
+machine.
+
+The scaffold only picks the smallest default shape. The generated
+`src/Makefile` still uses the shared helper, so you can later extend it with:
+
+- `ST_SOURCES := types.st fbs.st main.st`
+- `WRAPPER_CPP := custom_wrapper.cpp`
+- `EXTRA_CPP_SOURCES := helper.cpp`
+
 ## Host Config
 
 The host expects the normal `Cfg.LoadPlugin(...)` config string format:
@@ -191,8 +230,9 @@ startup, verify every used `%I/%Q` address, and link it directly to final
 `output_item` when your logic naturally maps to one contiguous byte image, for
 example an existing memmap. Use `input_bindings` / `output_bindings` when you
 want explicit offset-to-item control without an external manifest. The EL6002
-example in this repo uses contiguous images. The EL7041 example uses
-`mapping_file`.
+example in this repo intentionally uses contiguous images. The EL7041 example
+and the IOC project examples use `mapping_file` and are the preferred default
+pattern for new projects.
 
 If `MAPPING_FILE` is not provided and none of `INPUT_ITEM`, `OUTPUT_ITEM`,
 `INPUT_BINDINGS`, or `OUTPUT_BINDINGS` are set, the plugin defaults the

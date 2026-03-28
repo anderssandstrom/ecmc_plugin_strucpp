@@ -42,7 +42,7 @@ ST_BUNDLE := $(GEN_DIR)/$(PROGRAM)_bundle.st
 GEN_CPP := $(GEN_DIR)/$(PROGRAM).cpp
 GEN_HPP := $(GEN_DIR)/$(PROGRAM).hpp
 EXPORTS_HPP := $(GEN_DIR)/$(PROGRAM)_epics_exports.hpp
-GENERATED_WRAPPER_CPP := $(GEN_DIR)/$(LOGIC_NAME).cpp
+GENERATED_WRAPPER_CPP := $(GEN_DIR)/$(LOGIC_NAME)_wrapper.cpp
 WRAPPER_CPP ?= $(GENERATED_WRAPPER_CPP)
 
 LOGIC_LIB := $(ODIR)/$(LOGIC_NAME).$(LIBEXT)
@@ -54,7 +54,9 @@ STAGED_MAP_FILE := $(STAGED_LOGIC_LIB).map
 STAGED_SUBST_FILE := $(STAGED_LOGIC_LIB).substitutions
 
 EXTRA_OBJS := $(patsubst %.cpp,$(ODIR)/%.o,$(EXTRA_CPP_SOURCES))
-OBJS := $(ODIR)/$(PROGRAM).o $(ODIR)/$(LOGIC_NAME).o $(EXTRA_OBJS)
+PROGRAM_OBJ := $(ODIR)/$(PROGRAM)_program.o
+WRAPPER_OBJ := $(ODIR)/$(LOGIC_NAME)_wrapper.o
+OBJS := $(PROGRAM_OBJ) $(WRAPPER_OBJ) $(EXTRA_OBJS)
 
 .PHONY: all clean regen maps stage
 
@@ -89,11 +91,11 @@ $(SUBST_FILE): $(ST_BUNDLE) $(SUBSTGEN)
 	mkdir -p $(ODIR)
 	$(PYTHON) $(SUBSTGEN) --st-source $(ST_BUNDLE) --output $@
 
-$(ODIR)/$(PROGRAM).o: $(GEN_CPP)
+$(PROGRAM_OBJ): $(GEN_CPP)
 	mkdir -p $(ODIR)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
-$(ODIR)/$(LOGIC_NAME).o: $(WRAPPER_CPP) $(EXPORTS_HPP)
+$(WRAPPER_OBJ): $(WRAPPER_CPP) $(EXPORTS_HPP)
 	mkdir -p $(ODIR)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
