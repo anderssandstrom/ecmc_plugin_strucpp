@@ -13,8 +13,7 @@
 #include "ecmcStrucppBridge.hpp"
 #include "ecmcStrucppLogicIface.hpp"
 
-#include "ecmcAsynDataItem.h"
-#include "ecmcAsynPortDriver.h"
+#include "asynPortDriver.h"
 #include "ecmcDataItem.h"
 #include "ecmcPluginClient.h"
 #include "ecmcPluginDefs.h"
@@ -84,9 +83,237 @@ struct LogicRuntime {
 
 struct ExportedParamBinding {
   std::string name;
-  ecmcAsynDataItem* param {};
+  int param_id {-1};
   uint32_t type {};
   uint32_t writable {};
+  void* data {};
+  size_t bytes {};
+  std::vector<uint8_t> last_value;
+  bool initialized {false};
+};
+
+ExportedParamBinding* exportedBindingForReason(int reason);
+
+class StrucppAsynPort : public asynPortDriver {
+ public:
+  explicit StrucppAsynPort(const char* port_name)
+    : asynPortDriver(port_name,
+                     1,
+                     asynInt32Mask | asynUInt32DigitalMask | asynFloat64Mask |
+                       asynDrvUserMask,
+                     asynInt32Mask | asynUInt32DigitalMask | asynFloat64Mask |
+                       asynDrvUserMask,
+                     0,
+                     1,
+                     0,
+                     0) {}
+
+  bool syncExportedParams(std::vector<ExportedParamBinding>* bindings, bool force) {
+    if (!bindings) {
+      return false;
+    }
+
+    bool any_changed = false;
+    for (auto& binding : *bindings) {
+      if (syncOneParam(&binding, force)) {
+        any_changed = true;
+      }
+    }
+
+    if (any_changed) {
+      callParamCallbacks();
+    }
+    return true;
+  }
+
+  asynStatus writeInt32(asynUser* pasynUser, epicsInt32 value) override {
+    ExportedParamBinding* const binding = bindingForReason(pasynUser ? pasynUser->reason : -1);
+    if (!binding || binding->writable == 0 || !binding->data) {
+      return asynError;
+    }
+
+    switch (binding->type) {
+    case ECMC_STRUCPP_EXPORT_BOOL: {
+      const uint8_t typed = value != 0 ? 1u : 0u;
+      return writeScalar(binding, &typed, sizeof(typed), static_cast<epicsInt32>(typed));
+    }
+    case ECMC_STRUCPP_EXPORT_S8: {
+      const int8_t typed = static_cast<int8_t>(value);
+      return writeScalar(binding, &typed, sizeof(typed), static_cast<epicsInt32>(typed));
+    }
+    case ECMC_STRUCPP_EXPORT_U8: {
+      const uint8_t typed = static_cast<uint8_t>(value);
+      return writeScalar(binding, &typed, sizeof(typed), static_cast<epicsInt32>(typed));
+    }
+    case ECMC_STRUCPP_EXPORT_S16: {
+      const int16_t typed = static_cast<int16_t>(value);
+      return writeScalar(binding, &typed, sizeof(typed), static_cast<epicsInt32>(typed));
+    }
+    case ECMC_STRUCPP_EXPORT_U16: {
+      const uint16_t typed = static_cast<uint16_t>(value);
+      return writeScalar(binding, &typed, sizeof(typed), static_cast<epicsInt32>(typed));
+    }
+    case ECMC_STRUCPP_EXPORT_S32: {
+      const int32_t typed = static_cast<int32_t>(value);
+      return writeScalar(binding, &typed, sizeof(typed), static_cast<epicsInt32>(typed));
+    }
+    default:
+      return asynError;
+    }
+  }
+
+  asynStatus writeUInt32Digital(asynUser* pasynUser,
+                                epicsUInt32 value,
+                                epicsUInt32 mask) override {
+    ExportedParamBinding* const binding = bindingForReason(pasynUser ? pasynUser->reason : -1);
+    if (!binding || binding->writable == 0 || !binding->data) {
+      return asynError;
+    }
+
+    if (binding->type != ECMC_STRUCPP_EXPORT_U32) {
+      return asynError;
+    }
+
+    uint32_t typed = 0;
+    std::memcpy(&typed, binding->data, sizeof(typed));
+    typed = (typed & ~mask) | (static_cast<uint32_t>(value) & mask);
+    std::memcpy(binding->data, &typed, sizeof(typed));
+
+    binding->last_value.assign(reinterpret_cast<const uint8_t*>(&typed),
+                               reinterpret_cast<const uint8_t*>(&typed) + sizeof(typed));
+    binding->initialized = true;
+    setUInt32DigitalParam(binding->param_id, typed, 0xFFFFFFFFu);
+    callParamCallbacks();
+    return asynSuccess;
+  }
+
+  asynStatus writeFloat64(asynUser* pasynUser, epicsFloat64 value) override {
+    ExportedParamBinding* const binding = bindingForReason(pasynUser ? pasynUser->reason : -1);
+    if (!binding || binding->writable == 0 || !binding->data) {
+      return asynError;
+    }
+
+    switch (binding->type) {
+    case ECMC_STRUCPP_EXPORT_F32: {
+      const float typed = static_cast<float>(value);
+      std::memcpy(binding->data, &typed, sizeof(typed));
+      binding->last_value.assign(reinterpret_cast<const uint8_t*>(&typed),
+                                 reinterpret_cast<const uint8_t*>(&typed) + sizeof(typed));
+      binding->initialized = true;
+      setDoubleParam(binding->param_id, static_cast<double>(typed));
+      callParamCallbacks();
+      return asynSuccess;
+    }
+    case ECMC_STRUCPP_EXPORT_F64: {
+      const double typed = static_cast<double>(value);
+      std::memcpy(binding->data, &typed, sizeof(typed));
+      binding->last_value.assign(reinterpret_cast<const uint8_t*>(&typed),
+                                 reinterpret_cast<const uint8_t*>(&typed) + sizeof(typed));
+      binding->initialized = true;
+      setDoubleParam(binding->param_id, typed);
+      callParamCallbacks();
+      return asynSuccess;
+    }
+    default:
+      return asynError;
+    }
+  }
+
+ private:
+  ExportedParamBinding* bindingForReason(int reason) {
+    return exportedBindingForReason(reason);
+  }
+
+  asynStatus writeScalar(ExportedParamBinding* binding,
+                         const void* value,
+                         size_t bytes,
+                         epicsInt32 readback) {
+    if (!binding || !value || !binding->data || binding->bytes != bytes) {
+      return asynError;
+    }
+
+    std::memcpy(binding->data, value, bytes);
+    const auto* byte_value = static_cast<const uint8_t*>(value);
+    binding->last_value.assign(byte_value, byte_value + bytes);
+    binding->initialized = true;
+    setIntegerParam(binding->param_id, readback);
+    callParamCallbacks();
+    return asynSuccess;
+  }
+
+  bool syncOneParam(ExportedParamBinding* binding, bool force) {
+    if (!binding || binding->param_id < 0 || !binding->data || binding->bytes == 0) {
+      return false;
+    }
+
+    const auto* current = static_cast<const uint8_t*>(binding->data);
+    if (!force && binding->initialized &&
+        binding->last_value.size() == binding->bytes &&
+        std::memcmp(binding->last_value.data(), current, binding->bytes) == 0) {
+      return false;
+    }
+
+    binding->last_value.assign(current, current + binding->bytes);
+    binding->initialized = true;
+
+    switch (binding->type) {
+    case ECMC_STRUCPP_EXPORT_BOOL: {
+      const epicsInt32 value = current[0] != 0 ? 1 : 0;
+      setIntegerParam(binding->param_id, value);
+      return true;
+    }
+    case ECMC_STRUCPP_EXPORT_S8: {
+      int8_t value = 0;
+      std::memcpy(&value, current, sizeof(value));
+      setIntegerParam(binding->param_id, static_cast<epicsInt32>(value));
+      return true;
+    }
+    case ECMC_STRUCPP_EXPORT_U8: {
+      uint8_t value = 0;
+      std::memcpy(&value, current, sizeof(value));
+      setIntegerParam(binding->param_id, static_cast<epicsInt32>(value));
+      return true;
+    }
+    case ECMC_STRUCPP_EXPORT_S16: {
+      int16_t value = 0;
+      std::memcpy(&value, current, sizeof(value));
+      setIntegerParam(binding->param_id, static_cast<epicsInt32>(value));
+      return true;
+    }
+    case ECMC_STRUCPP_EXPORT_U16: {
+      uint16_t value = 0;
+      std::memcpy(&value, current, sizeof(value));
+      setIntegerParam(binding->param_id, static_cast<epicsInt32>(value));
+      return true;
+    }
+    case ECMC_STRUCPP_EXPORT_S32: {
+      int32_t value = 0;
+      std::memcpy(&value, current, sizeof(value));
+      setIntegerParam(binding->param_id, static_cast<epicsInt32>(value));
+      return true;
+    }
+    case ECMC_STRUCPP_EXPORT_U32: {
+      uint32_t value = 0;
+      std::memcpy(&value, current, sizeof(value));
+      setUInt32DigitalParam(binding->param_id, value, 0xFFFFFFFFu);
+      return true;
+    }
+    case ECMC_STRUCPP_EXPORT_F32: {
+      float value = 0;
+      std::memcpy(&value, current, sizeof(value));
+      setDoubleParam(binding->param_id, static_cast<double>(value));
+      return true;
+    }
+    case ECMC_STRUCPP_EXPORT_F64: {
+      double value = 0;
+      std::memcpy(&value, current, sizeof(value));
+      setDoubleParam(binding->param_id, value);
+      return true;
+    }
+    default:
+      return false;
+    }
+  }
 };
 
 static int alreadyLoaded = 0;
@@ -102,7 +329,7 @@ std::vector<BoundAddressMapping> g_bound_mappings;
 LogicRuntime g_logic {};
 ecmcStrucppCompiledCopyPlan g_copy_plan {};
 std::vector<ExportedParamBinding> g_exported_params;
-ecmcAsynPortDriver* g_asyn_port = nullptr;
+StrucppAsynPort* g_asyn_port = nullptr;
 
 constexpr double kPlcAreaInput = 0.0;
 constexpr double kPlcAreaOutput = 1.0;
@@ -294,56 +521,46 @@ double plcSetF64(double area, double offset, double value) {
 
 bool exportTypeInfo(uint32_t export_type,
                     asynParamType* asyn_type_out,
-                    ecmcEcDataType* data_type_out,
                     size_t* bytes_out) {
-  if (!asyn_type_out || !data_type_out || !bytes_out) {
+  if (!asyn_type_out || !bytes_out) {
     return false;
   }
 
   switch (export_type) {
   case ECMC_STRUCPP_EXPORT_BOOL:
     *asyn_type_out = asynParamInt32;
-    *data_type_out = ECMC_EC_U8;
     *bytes_out = 1;
     return true;
   case ECMC_STRUCPP_EXPORT_S8:
     *asyn_type_out = asynParamInt32;
-    *data_type_out = ECMC_EC_S8;
     *bytes_out = 1;
     return true;
   case ECMC_STRUCPP_EXPORT_U8:
     *asyn_type_out = asynParamInt32;
-    *data_type_out = ECMC_EC_U8;
     *bytes_out = 1;
     return true;
   case ECMC_STRUCPP_EXPORT_S16:
     *asyn_type_out = asynParamInt32;
-    *data_type_out = ECMC_EC_S16;
     *bytes_out = 2;
     return true;
   case ECMC_STRUCPP_EXPORT_U16:
     *asyn_type_out = asynParamInt32;
-    *data_type_out = ECMC_EC_U16;
     *bytes_out = 2;
     return true;
   case ECMC_STRUCPP_EXPORT_S32:
     *asyn_type_out = asynParamInt32;
-    *data_type_out = ECMC_EC_S32;
     *bytes_out = 4;
     return true;
   case ECMC_STRUCPP_EXPORT_U32:
     *asyn_type_out = asynParamUInt32Digital;
-    *data_type_out = ECMC_EC_U32;
     *bytes_out = 4;
     return true;
   case ECMC_STRUCPP_EXPORT_F32:
     *asyn_type_out = asynParamFloat64;
-    *data_type_out = ECMC_EC_F32;
     *bytes_out = 4;
     return true;
   case ECMC_STRUCPP_EXPORT_F64:
     *asyn_type_out = asynParamFloat64;
-    *data_type_out = ECMC_EC_F64;
     *bytes_out = 8;
     return true;
   default:
@@ -363,6 +580,19 @@ size_t logicExportedVarCount() {
     return 0;
   }
   return static_cast<size_t>(g_logic.api->get_exported_var_count(g_logic.instance));
+}
+
+ExportedParamBinding* exportedBindingForReason(int reason) {
+  if (reason < 0) {
+    return nullptr;
+  }
+
+  for (auto& binding : g_exported_params) {
+    if (binding.param_id == reason) {
+      return &binding;
+    }
+  }
+  return nullptr;
 }
 
 bool bindExportedVars(std::string* error_out) {
@@ -398,9 +628,8 @@ bool bindExportedVars(std::string* error_out) {
     }
 
     asynParamType asyn_type = asynParamNotDefined;
-    ecmcEcDataType data_type = ECMC_EC_NONE;
     size_t bytes = 0;
-    if (!exportTypeInfo(export_var.type, &asyn_type, &data_type, &bytes)) {
+    if (!exportTypeInfo(export_var.type, &asyn_type, &bytes)) {
       if (error_out) {
         *error_out = std::string("Unsupported exported ST variable type for '") +
                      export_var.name + "'";
@@ -408,37 +637,26 @@ bool bindExportedVars(std::string* error_out) {
       return false;
     }
 
-    ecmcAsynDataItem* param = g_asyn_port->findAvailParam(export_var.name);
-    if (param) {
-      param->setEcmcDataPointer(static_cast<uint8_t*>(export_var.data), bytes);
-      param->setEcmcDataType(data_type);
-      param->setAllowWriteToEcmc(export_var.writable != 0);
-      if (export_var.type == ECMC_STRUCPP_EXPORT_BOOL) {
-        param->setEcmcBitCount(1);
+    int param_id = -1;
+    if (g_asyn_port->createParam(0, export_var.name, asyn_type, &param_id) != asynSuccess) {
+      if (error_out) {
+        *error_out = std::string("Failed to create asyn parameter for exported ST variable '") +
+                     export_var.name + "'";
       }
-    } else {
-      param = g_asyn_port->addNewAvailParam(export_var.name,
-                                            asyn_type,
-                                            static_cast<uint8_t*>(export_var.data),
-                                            bytes,
-                                            data_type,
-                                            true);
-      if (!param) {
-        if (error_out) {
-          *error_out = std::string("Failed to create asyn parameter for exported ST variable '") +
-                       export_var.name + "'";
-        }
-        return false;
-      }
-      param->setAllowWriteToEcmc(export_var.writable != 0);
-      if (export_var.type == ECMC_STRUCPP_EXPORT_BOOL) {
-        param->setEcmcBitCount(1);
-      }
+      return false;
     }
 
-    param->refreshParamRT(1);
-    g_exported_params.push_back({export_var.name, param, export_var.type, export_var.writable});
+    g_exported_params.push_back({export_var.name,
+                                 param_id,
+                                 export_var.type,
+                                 export_var.writable,
+                                 export_var.data,
+                                 bytes,
+                                 {},
+                                 false});
   }
+
+  g_asyn_port->syncExportedParams(&g_exported_params, true);
 
   return true;
 }
@@ -449,11 +667,7 @@ bool ensureAsynPort(std::string* error_out) {
   }
 
   try {
-    g_asyn_port = new ecmcAsynPortDriver(g_config.asyn_port_name.c_str(),
-                                         128,
-                                         1,
-                                         0,
-                                         100.0);
+    g_asyn_port = new StrucppAsynPort(g_config.asyn_port_name.c_str());
   } catch (const std::exception& ex) {
     if (error_out) {
       *error_out = std::string("Failed to create plugin asyn port '") +
@@ -1530,7 +1744,6 @@ void clearRuntimeState() {
   g_bound_output_bindings.clear();
   g_mapping_specs.clear();
   g_bound_mappings.clear();
-  g_exported_params.clear();
 }
 
 void unloadLogicRuntime() {
@@ -1648,6 +1861,13 @@ static int construct(char* configStr) {
     return -1;
   }
 
+  if (!bindExportedVars(&error)) {
+    destroyAsynPort();
+    unloadLogicRuntime();
+    logError("%s", error.c_str());
+    return -1;
+  }
+
   alreadyLoaded = 1;
   const std::string input_bindings = describeBindingSpecs(g_config.input_bindings);
   const std::string output_bindings = describeBindingSpecs(g_config.output_bindings);
@@ -1664,6 +1884,7 @@ static int construct(char* configStr) {
 }
 
 static void destruct(void) {
+  g_exported_params.clear();
   unloadLogicRuntime();
   clearRuntimeState();
   destroyAsynPort();
@@ -1819,11 +2040,6 @@ static int enterRealtime(void) {
     return -1;
   }
 
-  if (!bindExportedVars(&error)) {
-    logError("%s", error.c_str());
-    return -1;
-  }
-
   logInfo("bound logic=%s input=%s (%zu bytes) output=%s (%zu bytes) memory=%zu bytes",
           g_logic.api->name ? g_logic.api->name : "<unnamed>",
           g_images.input.name.empty() ? "<none>" : g_images.input.name.c_str(),
@@ -1865,10 +2081,8 @@ static int realtime(int) {
     scatterBindings(g_images.output, g_bound_output_bindings);
   }
 
-  for (auto& exported_param : g_exported_params) {
-    if (exported_param.param) {
-      exported_param.param->refreshParamRT(1);
-    }
+  if (g_asyn_port && !g_exported_params.empty()) {
+    g_asyn_port->syncExportedParams(&g_exported_params, false);
   }
   return 0;
 }
