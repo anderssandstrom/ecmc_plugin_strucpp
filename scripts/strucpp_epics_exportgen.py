@@ -7,7 +7,7 @@ import sys
 
 
 VAR_RE = re.compile(
-    r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?:AT\s+%[IQM][XBWDL]\d+(?:\.\d+)?)?\s*:\s*([A-Za-z_][A-Za-z0-9_]*)\s*;\s*//\s*@epics\s+(.+?)\s*$"
+    r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?:AT\s+%[IQM][XBWDL]\d+(?:\.\d+)?)?\s*:\s*([A-Za-z_][A-Za-z0-9_]*)\s*;\s*//\s*@epics(?:\s+(.+?))?\s*$"
 )
 PROGRAM_RE = re.compile(r"^class\s+(Program_[A-Z0-9_]+)\s*:\s*public\s+ProgramBase\s*\{")
 
@@ -40,13 +40,18 @@ def parse_args():
 
 def parse_program_class(header_path: pathlib.Path):
     for line in header_path.read_text(encoding="utf-8").splitlines():
-      match = PROGRAM_RE.search(line.strip())
-      if match:
-          return match.group(1)
+        match = PROGRAM_RE.search(line.strip())
+        if match:
+            return match.group(1)
     raise RuntimeError(f"Failed to find Program_* class in {header_path}")
 
 
-def parse_exports(st_path: pathlib.Path):
+def derive_export_name(program_class: str, var_name: str):
+    program_name = program_class.removeprefix("Program_").lower()
+    return f"plugin.strucpp0.{program_name}.{var_name}"
+
+
+def parse_exports(st_path: pathlib.Path, program_class: str):
     exports = []
     seen_source_names = set()
     seen_export_names = set()
@@ -59,7 +64,7 @@ def parse_exports(st_path: pathlib.Path):
 
         var_name = match.group(1)
         type_name = match.group(2).upper()
-        annotation = match.group(3).strip()
+        annotation = (match.group(3) or "").strip()
         if type_name not in TYPE_MAP:
             raise RuntimeError(
                 f"Unsupported @epics type '{type_name}' for variable {var_name} in {st_path}:{line_no}"
@@ -72,7 +77,7 @@ def parse_exports(st_path: pathlib.Path):
             tokens = tokens[:-1]
         export_name = " ".join(tokens).strip()
         if not export_name:
-            export_name = var_name
+            export_name = derive_export_name(program_class, var_name)
         if var_name in seen_source_names:
             raise RuntimeError(
                 f"Duplicate @epics source variable '{var_name}' in {st_path}:{line_no}"
@@ -134,7 +139,7 @@ def main():
     output_path = pathlib.Path(args.output)
 
     program_class = parse_program_class(header_path)
-    exports = parse_exports(st_path)
+    exports = parse_exports(st_path, program_class)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(

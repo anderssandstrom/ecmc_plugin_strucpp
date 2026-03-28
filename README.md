@@ -497,14 +497,19 @@ the declaration lives in the ST source, not in a second C++ config list.
 Annotation shape:
 
 ```text
-counter       : INT;    // @epics plugin.strucpp.machine.counter
-manual_target : INT;    // @epics plugin.strucpp.machine.manual_target rw
+counter       : INT;    // @epics
+manual_target : INT;    // @epics rw
+special_name  : INT;    // @epics custom.path.value
+other_name    : INT;    // @epics custom.path.value rw
 ```
 
 Rules:
 
 - the annotation lives on the ST variable declaration line
-- the first token after `@epics` is the exported asyn parameter name
+- `@epics` with no explicit name derives:
+  `plugin.strucpp0.<program>.<variable>`
+- the first token after `@epics`, when present, is the explicit exported asyn
+  parameter name override
 - optional final token `rw` makes the parameter writable from EPICS
 - default is read-only
 - current support is for top-level scalar program variables:

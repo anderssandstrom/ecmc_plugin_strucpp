@@ -7,8 +7,9 @@ import sys
 
 
 VAR_RE = re.compile(
-    r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?:AT\s+%[IQM][XBWDL]\d+(?:\.\d+)?)?\s*:\s*([A-Za-z_][A-Za-z0-9_]*)\s*;\s*//\s*@epics\s+(.+?)\s*$"
+    r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?:AT\s+%[IQM][XBWDL]\d+(?:\.\d+)?)?\s*:\s*([A-Za-z_][A-Za-z0-9_]*)\s*;\s*//\s*@epics(?:\s+(.+?))?\s*$"
 )
+PROGRAM_RE = re.compile(r"^\s*PROGRAM\s+([A-Za-z_][A-Za-z0-9_]*)\s*$", re.IGNORECASE)
 
 TEMPLATE_MAP = {
     ("BOOL", False): "ecmcStrucppBi.template",
@@ -47,10 +48,23 @@ def parse_args():
     return parser.parse_args()
 
 
+def parse_program_name(st_path: pathlib.Path):
+    for line in st_path.read_text(encoding="utf-8").splitlines():
+        match = PROGRAM_RE.match(line)
+        if match:
+            return match.group(1).lower()
+    raise RuntimeError(f"Failed to find PROGRAM name in {st_path}")
+
+
+def derive_export_name(program_name: str, source_name: str):
+    return f"plugin.strucpp0.{program_name}.{source_name}"
+
+
 def parse_exports(st_path: pathlib.Path):
     exports = []
     seen_source_names = set()
     seen_export_names = set()
+    program_name = parse_program_name(st_path)
     for line_no, line in enumerate(st_path.read_text(encoding="utf-8").splitlines(), start=1):
         match = VAR_RE.match(line)
         if not match:
@@ -60,7 +74,7 @@ def parse_exports(st_path: pathlib.Path):
 
         source_name = match.group(1)
         type_name = match.group(2).upper()
-        annotation = match.group(3).strip()
+        annotation = (match.group(3) or "").strip()
         tokens = annotation.split()
 
         writable = False
@@ -70,7 +84,7 @@ def parse_exports(st_path: pathlib.Path):
 
         export_name = " ".join(tokens).strip()
         if not export_name:
-            export_name = source_name
+            export_name = derive_export_name(program_name, source_name)
         if source_name in seen_source_names:
             raise RuntimeError(
                 f"Duplicate @epics source variable '{source_name}' in {st_path}:{line_no}"
