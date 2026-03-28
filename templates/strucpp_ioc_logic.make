@@ -1,6 +1,7 @@
 PROGRAM ?= machine
 LOGIC_NAME ?= $(PROGRAM)_logic
 ST_SOURCE ?= $(PROGRAM).st
+ST_SOURCES ?= $(ST_SOURCE)
 PROJECT_BIN_DIR ?= ../bin
 GEN_DIR ?= generated
 
@@ -16,6 +17,7 @@ MAPGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_mapgen.py
 EXPORTGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_epics_exportgen.py
 SUBSTGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_epics_substgen.py
 WRAPPERGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_logic_wrappergen.py
+BUNDLEGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_bundle_st.py
 
 CXX ?= c++
 CXXFLAGS += -std=c++17 -fPIC -Wall -Wextra
@@ -35,6 +37,7 @@ endif
 
 ODIR := O.$(EPICS_VERSION)_$(OS_CLASS)-$(CPU_ARCH)
 
+ST_BUNDLE := $(GEN_DIR)/$(PROGRAM)_bundle.st
 GEN_CPP := $(GEN_DIR)/$(PROGRAM).cpp
 GEN_HPP := $(GEN_DIR)/$(PROGRAM).hpp
 EXPORTS_HPP := $(GEN_DIR)/$(PROGRAM)_epics_exports.hpp
@@ -58,26 +61,30 @@ stage: all $(STAGED_LOGIC_LIB) $(STAGED_MAP_FILE) $(STAGED_SUBST_FILE)
 
 regen: $(GEN_CPP)
 
-$(GEN_CPP): $(ST_SOURCE)
+$(ST_BUNDLE): $(ST_SOURCES) $(BUNDLEGEN)
+	mkdir -p $(GEN_DIR)
+	$(PYTHON) $(BUNDLEGEN) --output $@ $(ST_SOURCES)
+
+$(GEN_CPP): $(ST_BUNDLE)
 	mkdir -p $(GEN_DIR)
 	$(STRUCPP_CLI) $< -o $@
 
 $(GEN_HPP): $(GEN_CPP)
 
-$(EXPORTS_HPP): $(GEN_HPP) $(ST_SOURCE) $(EXPORTGEN)
-	$(PYTHON) $(EXPORTGEN) --st-source $(ST_SOURCE) --header $(GEN_HPP) --header-include $(GEN_DIR)/$(PROGRAM).hpp --output $@
+$(EXPORTS_HPP): $(GEN_HPP) $(ST_BUNDLE) $(EXPORTGEN)
+	$(PYTHON) $(EXPORTGEN) --st-source $(ST_BUNDLE) --header $(GEN_HPP) --header-include $(GEN_DIR)/$(PROGRAM).hpp --output $@
 
-$(WRAPPER_CPP): $(ST_SOURCE) $(WRAPPERGEN)
+$(WRAPPER_CPP): $(ST_BUNDLE) $(WRAPPERGEN)
 	mkdir -p $(GEN_DIR)
-	$(PYTHON) $(WRAPPERGEN) --st-source $(ST_SOURCE) --logic-name $(LOGIC_NAME) --header-include $(GEN_DIR)/$(PROGRAM).hpp --exports-include $(GEN_DIR)/$(PROGRAM)_epics_exports.hpp --output $@
+	$(PYTHON) $(WRAPPERGEN) --st-source $(ST_BUNDLE) --logic-name $(LOGIC_NAME) --header-include $(GEN_DIR)/$(PROGRAM).hpp --exports-include $(GEN_DIR)/$(PROGRAM)_epics_exports.hpp --output $@
 
-$(MAP_FILE): $(GEN_HPP) $(ST_SOURCE) $(MAPGEN)
+$(MAP_FILE): $(GEN_HPP) $(ST_BUNDLE) $(MAPGEN)
 	mkdir -p $(ODIR)
-	$(PYTHON) $(MAPGEN) --header $(GEN_HPP) --st-source $(ST_SOURCE) --output $@
+	$(PYTHON) $(MAPGEN) --header $(GEN_HPP) --st-source $(ST_BUNDLE) --output $@
 
-$(SUBST_FILE): $(ST_SOURCE) $(SUBSTGEN)
+$(SUBST_FILE): $(ST_BUNDLE) $(SUBSTGEN)
 	mkdir -p $(ODIR)
-	$(PYTHON) $(SUBSTGEN) --st-source $(ST_SOURCE) --output $@
+	$(PYTHON) $(SUBSTGEN) --st-source $(ST_BUNDLE) --output $@
 
 $(ODIR)/$(PROGRAM).o: $(GEN_CPP)
 	mkdir -p $(ODIR)

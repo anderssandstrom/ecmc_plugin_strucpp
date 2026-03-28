@@ -79,8 +79,22 @@ ECMC_PLUGIN_STRUCPP ?= ../../../ecmc_plugin_strucpp
 include $(ECMC_PLUGIN_STRUCPP)/templates/strucpp_ioc_logic.make
 ```
 
+For multi-file ST projects, set `ST_SOURCES` in declaration order, for example:
+
+```make
+PROGRAM := machine
+ST_SOURCES := machine_types.st machine_fbs.st machine.st
+ECMC_PLUGIN_STRUCPP ?= ../../../ecmc_plugin_strucpp
+include $(ECMC_PLUGIN_STRUCPP)/templates/strucpp_ioc_logic.make
+```
+
+The helper bundles those files into one generated ST source before running
+`strucpp`, so helper FBs, types, and the final `PROGRAM` can live in separate
+files.
+
 That common include handles:
 
+- ordered ST source bundling
 - `strucpp` code generation
 - export header generation from `// @epics ...`
 - mapping file generation from `// @ecmc ...`
