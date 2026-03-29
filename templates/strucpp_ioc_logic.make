@@ -11,8 +11,8 @@ STRUCPP ?= ../../../strucpp
 STRUCPP_CLI ?= strucpp
 ECMC_PLUGIN_STRUCPP ?= ../../../ecmc_plugin_strucpp
 PYTHON ?= python3
-EPICS_VERSION ?= 3.14.12
-OS_CLASS ?= RHEL7
+EPICS_VERSION ?= 7.0.10
+OS_CLASS ?= deb12
 CPU_ARCH ?= x86_64
 
 MAPGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_mapgen.py
@@ -30,14 +30,8 @@ CPPFLAGS += -I$(ECMC_PLUGIN_STRUCPP)/src
 CPPFLAGS += -I.
 CPPFLAGS += -I$(GEN_DIR)
 
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
-LDFLAGS += -dynamiclib -undefined dynamic_lookup
-LIBEXT := dylib
-else
 LDFLAGS += -shared
 LIBEXT := so
-endif
 
 ODIR := O.$(EPICS_VERSION)_$(OS_CLASS)-$(CPU_ARCH)
 
