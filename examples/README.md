@@ -9,3 +9,6 @@ This directory is split into two groups:
 
 Start with [`psi_ioc_examples/ioc_project_minimal`](psi_ioc_examples/ioc_project_minimal)
 for the smallest end-to-end IOC example.
+
+For a motion-library IOC example with EPICS-triggered `MC_*` commands, see
+[`psi_ioc_examples/ioc_project_mc_motion`](psi_ioc_examples/ioc_project_mc_motion).

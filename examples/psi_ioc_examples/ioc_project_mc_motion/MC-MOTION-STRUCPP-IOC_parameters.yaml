@@ -1,0 +1,7 @@
+ioc_name: MC-MOTION-STRUCPP-IOC
+ioc_host: example-softioc-01
+interpreter: iocsh
+epics_version: 3.14.12
+os: RHEL7
+os_id: rhel
+cpu_architecture: x86_64

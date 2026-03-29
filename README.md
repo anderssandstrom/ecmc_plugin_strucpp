@@ -138,6 +138,11 @@ now includes concrete opt-in files for this path:
 - `src/custom_logic_wrapper.cpp`
 - `src/machine_helper.cpp`
 
+For a PSI-style IOC example that uses the bundled `MC_*` motion library and
+exports EPICS-triggered command bits/values, see:
+
+- [`examples/psi_ioc_examples/ioc_project_mc_motion`](examples/psi_ioc_examples/ioc_project_mc_motion)
+
 When `WRAPPER_CPP` points at your own file, the helper stops generating the
 default wrapper and compiles the provided source instead.
 

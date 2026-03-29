@@ -11,5 +11,7 @@ Start here:
   smallest practical `gfa-iocutils`-style IOC project
 - [`ioc_project_example`](ioc_project_example)
   richer IOC project example with split ST files and optional C++ glue
+- [`ioc_project_mc_motion`](ioc_project_mc_motion)
+  IOC example using the bundled `MC_*` motion library with EPICS-triggered commands
 
 Only source examples are kept here. Build outputs are intentionally not tracked.
