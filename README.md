@@ -63,15 +63,6 @@ new plugin system. At runtime it:
 The copy work is compiled once at realtime entry into a direct pointer-based
 copy plan. The realtime loop only executes that plan.
 
-## Current Scope
-
-This host plugin is intentionally generic, but it is currently a singleton,
-like `ecmc_plugin_daq`. Load it once and point it at one logic library.
-
-If you later need several independent ST logic modules in one IOC, the next
-step is to add an object-registration layer on top of this host. The installed
-ABI and wrapper headers already support that extension.
-
 ## Bundled Motion Library
 
 This repo now ships a reusable ST motion library:
@@ -117,6 +108,16 @@ Example:
 ```sh
 caqtdm -macro "IOC=c6025a-04,PLG_ID=0" /path/to/ecmc_plugin_strucpp/qt/ecmc_plugin_strucpp_main.ui
 ```
+
+## Current Scope
+
+The plugin is intentionally generic, but it can currently only be loaded
+once, like `ecmc_plugin_daq`. Load one host instance and point it at one ST
+logic library.
+
+If you later need several independent ST logic modules in one IOC, the next
+step is to add an object-registration layer on top of this host. The installed
+ABI and wrapper headers already support that extension.
 
 The panel targets the built-in records such as:
 
