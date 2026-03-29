@@ -10,4 +10,4 @@
 
 require ecmccfg
 # Configure axis 1 here before loading the plugin.
-require ecmc_plugin_strucpp sandst_a "REPORT=1"
+require ecmc_plugin_strucpp sandst_a "REPORT=1,LOAD_APP_PVS=0"
