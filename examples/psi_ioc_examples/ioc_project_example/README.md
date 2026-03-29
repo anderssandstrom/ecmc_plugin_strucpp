@@ -82,10 +82,10 @@ workflow rather than using memmaps.
 It also shows both EPICS record-name override forms directly in
 [`src/main.st`](src/main.st):
 
-- `rec_suffix=Main-CycleCounterAct`
+- `rec=Main-CycleCounterAct`
   keeps the normal `P` prefix and only overrides the suffix
-- `rec_full=$(IOC):Main-PosActCustom`
-  uses one fully explicit record name
+- `prefix=$(IOC): rec=Main-PosActCustom`
+  uses a custom record prefix for that one record
 
 Here `$(IOC)` is expected to come from the IOC environment or the
 `gfa-iocutils` startup naming, not from the ST build step.

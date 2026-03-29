@@ -59,6 +59,9 @@ def parse_epics_annotation(annotation: str):
         lower = token.lower()
         if lower in ("rw", "ro"):
             writable = "1" if lower == "rw" else "0"
+        elif token.startswith("prefix="):
+            if token == "prefix=":
+                raise RuntimeError("Empty @epics record prefix override")
         elif token.startswith("rec_full="):
             if token == "rec_full=":
                 raise RuntimeError("Empty @epics record name override")

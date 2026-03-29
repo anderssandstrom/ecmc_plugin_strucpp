@@ -137,8 +137,8 @@ VAR
   actual_position    AT %IW0 : INT;   // @ecmc ec0.s@SLAVE@.positionActual01
   drive_control      AT %QW0 : WORD;  // @ecmc ec0.s@SLAVE@.driveControl01
   velocity_setpoint  AT %QW2 : INT;   // @ecmc ec0.s@SLAVE@.velocitySetpoint01
-  cycle_counter      AT %MW0 : INT;   // @epics rec_suffix=Main-CycleCounterAct
-  actual_pos_export           : INT;   // @epics rec_full=$(IOC):Main-PosAct
+  cycle_counter      AT %MW0 : INT;   // @epics rec=Main-CycleCounterAct
+  actual_pos_export           : INT;   // @epics prefix=$(IOC): rec=Main-PosAct
 END_VAR
 
 actual_pos_export := actual_position;

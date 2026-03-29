@@ -28,10 +28,10 @@ Those placeholders are expanded across the bundled ST source itself before
 It also shows both EPICS record-name override forms directly in
 [`src/main.st`](src/main.st):
 
-- `rec_suffix=Main-CycleCounterAct`
+- `rec=Main-CycleCounterAct`
   keeps the normal `P` prefix and overrides only the suffix
-- `rec_full=$(IOC):Main-PosActMini`
-  uses one fully explicit record name
+- `prefix=$(IOC): rec=Main-PosActMini`
+  uses a custom record prefix for that one record
 
 Here `$(IOC)` is expected to come from the IOC environment or the
 `gfa-iocutils` startup naming, not from the ST build step.

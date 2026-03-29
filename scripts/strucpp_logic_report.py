@@ -144,6 +144,10 @@ def parse_st_source(st_path, definitions):
                 lower = token.lower()
                 if lower in ("rw", "ro"):
                     writable = lower == "rw"
+                elif token.startswith("prefix="):
+                    record_prefix = token[len("prefix="):]
+                    if not record_prefix:
+                        raise RuntimeError(f"Empty @epics record prefix override in {st_path}:{line_no}")
                 elif token.startswith("rec_full="):
                     record_name = token[len("rec_full="):]
                     if not record_name:
@@ -157,7 +161,6 @@ def parse_st_source(st_path, definitions):
                     record_name = token[4:]
                     if not record_name:
                         raise RuntimeError(f"Empty @epics record name override in {st_path}:{line_no}")
-                    record_prefix = ""
                 else:
                     export_tokens.append(token)
             export_name = " ".join(export_tokens).strip() or name

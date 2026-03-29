@@ -3,8 +3,8 @@ VAR
   actual_position    AT %IW0 : INT;   // @ecmc ec.s${SLAVE_ID=14}.positionActual${CH_ID}
   drive_control      AT %QW0 : WORD;  // @ecmc ec.s${SLAVE_ID=14}.driveControl${CH_ID}
   velocity_setpoint  AT %QW2 : INT;   // @ecmc ec.s${SLAVE_ID=14}.velocitySetpoint${CH_ID}
-  cycle_counter      AT %MW0 : INT;   // @epics rec_suffix=Main-CycleCounterAct
-  actual_pos_export          : INT;   // @epics rec_full=$(IOC):Main-PosActMini
+  cycle_counter      AT %MW0 : INT;   // @epics rec=Main-CycleCounterAct
+  actual_pos_export          : INT;   // @epics prefix=$(IOC): rec=Main-PosActMini
 END_VAR
 
 actual_pos_export := actual_position;
