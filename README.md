@@ -550,6 +550,10 @@ The plugin also exports numeric-only exprtk PLC helper functions through the
 normal `ecmcPluginData.funcs[]` interface. These helpers operate directly on
 the plugin's linked `%I`, `%Q`, and `%M` byte images.
 
+This is the lightweight bridge between existing `ecmc` PLC / exprtk code and
+ST logic running inside `ecmc_plugin_strucpp`. It lets an `ecmc` PLC task read
+or write the same linked process image that the ST program uses.
+
 Area selector values:
 
 - `0` = `%I`
