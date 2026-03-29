@@ -32,6 +32,12 @@ END_PROGRAM
 That example reads and writes named `ecmc` data items through `%I/%Q`, keeps
 internal state in `%M`, and exposes one variable to EPICS with `@epics`.
 
+This is not limited to one flat `PROGRAM`. Normal IEC 61131-3
+`FUNCTION_BLOCK`s, `FUNCTION`s, and reusable helper code can be used as well.
+The repo also ships a bundled motion library with PLCopen-style `MC_*` blocks
+such as `MC_Power`, `MC_MoveAbsolute`, `MC_MoveVelocity`, and
+`MC_ReadActualPosition`.
+
 The split is:
 
 - `ecmc_plugin_strucpp`
