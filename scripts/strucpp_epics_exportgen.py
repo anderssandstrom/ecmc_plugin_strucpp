@@ -63,11 +63,9 @@ def parse_epics_annotation(annotation: str):
             if token == "prefix=":
                 raise RuntimeError("Empty @epics record prefix override")
         elif token.startswith("rec_full="):
-            if token == "rec_full=":
-                raise RuntimeError("Empty @epics record name override")
+            raise RuntimeError("Unsupported @epics token 'rec_full=', use 'rec=' with optional 'prefix='")
         elif token.startswith("rec_suffix="):
-            if token == "rec_suffix=":
-                raise RuntimeError("Empty @epics record name suffix override")
+            raise RuntimeError("Unsupported @epics token 'rec_suffix=', use 'rec=' instead")
         elif token.startswith("rec="):
             if token == "rec=":
                 raise RuntimeError("Empty @epics record name override")

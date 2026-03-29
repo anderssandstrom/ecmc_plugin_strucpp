@@ -547,11 +547,9 @@ counter       : INT;    // @epics
 manual_target : INT;    // @epics rw
 special_name  : INT;    // @epics custom.path.value
 other_name    : INT;    // @epics custom.path.value rw
-named_rec     : INT;    // @epics rec_full=$(IOC):Main-NamedRec
-named_suffix  : INT;    // @epics rec_suffix=Main-NamedSuffix
-full_override : INT;    // @epics custom.path.value rec_full=$(IOC):Main-FullOverride rw
 short_rec     : INT;    // @epics rec=Main-ShortRec
 custom_pfx    : INT;    // @epics prefix=$(IOC): rec=Main-CustomPfx
+named_asyn    : INT;    // @epics custom.path.value prefix=$(IOC): rec=Main-FullOverride rw
 ```
 
 Rules:
@@ -565,24 +563,15 @@ Rules:
   still using the normal `P` prefix
 - `prefix=<PV-prefix>` optionally overrides the prefix used for that one
   record
-- `rec_full=<PV-name>` optionally overrides the generated record name in the
-  substitutions file with one full explicit PV name, without prepending `P`
-- `rec_suffix=<record-suffix>` optionally overrides the record suffix while
-  still using the normal `P` prefix
 - for example:
   `rec=Main-Value`
   `prefix=$(IOC): rec=Main-Value`
-- if you want the IOC prefix in `rec_full`, write it explicitly, for example
-  `rec_full=$(IOC):Main-Value`
 - optional final token `rw` makes the parameter writable from EPICS
 - default is read-only
 - current support is for top-level scalar program variables:
   `BOOL`, `SINT`, `USINT`, `BYTE`, `INT`, `UINT`, `WORD`, `DINT`, `UDINT`,
   `DWORD`, `REAL`, `LREAL`
 - duplicate exported names are rejected at startup with a clear error
-
-The older `rec_full=...` and `rec_suffix=...` forms are still accepted for
-compatibility, but new examples use `rec=` and `prefix=`.
 
 The application repo runs
 [`scripts/strucpp_epics_exportgen.py`](scripts/strucpp_epics_exportgen.py) to

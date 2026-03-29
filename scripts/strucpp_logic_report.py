@@ -149,14 +149,13 @@ def parse_st_source(st_path, definitions):
                     if not record_prefix:
                         raise RuntimeError(f"Empty @epics record prefix override in {st_path}:{line_no}")
                 elif token.startswith("rec_full="):
-                    record_name = token[len("rec_full="):]
-                    if not record_name:
-                        raise RuntimeError(f"Empty @epics record name override in {st_path}:{line_no}")
-                    record_prefix = ""
+                    raise RuntimeError(
+                        f"Unsupported @epics token 'rec_full=' in {st_path}:{line_no}, use 'rec=' with optional 'prefix='"
+                    )
                 elif token.startswith("rec_suffix="):
-                    record_name = token[len("rec_suffix="):]
-                    if not record_name:
-                        raise RuntimeError(f"Empty @epics record name suffix override in {st_path}:{line_no}")
+                    raise RuntimeError(
+                        f"Unsupported @epics token 'rec_suffix=' in {st_path}:{line_no}, use 'rec=' instead"
+                    )
                 elif token.startswith("rec="):
                     record_name = token[4:]
                     if not record_name:
