@@ -71,6 +71,13 @@ new plugin system. At runtime it:
 The copy work is compiled once at realtime entry into a direct pointer-based
 copy plan. The realtime loop only executes that plan.
 
+The plugin is already usable for real IOC work, but it should still be
+treated as a relatively new integration layer. The current examples, build
+helpers, and validation tools cover the intended workflow well, but runtime
+coverage across different IOC setups and hardware combinations is still
+limited. It is a good idea to validate each application path on the target
+system before relying on it in routine operation.
+
 ## Quick Start
 
 For the fastest path to a working IOC, start with the PSI-style minimal
