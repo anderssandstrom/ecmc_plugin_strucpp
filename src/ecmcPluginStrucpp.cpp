@@ -30,6 +30,7 @@
 #include <cstring>
 #include <dlfcn.h>
 #include <fstream>
+#include <iterator>
 #include <limits>
 #include <mutex>
 #include <sstream>
@@ -106,7 +107,23 @@ struct ExportedParamBinding {
   bool initialized {false};
 };
 
+struct GroupedBoolMember {
+  void* data {};
+  uint32_t bit_index {};
+};
+
+struct GroupedBoolParamBinding {
+  std::string name;
+  int param_id {-1};
+  uint32_t writable {};
+  uint32_t mask {0xFFFFFFFFu};
+  std::vector<GroupedBoolMember> members;
+  uint32_t last_value {};
+  bool initialized {false};
+};
+
 ExportedParamBinding* paramBindingForReason(int reason);
+GroupedBoolParamBinding* groupedBoolBindingForReason(int reason);
 bool applyRuntimeSampleRateMs(double requested_ms, std::string* error_out);
 bool syncBuiltinParams(bool force, bool defer_callbacks);
 
@@ -148,6 +165,30 @@ class StrucppAsynPort : public asynPortDriver {
     bool any_changed = false;
     for (auto& binding : *bindings) {
       if (syncOneParam(&binding, force)) {
+        any_changed = true;
+      }
+    }
+
+    if (any_changed) {
+      if (defer_callbacks) {
+        scheduleCallbacks();
+      } else {
+        callParamCallbacks();
+      }
+    }
+    return true;
+  }
+
+  bool syncGroupedBoolParams(std::vector<GroupedBoolParamBinding>* bindings,
+                             bool force,
+                             bool defer_callbacks) {
+    if (!bindings) {
+      return false;
+    }
+
+    bool any_changed = false;
+    for (auto& binding : *bindings) {
+      if (syncOneGroupedBoolParam(&binding, force)) {
         any_changed = true;
       }
     }
@@ -212,6 +253,23 @@ class StrucppAsynPort : public asynPortDriver {
   asynStatus writeUInt32Digital(asynUser* pasynUser,
                                 epicsUInt32 value,
                                 epicsUInt32 mask) override {
+    GroupedBoolParamBinding* const grouped_binding =
+      groupedBoolBindingForReason(pasynUser ? pasynUser->reason : -1);
+    if (grouped_binding) {
+      if (grouped_binding->writable == 0) {
+        return asynError;
+      }
+
+      uint32_t typed = grouped_binding->initialized ? grouped_binding->last_value : 0u;
+      typed = (typed & ~static_cast<uint32_t>(mask)) | (static_cast<uint32_t>(value) & static_cast<uint32_t>(mask));
+      if (!writeGroupedBool(grouped_binding, typed)) {
+        return asynError;
+      }
+      setUInt32DigitalParam(grouped_binding->param_id, typed, grouped_binding->mask);
+      callParamCallbacks();
+      return asynSuccess;
+    }
+
     ExportedParamBinding* const binding = bindingForReason(pasynUser ? pasynUser->reason : -1);
     if (!binding || binding->writable == 0 || !binding->data) {
       return asynError;
@@ -398,6 +456,54 @@ class StrucppAsynPort : public asynPortDriver {
     }
   }
 
+  bool syncOneGroupedBoolParam(GroupedBoolParamBinding* binding, bool force) {
+    if (!binding || binding->param_id < 0) {
+      return false;
+    }
+
+    uint32_t value = 0u;
+    for (const auto& member : binding->members) {
+      if (!member.data) {
+        continue;
+      }
+      const auto* raw = static_cast<const uint8_t*>(member.data);
+      if (raw[0] != 0u) {
+        value |= (1u << member.bit_index);
+      }
+    }
+
+    if (!force && binding->initialized && binding->last_value == value) {
+      return false;
+    }
+
+    binding->last_value = value;
+    binding->initialized = true;
+    setUInt32DigitalParam(binding->param_id, value, binding->mask);
+    return true;
+  }
+
+  bool writeGroupedBool(GroupedBoolParamBinding* binding, uint32_t value) {
+    if (!binding) {
+      return false;
+    }
+
+    if (binding->initialized && binding->last_value == value) {
+      return true;
+    }
+
+    for (const auto& member : binding->members) {
+      if (!member.data) {
+        return false;
+      }
+      auto* raw = static_cast<uint8_t*>(member.data);
+      raw[0] = ((value >> member.bit_index) & 0x1u) ? 1u : 0u;
+    }
+
+    binding->last_value = value;
+    binding->initialized = true;
+    return true;
+  }
+
   void scheduleCallbacks() {
     {
       std::lock_guard<std::mutex> lock(callback_mutex_);
@@ -459,6 +565,7 @@ LogicRuntime g_logic {};
 ecmcStrucppCompiledCopyPlan g_copy_plan {};
 std::vector<ExportedParamBinding> g_builtin_params;
 std::vector<ExportedParamBinding> g_exported_params;
+std::vector<GroupedBoolParamBinding> g_grouped_bool_params;
 StrucppAsynPort* g_asyn_port = nullptr;
 size_t g_runtime_execute_divider = 1;
 size_t g_execute_divider_counter = 0;
@@ -816,6 +923,7 @@ bool bindBuiltinVars(std::string* error_out) {
 
 bool bindExportedVars(std::string* error_out) {
   g_exported_params.clear();
+  g_grouped_bool_params.clear();
 
   const ecmcStrucppExportedVar* const vars = logicExportedVars();
   const size_t count = logicExportedVarCount();
@@ -830,7 +938,7 @@ bool bindExportedVars(std::string* error_out) {
     return false;
   }
 
-  std::set<std::string> seen_names;
+  std::set<std::string> seen_scalar_names;
   for (size_t i = 0; i < count; ++i) {
     const auto& export_var = vars[i];
     if (!export_var.name || !export_var.name[0]) {
@@ -857,7 +965,60 @@ bool bindExportedVars(std::string* error_out) {
       return false;
     }
 
-    if (!seen_names.insert(export_var.name).second) {
+    const bool grouped_bool =
+      (export_var.flags & ECMC_STRUCPP_EXPORT_FLAG_GROUPED_BOOL) != 0u;
+    if (grouped_bool) {
+      if (export_var.type != ECMC_STRUCPP_EXPORT_BOOL) {
+        if (error_out) {
+          *error_out = std::string("Grouped BOOL export '") + export_var.name +
+                       "' must use BOOL type";
+        }
+        return false;
+      }
+
+      auto group_it = std::find_if(g_grouped_bool_params.begin(),
+                                   g_grouped_bool_params.end(),
+                                   [&](const GroupedBoolParamBinding& binding) {
+                                     return binding.name == export_var.name;
+                                   });
+      if (group_it == g_grouped_bool_params.end()) {
+        int param_id = -1;
+        if (g_asyn_port->createParam(0, export_var.name, asynParamUInt32Digital, &param_id) != asynSuccess) {
+          if (error_out) {
+            *error_out = std::string("Failed to create grouped BOOL asyn parameter for exported ST variable '") +
+                         export_var.name + "'";
+          }
+          return false;
+        }
+        g_grouped_bool_params.push_back({export_var.name, param_id, export_var.writable, 0xFFFFFFFFu});
+        group_it = std::prev(g_grouped_bool_params.end());
+      } else if (group_it->writable != export_var.writable) {
+        if (error_out) {
+          *error_out = std::string("Conflicting grouped BOOL writable mode for export '") +
+                       export_var.name + "'";
+        }
+        return false;
+      }
+
+      const auto duplicate_bit = std::find_if(group_it->members.begin(),
+                                              group_it->members.end(),
+                                              [&](const GroupedBoolMember& member) {
+                                                return member.bit_index == export_var.bit_index;
+                                              });
+      if (duplicate_bit != group_it->members.end()) {
+        if (error_out) {
+          *error_out = std::string("Duplicate grouped BOOL bit ") +
+                       std::to_string(export_var.bit_index) + " for export '" +
+                       export_var.name + "'";
+        }
+        return false;
+      }
+
+      group_it->members.push_back({export_var.data, export_var.bit_index});
+      continue;
+    }
+
+    if (!seen_scalar_names.insert(export_var.name).second) {
       if (error_out) {
         *error_out = std::string("Duplicate exported ST variable name: '") +
                      export_var.name + "'";
@@ -885,6 +1046,7 @@ bool bindExportedVars(std::string* error_out) {
   }
 
   g_asyn_port->syncExportedParams(&g_exported_params, true, false);
+  g_asyn_port->syncGroupedBoolParams(&g_grouped_bool_params, true, false);
 
   return true;
 }
@@ -905,7 +1067,7 @@ std::string describeBuiltinVars() {
 }
 
 std::string describeExportedVars() {
-  if (g_exported_params.empty()) {
+  if (g_exported_params.empty() && g_grouped_bool_params.empty()) {
     return "<none>";
   }
 
@@ -917,6 +1079,15 @@ std::string describeExportedVars() {
     const auto& binding = g_exported_params[i];
     oss << binding.name << "[" << exportTypeName(binding.type) << ","
         << (binding.writable != 0 ? "rw" : "ro") << "]";
+  }
+  for (size_t i = 0; i < g_grouped_bool_params.size(); ++i) {
+    if (!oss.str().empty()) {
+      oss << ",";
+    }
+    const auto& binding = g_grouped_bool_params[i];
+    oss << binding.name << "[BOOL_GROUP,"
+        << (binding.writable != 0 ? "rw" : "ro")
+        << ",bits=" << binding.members.size() << "]";
   }
   return oss.str();
 }
@@ -1150,11 +1321,29 @@ ExportedParamBinding* findBindingForReason(std::vector<ExportedParamBinding>* bi
   return nullptr;
 }
 
+GroupedBoolParamBinding* findGroupedBoolBindingForReason(std::vector<GroupedBoolParamBinding>* bindings,
+                                                         int reason) {
+  if (!bindings || reason < 0) {
+    return nullptr;
+  }
+
+  for (auto& binding : *bindings) {
+    if (binding.param_id == reason) {
+      return &binding;
+    }
+  }
+  return nullptr;
+}
+
 ExportedParamBinding* paramBindingForReason(int reason) {
   if (auto* binding = findBindingForReason(&g_builtin_params, reason)) {
     return binding;
   }
   return findBindingForReason(&g_exported_params, reason);
+}
+
+GroupedBoolParamBinding* groupedBoolBindingForReason(int reason) {
+  return findGroupedBoolBindingForReason(&g_grouped_bool_params, reason);
 }
 
 bool syncBuiltinParams(bool force, bool defer_callbacks) {
@@ -2401,6 +2590,7 @@ static int construct(char* configStr) {
 static void destruct(void) {
   g_builtin_params.clear();
   g_exported_params.clear();
+  g_grouped_bool_params.clear();
   unloadLogicRuntime();
   clearRuntimeState();
   destroyAsynPort();
@@ -2475,7 +2665,7 @@ static int enterRealtime(void) {
             g_images.memory.size);
     logInfo("mapping_summary direct_mappings=%zu exports=%zu",
             g_bound_mappings.size(),
-            g_exported_params.size());
+            g_exported_params.size() + g_grouped_bool_params.size());
     return 0;
   }
 
@@ -2583,15 +2773,17 @@ static int enterRealtime(void) {
           g_images.output.name.empty() ? "<none>" : g_images.output.name.c_str(),
           g_images.output.size,
           g_images.memory.size);
-  if (!g_exported_params.empty()) {
-    logInfo("published %zu ST variables to asyn", g_exported_params.size());
+  if (!g_exported_params.empty() || !g_grouped_bool_params.empty()) {
+    logInfo("published %zu scalar ST variables and %zu grouped BOOL exports to asyn",
+            g_exported_params.size(),
+            g_grouped_bool_params.size());
   }
   logInfo("binding_summary mode=%s exports=%zu",
           (!g_config.input_bindings.empty() || !g_config.output_bindings.empty()) ?
             "explicit_bindings" :
             ((g_config.input_item.empty() && g_config.output_item.empty()) ? "none" :
              "contiguous_image"),
-          g_exported_params.size());
+          g_exported_params.size() + g_grouped_bool_params.size());
   return 0;
 }
 
@@ -2667,6 +2859,9 @@ static int realtime(int) {
 
   if (g_asyn_port && !g_exported_params.empty()) {
     g_asyn_port->syncExportedParams(&g_exported_params, false, true);
+  }
+  if (g_asyn_port && !g_grouped_bool_params.empty()) {
+    g_asyn_port->syncGroupedBoolParams(&g_grouped_bool_params, false, true);
   }
   return 0;
 }

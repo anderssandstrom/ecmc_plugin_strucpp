@@ -555,6 +555,10 @@ other_name    : INT;    // @epics custom.path.value rw
 short_rec     : INT;    // @epics rec=Main-ShortRec
 custom_pfx    : INT;    // @epics prefix=$(IOC): rec=Main-CustomPfx
 named_asyn    : INT;    // @epics custom.path.value prefix=$(IOC): rec=Main-FullOverride rw
+cmd_enable    : BOOL;   // @epics rw rec=Main-Cmd bit=0
+cmd_execute   : BOOL;   // @epics rw rec=Main-Cmd bit=1
+stat_busy     : BOOL;   // @epics rec=Main-Stat bit=0
+stat_error    : BOOL;   // @epics rec=Main-Stat bit=1
 ```
 
 Rules:
@@ -568,15 +572,25 @@ Rules:
   still using the normal `P` prefix
 - `prefix=<PV-prefix>` optionally overrides the prefix used for that one
   record
+- `bit=<0..31>` on `BOOL` declarations enables packed bitfield export; use
+  `group=<name>` to choose the internal/asyn group name, or just use
+  `rec=<name>` and the same value will be used as the group when `group=` is
+  omitted
+- packed `BOOL` exports become one exported `UInt32Digital` value and one
+  generated `mbbiDirect` or `mbboDirect` record
 - for example:
   `rec=Main-Value`
   `prefix=$(IOC): rec=Main-Value`
+- packed `BOOL` exports require explicit `bit=` numbering and keep read-only
+  and writable groups separate
 - optional final token `rw` makes the parameter writable from EPICS
 - default is read-only
-- current support is for top-level scalar program variables:
+- current support is for top-level program variables:
   `BOOL`, `SINT`, `USINT`, `BYTE`, `INT`, `UINT`, `WORD`, `DINT`, `UDINT`,
-  `DWORD`, `REAL`, `LREAL`
-- duplicate exported names are rejected at startup with a clear error
+  `DWORD`, `REAL`, `LREAL`; grouped export packing is available only for
+  `BOOL`
+- duplicate exported names are rejected at startup unless they are explicit
+  members of the same grouped `BOOL` export
 
 The application repo runs
 [`scripts/strucpp_epics_exportgen.py`](scripts/strucpp_epics_exportgen.py) to
@@ -625,7 +639,8 @@ generator,
 that turns the same `// @epics ...` annotations into a `.substitutions` file.
 The generated substitutions keep the full internal asyn name in `ASYN`, but
 derive a shorter EPICS record name in `REC`, following the other plugin
-templates more closely.
+templates more closely. Grouped `BOOL` exports generate packed
+`mbbiDirect`/`mbboDirect` records automatically.
 
 In addition, the repo ships a default built-in substitutions file:
 

@@ -24,10 +24,9 @@ The startup flow is:
 3. configure axis `1`
 4. load [`MC-MOTION-STRUCPP-IOC_startup.script`](MC-MOTION-STRUCPP-IOC_startup.script)
 
-The exported variables let EPICS drive the sample:
+The exported variables let EPICS drive the sample.
 
-- `EnableCmd`
-- `ExecuteCmd`
+- `Main-Cmd` as one packed `mbboDirect` command word
 - `TargetPos`
 - `Velocity`
 - `Acceleration`
@@ -35,15 +34,9 @@ The exported variables let EPICS drive the sample:
 
 and monitor:
 
-- `PowerStatus`
-- `MoveBusy`
-- `MoveDone`
-- `MoveError`
+- `Main-Stat` as one packed `mbbiDirect` status word
 - `MoveErrorId`
 - `ActualPos`
-- `StatusValid`
-- `StatusHomed`
-- `StatusErrorStop`
 
 Because these are normal `@epics` exports, the generated records come from
 `bin/main.so.substitutions` with the normal startup defaults.

@@ -60,6 +60,13 @@ def derive_export_name(program_name: str, source_name: str):
     return f"plugin.strucpp0.{program_name}.{source_name}"
 
 
+def normalize_group_name(group_name: str):
+    normalized = re.sub(r"[^A-Za-z0-9]+", "_", group_name.strip().lower()).strip("_")
+    if not normalized:
+        raise RuntimeError(f"Invalid empty @epics group name '{group_name}'")
+    return normalized
+
+
 def camelize(name: str):
     parts = re.split(r"[^A-Za-z0-9]+", name)
     return "".join(part[:1].upper() + part[1:] for part in parts if part)
@@ -70,24 +77,40 @@ def derive_record_name(program_name: str, source_name: str, writable: bool):
     return f"{base}-RB" if writable else base
 
 
+def derive_group_record_name(program_name: str, group_name: str):
+    return f"Plg-ST0-{camelize(program_name)}-{camelize(group_name)}"
+
+
 def parse_epics_annotation(annotation: str):
     tokens = annotation.split()
     writable = False
     export_tokens = []
     record_name = ""
     record_prefix = "$(P=)"
+    group_name = ""
+    bit_index = None
     for token in tokens:
         lower = token.lower()
         if lower in ("rw", "ro"):
             writable = lower == "rw"
+        elif token.startswith("group="):
+            group_name = token[len("group="):]
+            if not group_name:
+                raise RuntimeError("Empty @epics group name")
+        elif token.startswith("bit="):
+            bit_text = token[len("bit="):]
+            if not bit_text:
+                raise RuntimeError("Empty @epics bit index")
+            try:
+                bit_index = int(bit_text, 10)
+            except ValueError as exc:
+                raise RuntimeError(f"Invalid @epics bit index '{bit_text}'") from exc
+            if bit_index < 0 or bit_index > 31:
+                raise RuntimeError(f"Invalid @epics bit index '{bit_text}', expected 0..31")
         elif token.startswith("prefix="):
             record_prefix = token[len("prefix="):]
             if not record_prefix:
                 raise RuntimeError("Empty @epics record prefix override")
-        elif token.startswith("rec_full="):
-            raise RuntimeError("Unsupported @epics token 'rec_full=', use 'rec=' with optional 'prefix='")
-        elif token.startswith("rec_suffix="):
-            raise RuntimeError("Unsupported @epics token 'rec_suffix=', use 'rec=' instead")
         elif token.startswith("rec="):
             record_name = token[4:]
             if not record_name:
@@ -95,14 +118,15 @@ def parse_epics_annotation(annotation: str):
         else:
             export_tokens.append(token)
     export_name = " ".join(export_tokens).strip()
-    return export_name, record_name, record_prefix, writable
+    return export_name, record_name, record_prefix, writable, group_name, bit_index
 
 
 def parse_exports(st_path: pathlib.Path):
     exports = []
     seen_source_names = set()
-    seen_export_names = set()
-    seen_record_names = set()
+    seen_export_names = {}
+    seen_record_names = {}
+    grouped_rows = {}
     program_name = parse_program_name(st_path)
     for line_no, line in enumerate(st_path.read_text(encoding="utf-8").splitlines(), start=1):
         match = VAR_RE.match(line)
@@ -114,27 +138,78 @@ def parse_exports(st_path: pathlib.Path):
         source_name = match.group(1)
         type_name = match.group(2).upper()
         annotation = (match.group(3) or "").strip()
-        export_name, record_name, record_prefix, writable = parse_epics_annotation(annotation)
+        export_name, record_name, record_prefix, writable, group_name, bit_index = parse_epics_annotation(annotation)
+        effective_group_name = group_name or (record_name if bit_index is not None and record_name else "")
+        grouped_bool = bool(effective_group_name)
+        if grouped_bool:
+            if type_name != "BOOL":
+                raise RuntimeError(
+                    f"@epics group is only supported for BOOL variables, not '{type_name}' in {st_path}:{line_no}"
+                )
+            if bit_index is None:
+                raise RuntimeError(
+                    f"Grouped @epics BOOL '{source_name}' in {st_path}:{line_no} requires bit=<0..31>"
+                )
+        elif bit_index is not None:
+            raise RuntimeError(
+                f"@epics bit= requires group= or rec= for variable '{source_name}' in {st_path}:{line_no}"
+            )
+
         if not export_name:
-            export_name = derive_export_name(program_name, source_name)
+            export_name = derive_export_name(
+                program_name,
+                normalize_group_name(effective_group_name) if grouped_bool else source_name,
+            )
         if not record_name:
-            record_name = derive_record_name(program_name, source_name, writable)
+            if grouped_bool:
+                record_name = derive_group_record_name(program_name, effective_group_name)
+            else:
+                record_name = derive_record_name(program_name, source_name, writable)
             record_prefix = "$(P=)"
         if source_name in seen_source_names:
             raise RuntimeError(
                 f"Duplicate @epics source variable '{source_name}' in {st_path}:{line_no}"
             )
-        if export_name in seen_export_names:
+
+        export_key = (export_name, writable, effective_group_name)
+        if export_name in seen_export_names and seen_export_names[export_name] != export_key:
             raise RuntimeError(
-                f"Duplicate @epics export name '{export_name}' in {st_path}:{line_no}"
+                f"Conflicting @epics export name '{export_name}' in {st_path}:{line_no}"
             )
-        if record_name in seen_record_names:
+        seen_export_names[export_name] = export_key
+
+        record_key = (record_name, record_prefix, writable, effective_group_name)
+        if record_name in seen_record_names and seen_record_names[record_name] != record_key:
             raise RuntimeError(
-                f"Duplicate @epics record name '{record_name}' in {st_path}:{line_no}"
+                f"Conflicting @epics record name '{record_name}' in {st_path}:{line_no}"
             )
+        seen_record_names[record_name] = record_key
         seen_source_names.add(source_name)
-        seen_export_names.add(export_name)
-        seen_record_names.add(record_name)
+
+        if grouped_bool:
+            group_key = (export_name, record_name, record_prefix, writable)
+            row = grouped_rows.setdefault(
+                group_key,
+                {
+                    "source_name": effective_group_name,
+                    "group_name": effective_group_name,
+                    "type_name": type_name,
+                    "export_name": export_name,
+                    "record_name": record_name,
+                    "record_prefix": record_prefix,
+                    "template": "ecmcStrucppMbboDirect.template"
+                    if writable
+                    else "ecmcStrucppMbbiDirect.template",
+                    "writable": writable,
+                    "used_bits": set(),
+                },
+            )
+            if bit_index in row["used_bits"]:
+                raise RuntimeError(
+                    f"Duplicate @epics group bit {bit_index} for record '{record_name}' in {st_path}:{line_no}"
+                )
+            row["used_bits"].add(bit_index)
+            continue
 
         template = TEMPLATE_MAP.get((type_name, writable))
         if not template:
@@ -154,6 +229,7 @@ def parse_exports(st_path: pathlib.Path):
             }
         )
 
+    exports.extend(grouped_rows.values())
     return exports
 
 
@@ -176,6 +252,24 @@ def substitution_block(template_name, rows):
                 f'"{row["record_prefix"]}", '
                 '"$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", '
                 f'"{row["record_name"]}", "{row["export_name"]}", "{row["source_name"]}", "FALSE", "TRUE" }}'
+            )
+    elif template_name == "ecmcStrucppMbbiDirect.template":
+        lines.append("pattern { P, REC_PREFIX, PORT, ADDR, MASK, TIMEOUT, REC, ASYN, DESC }")
+        for row in rows:
+            lines.append(
+                '{ "$(P=)", '
+                f'"{row["record_prefix"]}", '
+                '"$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(MASK=0xFFFFFFFF)", "$(TIMEOUT=1000)", '
+                f'"{row["record_name"]}", "{row["export_name"]}", "{row["source_name"]}" }}'
+            )
+    elif template_name == "ecmcStrucppMbboDirect.template":
+        lines.append("pattern { P, REC_PREFIX, PORT, ADDR, MASK, TIMEOUT, REC, ASYN, DESC }")
+        for row in rows:
+            lines.append(
+                '{ "$(P=)", '
+                f'"{row["record_prefix"]}", '
+                '"$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(MASK=0xFFFFFFFF)", "$(TIMEOUT=1000)", '
+                f'"{row["record_name"]}", "{row["export_name"]}", "{row["source_name"]}" }}'
             )
     else:
         lines.append("pattern { P, REC_PREFIX, PORT, ADDR, TIMEOUT, REC, ASYN, DESC }")
@@ -209,6 +303,8 @@ def main():
         grouped.setdefault(export["template"], []).append(export)
 
     for template_name in (
+        "ecmcStrucppMbbiDirect.template",
+        "ecmcStrucppMbboDirect.template",
         "ecmcStrucppBi.template",
         "ecmcStrucppBo.template",
         "ecmcStrucppLongIn.template",

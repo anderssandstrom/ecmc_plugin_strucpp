@@ -4,7 +4,7 @@
 
 #include "iec_located.hpp"
 
-#define ECMC_STRUCPP_LOGIC_ABI_VERSION 2
+#define ECMC_STRUCPP_LOGIC_ABI_VERSION 3
 
 enum ecmcStrucppExportType : uint32_t {
   ECMC_STRUCPP_EXPORT_BOOL = 1,
@@ -23,6 +23,13 @@ struct ecmcStrucppExportedVar {
   void* data;
   uint32_t type;
   uint32_t writable;
+  uint32_t flags;
+  uint32_t bit_index;
+};
+
+enum ecmcStrucppExportFlags : uint32_t {
+  ECMC_STRUCPP_EXPORT_FLAG_NONE = 0,
+  ECMC_STRUCPP_EXPORT_FLAG_GROUPED_BOOL = 1u << 0,
 };
 
 struct ecmcStrucppLogicApi {

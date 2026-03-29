@@ -19,6 +19,7 @@ VAR_RE = re.compile(
 )
 PROGRAM_RE = re.compile(r"^\s*PROGRAM\s+([A-Za-z_][A-Za-z0-9_]*)\s*$", re.IGNORECASE)
 QUOTED_RE = re.compile(r'"([^"]*)"')
+PATTERN_RE = re.compile(r"^\s*pattern\s*\{\s*(.+?)\s*\}\s*$")
 PLACEHOLDER_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)(?:=([^}]*))?\}")
 
 WIDTH_BYTES = {"B": 1, "W": 2, "D": 4, "L": 8}
@@ -87,11 +88,16 @@ def parse_program_name(text, path):
     raise RuntimeError(f"Failed to find PROGRAM declaration in {path}")
 
 
+def derive_export_name(program_name, source_name):
+    return f"plugin.strucpp0.{program_name.lower()}.{source_name}"
+
+
 def parse_st_source(st_path, definitions):
     text = st_path.read_text(encoding="utf-8")
     program_name = parse_program_name(text, st_path)
     located = []
     exports = []
+    grouped_export_bits = {}
     for line_no, raw_line in enumerate(text.splitlines(), start=1):
         located_match = LOCATED_RE.match(raw_line)
         var_match = VAR_RE.match(raw_line)
@@ -140,29 +146,69 @@ def parse_st_source(st_path, definitions):
             record_name = None
             record_prefix = "$(P=)"
             export_tokens = []
+            group_name = ""
+            bit_index = None
             for token in annotation.split():
                 lower = token.lower()
                 if lower in ("rw", "ro"):
                     writable = lower == "rw"
+                elif token.startswith("group="):
+                    group_name = token[len("group="):]
+                    if not group_name:
+                        raise RuntimeError(f"Empty @epics group name in {st_path}:{line_no}")
+                elif token.startswith("bit="):
+                    bit_text = token[len("bit="):]
+                    if not bit_text:
+                        raise RuntimeError(f"Empty @epics bit index in {st_path}:{line_no}")
+                    try:
+                        bit_index = int(bit_text, 10)
+                    except ValueError as exc:
+                        raise RuntimeError(
+                            f"Invalid @epics bit index '{bit_text}' in {st_path}:{line_no}"
+                        ) from exc
+                    if bit_index < 0 or bit_index > 31:
+                        raise RuntimeError(
+                            f"Invalid @epics bit index '{bit_text}' in {st_path}:{line_no}, expected 0..31"
+                        )
                 elif token.startswith("prefix="):
                     record_prefix = token[len("prefix="):]
                     if not record_prefix:
                         raise RuntimeError(f"Empty @epics record prefix override in {st_path}:{line_no}")
-                elif token.startswith("rec_full="):
-                    raise RuntimeError(
-                        f"Unsupported @epics token 'rec_full=' in {st_path}:{line_no}, use 'rec=' with optional 'prefix='"
-                    )
-                elif token.startswith("rec_suffix="):
-                    raise RuntimeError(
-                        f"Unsupported @epics token 'rec_suffix=' in {st_path}:{line_no}, use 'rec=' instead"
-                    )
                 elif token.startswith("rec="):
                     record_name = token[4:]
                     if not record_name:
                         raise RuntimeError(f"Empty @epics record name override in {st_path}:{line_no}")
                 else:
                     export_tokens.append(token)
-            export_name = " ".join(export_tokens).strip() or name
+            effective_group_name = group_name or (record_name if bit_index is not None and record_name else "")
+            grouped_bool = bool(effective_group_name)
+            if grouped_bool:
+                if type_name != "BOOL":
+                    raise RuntimeError(
+                        f"@epics group is only supported for BOOL variables, not '{type_name}' in {st_path}:{line_no}"
+                    )
+                if bit_index is None:
+                    raise RuntimeError(
+                        f"Grouped @epics BOOL '{name}' in {st_path}:{line_no} requires bit=<0..31>"
+                    )
+            elif bit_index is not None:
+                raise RuntimeError(
+                    f"@epics bit= requires group= or rec= for variable '{name}' in {st_path}:{line_no}"
+                )
+
+            export_name = " ".join(export_tokens).strip() or derive_export_name(
+                program_name,
+                re.sub(r"[^A-Za-z0-9]+", "_", effective_group_name.strip().lower()).strip("_")
+                if grouped_bool
+                else name,
+            )
+            if grouped_bool:
+                bits = grouped_export_bits.setdefault(export_name, set())
+                if bit_index in bits:
+                    raise RuntimeError(
+                        f"Duplicate @epics group bit {bit_index} for export '{export_name}' in {st_path}:{line_no}"
+                    )
+                bits.add(bit_index)
             exports.append(
                 {
                     "name": name,
@@ -172,6 +218,8 @@ def parse_st_source(st_path, definitions):
                     "record_name": record_name,
                     "record_prefix": record_prefix,
                     "writable": writable,
+                    "group_name": effective_group_name,
+                    "bit_index": bit_index,
                     "line_no": line_no,
                 }
             )
@@ -215,15 +263,24 @@ def parse_map_file(map_path):
 
 def parse_substitutions(subst_path):
     exports = []
+    columns = []
     if not subst_path:
         return exports
     for raw_line in pathlib.Path(subst_path).read_text(encoding="utf-8").splitlines():
         line = raw_line.strip()
+        pattern_match = PATTERN_RE.match(line)
+        if pattern_match:
+          columns = [column.strip() for column in pattern_match.group(1).split(",")]
+          continue
         if not line.startswith("{"):
             continue
         quoted = QUOTED_RE.findall(line)
-        if len(quoted) >= 5:
-            exports.append(quoted[4])
+        if not columns or len(quoted) != len(columns):
+            continue
+        row = dict(zip(columns, quoted))
+        asyn_name = row.get("ASYN")
+        if asyn_name:
+            exports.append(asyn_name)
     return exports
 
 
@@ -296,16 +353,18 @@ def validate(program_name, located, exports, forwards, mappings, subst_exports, 
                     f"Mapping mismatch for {entry['address']}: ST '{entry['ecmc_item']}' vs map '{mapped_item}'"
                 )
 
-    seen_export_names = set()
-    seen_record_names = set()
+    seen_export_names = {}
+    seen_record_names = {}
     for export in exports:
-        if export["export_name"] in seen_export_names:
-            errors.append(f"Duplicate @epics export name in ST: {export['export_name']}")
-        seen_export_names.add(export["export_name"])
+        export_key = (export["writable"], export["group_name"])
+        if export["export_name"] in seen_export_names and seen_export_names[export["export_name"]] != export_key:
+            errors.append(f"Conflicting @epics export name in ST: {export['export_name']}")
+        seen_export_names[export["export_name"]] = export_key
         if export["record_name"]:
-            if export["record_name"] in seen_record_names:
-                errors.append(f"Duplicate @epics record name in ST: {export['record_name']}")
-            seen_record_names.add(export["record_name"])
+            record_key = (export["record_prefix"], export["writable"], export["group_name"])
+            if export["record_name"] in seen_record_names and seen_record_names[export["record_name"]] != record_key:
+                errors.append(f"Conflicting @epics record name in ST: {export['record_name']}")
+            seen_record_names[export["record_name"]] = record_key
         if paths["substitutions"] and export["export_name"] not in subst_exports:
             errors.append(f"Export missing from substitutions file: {export['export_name']}")
 
@@ -354,9 +413,13 @@ def build_summary(program_name, located, exports, mappings, errors, warnings, pa
             mode = "rw" if export["writable"] else "ro"
             rec_suffix = ""
             if export["record_name"]:
-                key = "rec_full" if export["record_prefix"] == "" else "rec_suffix"
-                rec_suffix = f", {key}={export['record_name']}"
-            lines.append(f"  {export['export_name']} ({export['name']}, {export['type_name']}, {mode}{rec_suffix})")
+                rec_suffix = f", rec={export['record_name']}, prefix={export['record_prefix']}"
+            group_suffix = ""
+            if export["group_name"]:
+                group_suffix = f", group={export['group_name']}, bit={export['bit_index']}"
+            lines.append(
+                f"  {export['export_name']} ({export['name']}, {export['type_name']}, {mode}{group_suffix}{rec_suffix})"
+            )
         lines.append("")
 
     if warnings:

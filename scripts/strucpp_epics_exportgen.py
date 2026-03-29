@@ -51,14 +51,37 @@ def derive_export_name(program_class: str, var_name: str):
     return f"plugin.strucpp0.{program_name}.{var_name}"
 
 
+def normalize_group_name(group_name: str):
+    normalized = re.sub(r"[^A-Za-z0-9]+", "_", group_name.strip().lower()).strip("_")
+    if not normalized:
+        raise RuntimeError(f"Invalid empty @epics group name '{group_name}'")
+    return normalized
+
+
 def parse_epics_annotation(annotation: str):
     tokens = annotation.split()
     writable = "0"
     export_tokens = []
+    group_name = ""
+    bit_index = None
     for token in tokens:
         lower = token.lower()
         if lower in ("rw", "ro"):
             writable = "1" if lower == "rw" else "0"
+        elif token.startswith("group="):
+            group_name = token[len("group="):]
+            if not group_name:
+                raise RuntimeError("Empty @epics group name")
+        elif token.startswith("bit="):
+            bit_text = token[len("bit="):]
+            if not bit_text:
+                raise RuntimeError("Empty @epics bit index")
+            try:
+                bit_index = int(bit_text, 10)
+            except ValueError as exc:
+                raise RuntimeError(f"Invalid @epics bit index '{bit_text}'") from exc
+            if bit_index < 0 or bit_index > 31:
+                raise RuntimeError(f"Invalid @epics bit index '{bit_text}', expected 0..31")
         elif token.startswith("prefix="):
             if token == "prefix=":
                 raise RuntimeError("Empty @epics record prefix override")
@@ -72,13 +95,14 @@ def parse_epics_annotation(annotation: str):
         else:
             export_tokens.append(token)
     export_name = " ".join(export_tokens).strip()
-    return export_name, writable
+    return export_name, writable, group_name, bit_index
 
 
 def parse_exports(st_path: pathlib.Path, program_class: str):
     exports = []
     seen_source_names = set()
-    seen_export_names = set()
+    seen_export_names = {}
+    grouped_members = {}
     for line_no, line in enumerate(st_path.read_text(encoding="utf-8").splitlines(), start=1):
         match = VAR_RE.match(line)
         if not match:
@@ -94,19 +118,62 @@ def parse_exports(st_path: pathlib.Path, program_class: str):
                 f"Unsupported @epics type '{type_name}' for variable {var_name} in {st_path}:{line_no}"
             )
 
-        export_name, writable = parse_epics_annotation(annotation)
+        export_name, writable, group_name, bit_index = parse_epics_annotation(annotation)
+        effective_group_name = group_name
+        record_name = ""
+        for token in annotation.split():
+            if token.startswith("rec="):
+                record_name = token[4:]
+                break
+        if not effective_group_name and bit_index is not None and record_name:
+            effective_group_name = record_name
+        grouped_bool = bool(effective_group_name)
+        if grouped_bool:
+            if type_name != "BOOL":
+                raise RuntimeError(
+                    f"@epics group is only supported for BOOL variables, not '{type_name}' in {st_path}:{line_no}"
+                )
+            if bit_index is None:
+                raise RuntimeError(
+                    f"Grouped @epics BOOL '{var_name}' in {st_path}:{line_no} requires bit=<0..31>"
+                )
+        elif bit_index is not None:
+            raise RuntimeError(
+                f"@epics bit= requires group= or rec= for variable '{var_name}' in {st_path}:{line_no}"
+            )
+
         if not export_name:
-            export_name = derive_export_name(program_class, var_name)
+            export_name = derive_export_name(
+                program_class,
+                normalize_group_name(effective_group_name) if grouped_bool else var_name,
+            )
         if var_name in seen_source_names:
             raise RuntimeError(
                 f"Duplicate @epics source variable '{var_name}' in {st_path}:{line_no}"
             )
-        if export_name in seen_export_names:
+
+        seen_meta = seen_export_names.get(export_name)
+        group_key = (export_name, writable, effective_group_name)
+        if seen_meta is None:
+            seen_export_names[export_name] = group_key
+        elif seen_meta != group_key:
             raise RuntimeError(
-                f"Duplicate @epics export name '{export_name}' in {st_path}:{line_no}"
+                f"Conflicting @epics export name '{export_name}' in {st_path}:{line_no}"
             )
         seen_source_names.add(var_name)
-        seen_export_names.add(export_name)
+
+        flags = "ECMC_STRUCPP_EXPORT_FLAG_NONE"
+        emitted_bit_index = "0"
+        if grouped_bool:
+            flags = "ECMC_STRUCPP_EXPORT_FLAG_GROUPED_BOOL"
+            emitted_bit_index = str(bit_index)
+            if group_key not in grouped_members:
+                grouped_members[group_key] = set()
+            if bit_index in grouped_members[group_key]:
+                raise RuntimeError(
+                    f"Duplicate @epics group bit {bit_index} for export '{export_name}' in {st_path}:{line_no}"
+                )
+            grouped_members[group_key].add(bit_index)
 
         exports.append(
             {
@@ -115,6 +182,8 @@ def parse_exports(st_path: pathlib.Path, program_class: str):
                 "export_name": export_name,
                 "type_name": TYPE_MAP[type_name],
                 "writable": writable,
+                "flags": flags,
+                "bit_index": emitted_bit_index,
             }
         )
 
@@ -143,6 +212,8 @@ def generate_header(program_class: str, header_include: str, exports):
         lines.append(f"    program.{export['member_name']}.raw_ptr(),")
         lines.append(f"    {export['type_name']},")
         lines.append(f"    {export['writable']},")
+        lines.append(f"    {export['flags']},")
+        lines.append(f"    {export['bit_index']},")
         lines.append("  });")
     lines.append("}")
     lines.append("")

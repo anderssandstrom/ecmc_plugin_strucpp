@@ -1,0 +1,18 @@
+record(mbboDirect,"$(REC_PREFIX=$(P))$(REC)"){
+  info(asyn:READBACK,"1")
+  field(DESC, "${DESC=}")
+  field(PINI, "1")
+  field(DTYP, "asynUInt32Digital")
+  field(OUT,  "@asynMask($(PORT),$(ADDR=0),$(MASK=0xFFFFFFFF),$(TIMEOUT=1000))$(ASYN)")
+  field(DOL, "0")
+  field(VAL, "0")
+}
+
+record(mbbiDirect,"$(REC_PREFIX=$(P))$(REC)-RB"){
+  field(DESC, "${DESC=}")
+  field(PINI, "1")
+  field(DTYP, "asynUInt32Digital")
+  field(INP,  "@asynMask($(PORT),$(ADDR=0),$(MASK=0xFFFFFFFF),$(TIMEOUT=1000))$(ASYN)")
+  field(SCAN, "I/O Intr")
+  field(TSE,  "0")
+}
