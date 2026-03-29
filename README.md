@@ -36,7 +36,13 @@ This is not limited to one flat `PROGRAM`. Normal IEC 61131-3
 `FUNCTION_BLOCK`s, `FUNCTION`s, and reusable helper code can be used as well.
 The repo also ships a bundled motion library with PLCopen-style `MC_*` blocks
 such as `MC_Power`, `MC_MoveAbsolute`, `MC_MoveVelocity`, and
-`MC_ReadActualPosition`.
+`MC_ReadActualPosition`, for example:
+
+```iecst
+axis.AxisIndex := 1;
+power(Axis := axis, Enable := enable_cmd);
+moveAbs(Axis := axis, Execute := execute_cmd, Position := 1000.0, Velocity := 200.0);
+```
 
 The split is:
 
