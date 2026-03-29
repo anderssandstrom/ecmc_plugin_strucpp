@@ -71,6 +71,35 @@ new plugin system. At runtime it:
 The copy work is compiled once at realtime entry into a direct pointer-based
 copy plan. The realtime loop only executes that plan.
 
+## Quick Start
+
+For the fastest path to a working IOC, start with the PSI-style minimal
+example:
+
+- [`examples/psi_ioc_examples/ioc_project_minimal`](examples/psi_ioc_examples/ioc_project_minimal)
+
+That example is intentionally small and shows the preferred default workflow:
+
+- one ST source file: `src/main.st`
+- direct `@ecmc` mapping to EtherCAT items
+- optional `@epics` export from the same ST file
+- default output files in `bin/`:
+  `main.so`, `main.so.map`, `main.so.substitutions`
+- startup with a simple `require ecmc_plugin_strucpp ...`
+
+Typical flow:
+
+1. edit [`src/main.st`](examples/psi_ioc_examples/ioc_project_minimal/src/main.st)
+2. run `make`
+3. run `ioc install --source .`
+4. start the IOC with
+   [`MINIMAL-STRUCPP-IOC_startup.script`](examples/psi_ioc_examples/ioc_project_minimal/MINIMAL-STRUCPP-IOC_startup.script)
+
+If you want a slightly richer example with helper FBs, custom record naming,
+and a split source layout, use:
+
+- [`examples/psi_ioc_examples/ioc_project_example`](examples/psi_ioc_examples/ioc_project_example)
+
 ## Bundled Motion Library
 
 This repo now ships a reusable ST motion library:
