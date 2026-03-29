@@ -1,4 +1,4 @@
-# App Examples
+# PSI IOC Examples
 
 This subtree contains the curated source examples that used to live in the
 separate `ecmc_strucpp_app_example` repo.

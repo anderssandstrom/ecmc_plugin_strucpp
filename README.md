@@ -111,7 +111,7 @@ include $(ECMC_PLUGIN_STRUCPP)/templates/strucpp_ioc_logic.make
   compiles extra handwritten C++ translation units into the same logic library
 
 The sample IOC project in
-[`examples/app_examples/ioc_project_example`](examples/app_examples/ioc_project_example)
+[`examples/psi_ioc_examples/ioc_project_example`](examples/psi_ioc_examples/ioc_project_example)
 now includes concrete opt-in files for this path:
 
 - `src/Makefile.with_cpp`
@@ -763,7 +763,7 @@ The startup helper accepts:
 `sample_rate_ms=<n>` in the plugin config string.
 
 There is also a concrete IOC example in
-[`examples/loadPluginExample.cmd`](examples/loadPluginExample.cmd).
+[`examples/iocsh_examples/loadPluginExample.cmd`](examples/iocsh_examples/loadPluginExample.cmd).
 
 If `EPICS_SUBST` is provided, `startup.cmd` also calls `dbLoadTemplate(...)`
 automatically after the plugin is loaded. The standard macro set passed by the
@@ -794,23 +794,23 @@ record file.
 For a minimal EL7041 velocity-only sample that binds `%IW0` to
 `positionActual01`, `%QW0` to `driveControl01`, and `%QW2` to
 `velocitySetpoint01` through a startup-linked mapping file, see
-[`examples/loadEL7041VelocityExample.cmd`](examples/loadEL7041VelocityExample.cmd).
+[`examples/iocsh_examples/loadEL7041VelocityExample.cmd`](examples/iocsh_examples/loadEL7041VelocityExample.cmd).
 
 For a motion-data sample that binds `%IL0` to `ax1.enc.actpos` and `%QL0` to
 `ax1.traj.targetpos`, see
-[`examples/loadMotionActposMirrorExample.cmd`](examples/loadMotionActposMirrorExample.cmd).
+[`examples/iocsh_examples/loadMotionActposMirrorExample.cmd`](examples/iocsh_examples/loadMotionActposMirrorExample.cmd).
 
 For a real ST motion-library sample using `MC_Power`, `MC_MoveAbsolute`, and
 `MC_ReadActualPosition` through one contiguous input/output image, see
-[`examples/loadMcPowerMoveAbsoluteLibExample.cmd`](examples/loadMcPowerMoveAbsoluteLibExample.cmd).
+[`examples/iocsh_examples/loadMcPowerMoveAbsoluteLibExample.cmd`](examples/iocsh_examples/loadMcPowerMoveAbsoluteLibExample.cmd).
 
 For a velocity-oriented ST motion-library sample using `MC_Power`,
 `MC_MoveVelocity`, `MC_ReadStatus`, and `MC_ReadActualVelocity`, see
-[`examples/loadMcPowerMoveVelocityLibExample.cmd`](examples/loadMcPowerMoveVelocityLibExample.cmd).
+[`examples/iocsh_examples/loadMcPowerMoveVelocityLibExample.cmd`](examples/iocsh_examples/loadMcPowerMoveVelocityLibExample.cmd).
 
 For a relative-move ST motion-library sample using `MC_Power`,
 `MC_MoveRelative`, `MC_ReadStatus`, and `MC_ReadActualPosition`, see
-[`examples/loadMcPowerMoveRelativeLibExample.cmd`](examples/loadMcPowerMoveRelativeLibExample.cmd).
+[`examples/iocsh_examples/loadMcPowerMoveRelativeLibExample.cmd`](examples/iocsh_examples/loadMcPowerMoveRelativeLibExample.cmd).
 
 ## Quick Start
 

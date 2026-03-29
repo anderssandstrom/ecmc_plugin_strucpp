@@ -31,6 +31,6 @@ The IOC-style examples that use these patterns live next to this sample app in:
 
 The corresponding plugin-side startup examples remain in:
 
-- [`../../loadEL7041VelocityExample.cmd`](../../loadEL7041VelocityExample.cmd)
-- [`../../loadMotionActposMirrorExample.cmd`](../../loadMotionActposMirrorExample.cmd)
-- [`../../loadMotionVelocityDirectExample.cmd`](../../loadMotionVelocityDirectExample.cmd)
+- [`../../iocsh_examples/loadEL7041VelocityExample.cmd`](../../iocsh_examples/loadEL7041VelocityExample.cmd)
+- [`../../iocsh_examples/loadMotionActposMirrorExample.cmd`](../../iocsh_examples/loadMotionActposMirrorExample.cmd)
+- [`../../iocsh_examples/loadMotionVelocityDirectExample.cmd`](../../iocsh_examples/loadMotionVelocityDirectExample.cmd)
