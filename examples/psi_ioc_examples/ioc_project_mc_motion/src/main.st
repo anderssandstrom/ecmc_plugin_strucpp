@@ -24,7 +24,7 @@ VAR
   status_errorstop: BOOL;   // @epics rec=Main-ErrorStop
 END_VAR
 
-axis.AxisIndex := 0;
+axis.AxisIndex := 1;
 
 power(Axis := axis, Enable := enable_cmd);
 moveAbs(Axis := axis,

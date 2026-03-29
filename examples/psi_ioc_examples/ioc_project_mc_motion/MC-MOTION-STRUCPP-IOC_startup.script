@@ -1,7 +1,7 @@
 # IOC example for the bundled ST motion library.
 #
 # Prerequisite:
-# - axis 0 must already be configured in this IOC before loading the plugin
+# - axis 1 must already be configured in this IOC before loading the plugin
 # - the generated records from bin/main.so.substitutions give EPICS access to
 #   EnableCmd, ExecuteCmd, TargetPos, Velocity, and the motion status values
 #
@@ -9,5 +9,5 @@
 # caqtdm -macro "IOC=c6025a-04,PLG_ID=0" $(ecmc_plugin_strucpp_DIR)qt/ecmc_plugin_strucpp_main.ui
 
 require ecmccfg
-# Configure axis 0 here before loading the plugin.
+# Configure axis 1 here before loading the plugin.
 require ecmc_plugin_strucpp sandst_a "REPORT=1"
