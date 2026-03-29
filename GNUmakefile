@@ -16,10 +16,10 @@ IGNORE_MODULES += motorBase
 USR_CXXFLAGS += -std=c++17
 OPT_CXXFLAGS_YES = -O3
 
-ecmc_VERSION = 11.0
+ecmc_VERSION = strucpp
 
 ifndef STRUCPP
-STRUCPP = $(abspath ../strucpp)
+STRUCPP = $(abspath ../../STruCpp)
 endif
 
 USR_CXXFLAGS += -I$(STRUCPP)/src/runtime/include
