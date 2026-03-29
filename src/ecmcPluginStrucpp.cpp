@@ -15,7 +15,6 @@
 
 #include "asynPortDriver.h"
 #include "ecmcDataItem.h"
-#include "ecmcEc.h"
 #include "ecmcPluginClient.h"
 #include "ecmcPluginDefs.h"
 
@@ -1962,8 +1961,7 @@ bool parseConfigString(const char* raw_config,
 }
 
 int currentMasterIndex() {
-  auto* master = static_cast<ecmcEc*>(getEcMaster());
-  return master ? master->getMasterIndex() : -1;
+  return getEcmcMasterIndex();
 }
 
 bool resolveItemName(const std::string& item_name,
