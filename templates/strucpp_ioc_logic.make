@@ -8,12 +8,20 @@ PROJECT_BIN_DIR ?= ../bin
 GEN_DIR ?= generated
 
 STRUCPP ?= ../../../strucpp
-STRUCPP_CLI ?= strucpp
 ECMC_PLUGIN_STRUCPP ?= ../../../ecmc_plugin_strucpp
 PYTHON ?= python3
 EPICS_VERSION ?= 7.0.10
 OS_CLASS ?= deb12
 CPU_ARCH ?= x86_64
+
+DEFAULT_STRUCPP_CLI := $(abspath $(ECMC_PLUGIN_STRUCPP)/../strucpp_bin/strucpp)
+ifeq ($(origin STRUCPP_CLI), undefined)
+  ifneq ($(wildcard $(DEFAULT_STRUCPP_CLI)),)
+    STRUCPP_CLI := $(DEFAULT_STRUCPP_CLI)
+  else
+    STRUCPP_CLI := strucpp
+  endif
+endif
 
 MAPGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_mapgen.py
 EXPORTGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_epics_exportgen.py
