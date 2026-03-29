@@ -4,6 +4,7 @@ MODULE = ecmc_plugin_strucpp
 
 # Transfer module name to the ecmc plugin entry symbol.
 USR_CFLAGS +=-DECMC_PLUGIN_MODULE_NAME=${MODULE}
+USR_CXXFLAGS += -DECMC_PLUGIN_MODULE_NAME=${MODULE}
 
 BUILDCLASSES = Linux
 ARCH_FILTER = deb10% deb12%
