@@ -7,6 +7,31 @@ In this repo, `ST` means **Structured Text** as defined by **IEC 61131-3**,
 the PLC programming-language standard. It does not mean EPICS sequencer
 State Notation Language `.st` files.
 
+The plugin is meant to run ST code like this:
+
+```iecst
+PROGRAM MAIN
+VAR
+  actual_position    AT %IW0 : INT;   // @ecmc ec.s${SLAVE_ID=14}.positionActual${CH_ID}
+  drive_control      AT %QW0 : WORD;  // @ecmc ec.s${SLAVE_ID=14}.driveControl${CH_ID}
+  velocity_setpoint  AT %QW2 : INT;   // @ecmc ec.s${SLAVE_ID=14}.velocitySetpoint${CH_ID}
+  cycle_counter      AT %MW0 : INT;   // @epics rec=Main-CycleCounterAct
+END_VAR
+
+cycle_counter := cycle_counter + 1;
+drive_control := 16#0001;
+
+IF actual_position < 0 THEN
+  velocity_setpoint := 1000;
+ELSIF actual_position > 1000 THEN
+  velocity_setpoint := -1000;
+END_IF;
+END_PROGRAM
+```
+
+That example reads and writes named `ecmc` data items through `%I/%Q`, keeps
+internal state in `%M`, and exposes one variable to EPICS with `@epics`.
+
 The split is:
 
 - `ecmc_plugin_strucpp`
