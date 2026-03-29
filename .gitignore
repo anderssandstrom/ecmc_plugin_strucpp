@@ -1,6 +1,9 @@
 O.*
 bin/
 lib/
+!lib/
+lib/*
+!lib/ecmc_motion.st
 configure/
 autom4te.cache/
 .DS_Store
