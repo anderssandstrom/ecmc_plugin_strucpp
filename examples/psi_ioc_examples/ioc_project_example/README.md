@@ -22,7 +22,7 @@ This example is based on the current `gfa-iocutils` README, which says:
 So the expected flow is:
 
 1. `make`
-2. `ioc install --source .`
+2. `ioc install --clean -V --ioc STRUCPP-IOC-EXAMPLE`
 3. IOC startup uses `require ecmccfg`, adds the EL7041 slave, then loads `ecmc_plugin_strucpp`
 
 The default naming conventions from `ecmc_plugin_strucpp` are used:

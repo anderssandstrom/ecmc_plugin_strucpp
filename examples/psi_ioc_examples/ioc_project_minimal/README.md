@@ -39,7 +39,7 @@ Here `$(IOC)` is expected to come from the IOC environment or the
 The expected flow is:
 
 1. `make`
-2. `ioc install --source .`
+2. `ioc install --clean -V --ioc MINIMAL-STRUCPP-IOC`
 3. IOC startup loads:
    - `bin/main.so`
    - `bin/main.so.map`

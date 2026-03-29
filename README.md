@@ -98,7 +98,7 @@ Typical flow:
 
 1. edit [`src/main.st`](examples/psi_ioc_examples/ioc_project_minimal/src/main.st)
 2. run `make`
-3. run `ioc install --source .`
+3. run `ioc install --clean -V --ioc MINIMAL-STRUCPP-IOC`
 4. start the IOC with
    [`MINIMAL-STRUCPP-IOC_startup.script`](examples/psi_ioc_examples/ioc_project_minimal/MINIMAL-STRUCPP-IOC_startup.script)
 

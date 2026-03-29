@@ -9,7 +9,7 @@ all:
 	python3 $(IOC_SUBSGEN) --output $(IOC_ALL_SUBS) --input bin/main.so.substitutions
 
 install: all
-	ioc install --source .
+	ioc install --clean -V --ioc $(IOC_NAME)
 
 clean:
 	$(MAKE) -C src clean

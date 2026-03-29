@@ -20,7 +20,7 @@ Key points:
 The startup flow is:
 
 1. `make`
-2. `ioc install --source .`
+2. `ioc install --clean -V --ioc MC-MOTION-STRUCPP-IOC`
 3. configure axis `1`
 4. load [`MC-MOTION-STRUCPP-IOC_startup.script`](MC-MOTION-STRUCPP-IOC_startup.script)
 
