@@ -125,6 +125,30 @@ ExportedParamBinding* paramBindingForReason(int reason);
 GroupedBoolParamBinding* groupedBoolBindingForReason(int reason);
 bool applyRuntimeSampleRateMs(double requested_ms, std::string* error_out);
 bool syncBuiltinParams(bool force, bool defer_callbacks);
+bool createBoundParam(const char* name,
+                      uint32_t type,
+                      uint32_t writable,
+                      void* data,
+                      std::vector<ExportedParamBinding>* out_bindings,
+                      std::string* error_out);
+void applyControlWord(uint32_t control_word);
+void logError(const char* fmt, ...);
+
+extern int32_t g_control_word;
+extern bool g_execute_count_publish_due;
+
+constexpr double kPlcAreaInput = 0.0;
+constexpr double kPlcAreaOutput = 1.0;
+constexpr double kPlcAreaMemory = 2.0;
+constexpr const char* kDefaultAsynPortName = "PLUGIN.STRUCPP0";
+constexpr const char* kBuiltinControlWordName = "plugin.strucpp0.ctrl.word";
+constexpr const char* kBuiltinSampleRateName = "plugin.strucpp0.ctrl.rate_ms";
+constexpr const char* kBuiltinActualSampleRateName = "plugin.strucpp0.stat.rate_ms";
+constexpr const char* kBuiltinLastExecTimeName = "plugin.strucpp0.stat.exec_ms";
+constexpr const char* kBuiltinExecuteDividerName = "plugin.strucpp0.stat.div";
+constexpr const char* kBuiltinExecuteCountName = "plugin.strucpp0.stat.count";
+constexpr uint32_t kControlWordEnableExecutionBit = 1u << 0;
+constexpr uint32_t kControlWordMeasureExecTimeBit = 1u << 1;
 
 class StrucppAsynPort : public asynPortDriver {
  public:
@@ -264,7 +288,7 @@ class StrucppAsynPort : public asynPortDriver {
       if (!writeGroupedBool(grouped_binding, typed)) {
         return asynError;
       }
-      setUInt32DigitalParam(grouped_binding->param_id, typed, grouped_binding->mask);
+      setUIntDigitalParam(grouped_binding->param_id, typed, grouped_binding->mask);
       callParamCallbacks();
       return asynSuccess;
     }
@@ -291,7 +315,7 @@ class StrucppAsynPort : public asynPortDriver {
     binding->last_value.assign(reinterpret_cast<const uint8_t*>(&typed),
                                reinterpret_cast<const uint8_t*>(&typed) + sizeof(typed));
     binding->initialized = true;
-    setUInt32DigitalParam(binding->param_id, typed, 0xFFFFFFFFu);
+    setUIntDigitalParam(binding->param_id, typed, 0xFFFFFFFFu);
     callParamCallbacks();
     return asynSuccess;
   }
@@ -435,7 +459,7 @@ class StrucppAsynPort : public asynPortDriver {
     case ECMC_STRUCPP_EXPORT_U32: {
       uint32_t value = 0;
       std::memcpy(&value, current, sizeof(value));
-      setUInt32DigitalParam(binding->param_id, value, 0xFFFFFFFFu);
+      setUIntDigitalParam(binding->param_id, value, 0xFFFFFFFFu);
       return true;
     }
     case ECMC_STRUCPP_EXPORT_F32: {
@@ -477,7 +501,7 @@ class StrucppAsynPort : public asynPortDriver {
 
     binding->last_value = value;
     binding->initialized = true;
-    setUInt32DigitalParam(binding->param_id, value, binding->mask);
+    setUIntDigitalParam(binding->param_id, value, binding->mask);
     return true;
   }
 
@@ -579,19 +603,6 @@ int32_t g_execute_count = 0;
 size_t g_execute_count_publish_divider = 1;
 size_t g_execute_count_publish_counter = 0;
 bool g_execute_count_publish_due = false;
-
-constexpr double kPlcAreaInput = 0.0;
-constexpr double kPlcAreaOutput = 1.0;
-constexpr double kPlcAreaMemory = 2.0;
-constexpr const char* kDefaultAsynPortName = "PLUGIN.STRUCPP0";
-constexpr const char* kBuiltinControlWordName = "plugin.strucpp0.ctrl.word";
-constexpr const char* kBuiltinSampleRateName = "plugin.strucpp0.ctrl.rate_ms";
-constexpr const char* kBuiltinActualSampleRateName = "plugin.strucpp0.stat.rate_ms";
-constexpr const char* kBuiltinLastExecTimeName = "plugin.strucpp0.stat.exec_ms";
-constexpr const char* kBuiltinExecuteDividerName = "plugin.strucpp0.stat.div";
-constexpr const char* kBuiltinExecuteCountName = "plugin.strucpp0.stat.count";
-constexpr uint32_t kControlWordEnableExecutionBit = 1u << 0;
-constexpr uint32_t kControlWordMeasureExecTimeBit = 1u << 1;
 
 double plcNaN() {
   return std::numeric_limits<double>::quiet_NaN();
@@ -2864,11 +2875,13 @@ static int realtime(int) {
   return 0;
 }
 
-static struct ecmcPluginData pluginDataDef = {
-  .ifVersion = ECMC_PLUG_VERSION_MAGIC,
-  .name = "ecmc_plugin_strucpp",
-  .desc = "Generic ecmc host plugin for loadable STruCpp logic libraries.",
-  .optionDesc =
+ecmcPluginData makePluginData() {
+  ecmcPluginData data {};
+
+  data.ifVersion = ECMC_PLUG_VERSION_MAGIC;
+  data.name = "ecmc_plugin_strucpp";
+  data.desc = "Generic ecmc host plugin for loadable STruCpp logic libraries.";
+  data.optionDesc =
     "logic_lib=<path>;asyn_port=<plugin-port>;[mapping_file=<path>|input_item=<name>|input_bindings=<offset:item[@bytes],...>];"
     "[mapping_file=<path>|output_item=<name>|output_bindings=<offset:item[@bytes],...>];memory_bytes=<n>;sample_rate_ms=<n>\n"
     "PLC consts: STRUCPP_AREA_I=0, STRUCPP_AREA_Q=1, STRUCPP_AREA_M=2\n"
@@ -2877,121 +2890,144 @@ static struct ecmcPluginData pluginDataDef = {
     "strucpp_get_u16(a,b), strucpp_set_u16(a,b,v), strucpp_get_s16(a,b), strucpp_set_s16(a,b,v), "
     "strucpp_get_u32(a,b), strucpp_set_u32(a,b,v), strucpp_get_s32(a,b), strucpp_set_s32(a,b,v), "
     "strucpp_get_f32(a,b), strucpp_set_f32(a,b,v), "
-    "strucpp_get_f64(a,b), strucpp_set_f64(a,b,v)",
-  .version = ECMC_PLUGIN_VERSION,
-  .constructFnc = construct,
-  .destructFnc = destruct,
-  .realtimeEnterFnc = enterRealtime,
-  .realtimeExitFnc = exitRealtime,
-  .realtimeFnc = realtime,
-  .funcs[0] = {
-    .funcName = "strucpp_get_bit",
-    .funcDesc = "Read one bit from the plugin image area: area(0=I,1=Q,2=M), byte_offset, bit_index.",
-    .funcArg3 = plcGetBit,
-  },
-  .funcs[1] = {
-    .funcName = "strucpp_set_bit",
-    .funcDesc = "Write one bit in the plugin image area: area(0=I,1=Q,2=M), byte_offset, bit_index, value.",
-    .funcArg4 = plcSetBit,
-  },
-  .funcs[2] = {
-    .funcName = "strucpp_get_u8",
-    .funcDesc = "Read one unsigned byte from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
-    .funcArg2 = plcGetU8,
-  },
-  .funcs[3] = {
-    .funcName = "strucpp_set_u8",
-    .funcDesc = "Write one unsigned byte in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
-    .funcArg3 = plcSetU8,
-  },
-  .funcs[4] = {
-    .funcName = "strucpp_get_s8",
-    .funcDesc = "Read one signed byte from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
-    .funcArg2 = plcGetS8,
-  },
-  .funcs[5] = {
-    .funcName = "strucpp_set_s8",
-    .funcDesc = "Write one signed byte in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
-    .funcArg3 = plcSetS8,
-  },
-  .funcs[6] = {
-    .funcName = "strucpp_get_u16",
-    .funcDesc = "Read one unsigned 16-bit word from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
-    .funcArg2 = plcGetU16,
-  },
-  .funcs[7] = {
-    .funcName = "strucpp_set_u16",
-    .funcDesc = "Write one unsigned 16-bit word in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
-    .funcArg3 = plcSetU16,
-  },
-  .funcs[8] = {
-    .funcName = "strucpp_get_s16",
-    .funcDesc = "Read one signed 16-bit word from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
-    .funcArg2 = plcGetS16,
-  },
-  .funcs[9] = {
-    .funcName = "strucpp_set_s16",
-    .funcDesc = "Write one signed 16-bit word in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
-    .funcArg3 = plcSetS16,
-  },
-  .funcs[10] = {
-    .funcName = "strucpp_get_u32",
-    .funcDesc = "Read one unsigned 32-bit value from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
-    .funcArg2 = plcGetU32,
-  },
-  .funcs[11] = {
-    .funcName = "strucpp_set_u32",
-    .funcDesc = "Write one unsigned 32-bit value in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
-    .funcArg3 = plcSetU32,
-  },
-  .funcs[12] = {
-    .funcName = "strucpp_get_s32",
-    .funcDesc = "Read one signed 32-bit value from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
-    .funcArg2 = plcGetS32,
-  },
-  .funcs[13] = {
-    .funcName = "strucpp_set_s32",
-    .funcDesc = "Write one signed 32-bit value in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
-    .funcArg3 = plcSetS32,
-  },
-  .funcs[14] = {
-    .funcName = "strucpp_get_f32",
-    .funcDesc = "Read one 32-bit float from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
-    .funcArg2 = plcGetF32,
-  },
-  .funcs[15] = {
-    .funcName = "strucpp_set_f32",
-    .funcDesc = "Write one 32-bit float in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
-    .funcArg3 = plcSetF32,
-  },
-  .funcs[16] = {
-    .funcName = "strucpp_get_f64",
-    .funcDesc = "Read one 64-bit float from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
-    .funcArg2 = plcGetF64,
-  },
-  .funcs[17] = {
-    .funcName = "strucpp_set_f64",
-    .funcDesc = "Write one 64-bit float in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
-    .funcArg3 = plcSetF64,
-  },
-  .funcs[18] = {0},
-  .consts[0] = {
-    .constName = "STRUCPP_AREA_I",
-    .constDesc = "Input image area selector for strucpp exprtk helper functions.",
-    .constValue = kPlcAreaInput,
-  },
-  .consts[1] = {
-    .constName = "STRUCPP_AREA_Q",
-    .constDesc = "Output image area selector for strucpp exprtk helper functions.",
-    .constValue = kPlcAreaOutput,
-  },
-  .consts[2] = {
-    .constName = "STRUCPP_AREA_M",
-    .constDesc = "Memory image area selector for strucpp exprtk helper functions.",
-    .constValue = kPlcAreaMemory,
-  },
-  .consts[3] = {0},
-};
+    "strucpp_get_f64(a,b), strucpp_set_f64(a,b,v)";
+  data.version = ECMC_PLUGIN_VERSION;
+  data.constructFnc = construct;
+  data.destructFnc = destruct;
+  data.realtimeEnterFnc = enterRealtime;
+  data.realtimeExitFnc = exitRealtime;
+  data.realtimeFnc = realtime;
+
+  auto setFunc2 = [&data](size_t index,
+                          const char* name,
+                          const char* desc,
+                          double (*func)(double, double)) {
+    auto& entry = data.funcs[index];
+    entry.funcName = name;
+    entry.funcDesc = desc;
+    entry.funcArg2 = func;
+  };
+
+  auto setFunc3 = [&data](size_t index,
+                          const char* name,
+                          const char* desc,
+                          double (*func)(double, double, double)) {
+    auto& entry = data.funcs[index];
+    entry.funcName = name;
+    entry.funcDesc = desc;
+    entry.funcArg3 = func;
+  };
+
+  auto setFunc4 = [&data](size_t index,
+                          const char* name,
+                          const char* desc,
+                          double (*func)(double, double, double, double)) {
+    auto& entry = data.funcs[index];
+    entry.funcName = name;
+    entry.funcDesc = desc;
+    entry.funcArg4 = func;
+  };
+
+  setFunc3(0,
+           "strucpp_get_bit",
+           "Read one bit from the plugin image area: area(0=I,1=Q,2=M), byte_offset, bit_index.",
+           plcGetBit);
+  setFunc4(1,
+           "strucpp_set_bit",
+           "Write one bit in the plugin image area: area(0=I,1=Q,2=M), byte_offset, bit_index, value.",
+           plcSetBit);
+  setFunc2(2,
+           "strucpp_get_u8",
+           "Read one unsigned byte from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
+           plcGetU8);
+  setFunc3(3,
+           "strucpp_set_u8",
+           "Write one unsigned byte in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
+           plcSetU8);
+  setFunc2(4,
+           "strucpp_get_s8",
+           "Read one signed byte from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
+           plcGetS8);
+  setFunc3(5,
+           "strucpp_set_s8",
+           "Write one signed byte in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
+           plcSetS8);
+  setFunc2(6,
+           "strucpp_get_u16",
+           "Read one unsigned 16-bit word from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
+           plcGetU16);
+  setFunc3(7,
+           "strucpp_set_u16",
+           "Write one unsigned 16-bit word in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
+           plcSetU16);
+  setFunc2(8,
+           "strucpp_get_s16",
+           "Read one signed 16-bit word from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
+           plcGetS16);
+  setFunc3(9,
+           "strucpp_set_s16",
+           "Write one signed 16-bit word in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
+           plcSetS16);
+  setFunc2(10,
+           "strucpp_get_u32",
+           "Read one unsigned 32-bit value from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
+           plcGetU32);
+  setFunc3(11,
+           "strucpp_set_u32",
+           "Write one unsigned 32-bit value in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
+           plcSetU32);
+  setFunc2(12,
+           "strucpp_get_s32",
+           "Read one signed 32-bit value from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
+           plcGetS32);
+  setFunc3(13,
+           "strucpp_set_s32",
+           "Write one signed 32-bit value in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
+           plcSetS32);
+  setFunc2(14,
+           "strucpp_get_f32",
+           "Read one 32-bit float from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
+           plcGetF32);
+  setFunc3(15,
+           "strucpp_set_f32",
+           "Write one 32-bit float in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
+           plcSetF32);
+  setFunc2(16,
+           "strucpp_get_f64",
+           "Read one 64-bit float from the plugin image area: area(0=I,1=Q,2=M), byte_offset.",
+           plcGetF64);
+  setFunc3(17,
+           "strucpp_set_f64",
+           "Write one 64-bit float in the plugin image area: area(0=I,1=Q,2=M), byte_offset, value.",
+           plcSetF64);
+
+  auto setConst = [&data](size_t index,
+                          const char* name,
+                          const char* desc,
+                          double value) {
+    auto& entry = data.consts[index];
+    entry.constName = name;
+    entry.constDesc = desc;
+    entry.constValue = value;
+  };
+
+  setConst(0,
+           "STRUCPP_AREA_I",
+           "Input image area selector for strucpp exprtk helper functions.",
+           kPlcAreaInput);
+  setConst(1,
+           "STRUCPP_AREA_Q",
+           "Output image area selector for strucpp exprtk helper functions.",
+           kPlcAreaOutput);
+  setConst(2,
+           "STRUCPP_AREA_M",
+           "Memory image area selector for strucpp exprtk helper functions.",
+           kPlcAreaMemory);
+
+  return data;
+}
+
+static ecmcPluginData pluginDataDef = makePluginData();
 
 ecmc_plugin_register(pluginDataDef);
 
