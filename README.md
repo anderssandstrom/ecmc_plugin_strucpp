@@ -3,6 +3,10 @@
 `ecmc_plugin_strucpp` is a generic `ecmc` host plugin for running
 loadable `STruCpp` logic libraries inside the normal `ecmc` realtime loop.
 
+In this repo, `ST` means **Structured Text** as defined by **IEC 61131-3**,
+the PLC programming-language standard. It does not mean EPICS sequencer
+State Notation Language `.st` files.
+
 The split is:
 
 - `ecmc_plugin_strucpp`
