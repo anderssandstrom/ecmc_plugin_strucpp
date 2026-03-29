@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>430</width>
+    <height>255</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>ecmc_plugin_strucpp</string>
+  </property>
+  <widget class="caLabel" name="caLabelTitle">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>311</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>ST plugin control and status</string>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+     <bold>true</bold>
+    </font>
+   </property>
+  </widget>
+  <widget class="caLabel" name="caLabelPfx">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>34</y>
+     <width>381</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>PV base: $(IOC):Plg-ST$(PLG_ID=0)-...</string>
+   </property>
+  </widget>
+  <widget class="caLabel" name="caLabelCtrlWord">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>66</y>
+     <width>111</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Control word</string>
+   </property>
+  </widget>
+  <widget class="caTextEntry" name="caTextEntryCtrlWord">
+   <property name="geometry">
+    <rect>
+     <x>130</x>
+     <y>62</y>
+     <width>81</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="channel" stdset="0">
+    <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-CtrlWord-RB</string>
+   </property>
+  </widget>
+  <widget class="caLabel" name="caLabelCtrlHint">
+   <property name="geometry">
+    <rect>
+     <x>220</x>
+     <y>66</y>
+     <width>191</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>bit0 enable, bit1 exec-time</string>
+   </property>
+  </widget>
+  <widget class="caMessageButton" name="caMessageButtonEnable">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>92</y>
+     <width>91</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Enable</string>
+   </property>
+   <property name="channel" stdset="0">
+    <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-CtrlWord-RB</string>
+   </property>
+   <property name="releaseMessage">
+    <string notr="true">1</string>
+   </property>
+  </widget>
+  <widget class="caMessageButton" name="caMessageButtonDisable">
+   <property name="geometry">
+    <rect>
+     <x>110</x>
+     <y>92</y>
+     <width>91</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Disable</string>
+   </property>
+   <property name="channel" stdset="0">
+    <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-CtrlWord-RB</string>
+   </property>
+   <property name="releaseMessage">
+    <string notr="true">0</string>
+   </property>
+  </widget>
+  <widget class="caMessageButton" name="caMessageButtonEnableMeas">
+   <property name="geometry">
+    <rect>
+     <x>210</x>
+     <y>92</y>
+     <width>111</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Enable+Meas</string>
+   </property>
+   <property name="channel" stdset="0">
+    <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-CtrlWord-RB</string>
+   </property>
+   <property name="releaseMessage">
+    <string notr="true">3</string>
+   </property>
+  </widget>
+  <widget class="caLabel" name="caLabelRateReq">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>132</y>
+     <width>111</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Req sample [ms]</string>
+   </property>
+  </widget>
+  <widget class="caTextEntry" name="caTextEntryRateReq">
+   <property name="geometry">
+    <rect>
+     <x>130</x>
+     <y>128</y>
+     <width>81</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="channel" stdset="0">
+    <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-SmpMs-RB</string>
+   </property>
+  </widget>
+  <widget class="caLabel" name="caLabelRateAct">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>162</y>
+     <width>111</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Act sample [ms]</string>
+   </property>
+  </widget>
+  <widget class="caLineEdit" name="caLineEditRateAct">
+   <property name="geometry">
+    <rect>
+     <x>130</x>
+     <y>158</y>
+     <width>81</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="channel" stdset="0">
+    <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-SmpMsAct</string>
+   </property>
+   <property name="colorMode">
+    <enum>caLineEdit::Static</enum>
+   </property>
+   <property name="precisionMode">
+    <enum>caLineEdit::Channel</enum>
+   </property>
+   <property name="limitsMode">
+    <enum>caLineEdit::Channel</enum>
+   </property>
+   <property name="unitsEnabled">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="caLabel" name="caLabelExec">
+   <property name="geometry">
+    <rect>
+     <x>220</x>
+     <y>132</y>
+     <width>101</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Exec time [ms]</string>
+   </property>
+  </widget>
+  <widget class="caLineEdit" name="caLineEditExec">
+   <property name="geometry">
+    <rect>
+     <x>330</x>
+     <y>128</y>
+     <width>81</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="channel" stdset="0">
+    <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-ExeMsAct</string>
+   </property>
+   <property name="colorMode">
+    <enum>caLineEdit::Static</enum>
+   </property>
+   <property name="precisionMode">
+    <enum>caLineEdit::Channel</enum>
+   </property>
+   <property name="limitsMode">
+    <enum>caLineEdit::Channel</enum>
+   </property>
+   <property name="unitsEnabled">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="caLabel" name="caLabelDiv">
+   <property name="geometry">
+    <rect>
+     <x>220</x>
+     <y>162</y>
+     <width>101</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Divider</string>
+   </property>
+  </widget>
+  <widget class="caLineEdit" name="caLineEditDiv">
+   <property name="geometry">
+    <rect>
+     <x>330</x>
+     <y>158</y>
+     <width>81</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="channel" stdset="0">
+    <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-DivAct</string>
+   </property>
+   <property name="colorMode">
+    <enum>caLineEdit::Static</enum>
+   </property>
+   <property name="precisionMode">
+    <enum>caLineEdit::Channel</enum>
+   </property>
+   <property name="limitsMode">
+    <enum>caLineEdit::Channel</enum>
+   </property>
+  </widget>
+  <widget class="caLabel" name="caLabelCount">
+   <property name="geometry">
+    <rect>
+     <x>220</x>
+     <y>192</y>
+     <width>101</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Exec count</string>
+   </property>
+  </widget>
+  <widget class="caLineEdit" name="caLineEditCount">
+   <property name="geometry">
+    <rect>
+     <x>330</x>
+     <y>188</y>
+     <width>81</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="channel" stdset="0">
+    <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-CntAct</string>
+   </property>
+   <property name="colorMode">
+    <enum>caLineEdit::Static</enum>
+   </property>
+   <property name="precisionMode">
+    <enum>caLineEdit::Channel</enum>
+   </property>
+   <property name="limitsMode">
+    <enum>caLineEdit::Channel</enum>
+   </property>
+  </widget>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>caLabel</class>
+   <extends>QWidget</extends>
+   <header>caLabel</header>
+  </customwidget>
+  <customwidget>
+   <class>caLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>caLineEdit</header>
+  </customwidget>
+  <customwidget>
+   <class>caTextEntry</class>
+   <extends>caLineEdit</extends>
+   <header>caTextEntry</header>
+  </customwidget>
+  <customwidget>
+   <class>caMessageButton</class>
+   <extends>QPushButton</extends>
+   <header>caMessageButton</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

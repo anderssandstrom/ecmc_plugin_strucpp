@@ -63,6 +63,26 @@ If the ST source changes, rebuild the bundled `.stlib` with:
 That recompiles the library with `strucpp` in a container and reapplies the
 required `ecmcMcApi.h` header metadata.
 
+## Qt Panel
+
+This repo also ships a small caQtDM panel for the built-in plugin control and
+status PVs:
+
+- [`qt/ecmc_plugin_strucpp_main.ui`](qt/ecmc_plugin_strucpp_main.ui)
+- [`qt/readme.md`](qt/readme.md)
+
+Example:
+
+```sh
+caqtdm -macro "IOC=c6025a-04,PLG_ID=0" /path/to/ecmc_plugin_strucpp/qt/ecmc_plugin_strucpp_main.ui
+```
+
+The panel targets the built-in records such as:
+
+- `$(IOC):Plg-ST$(PLG_ID)-CtrlWord-RB`
+- `$(IOC):Plg-ST$(PLG_ID)-SmpMs-RB`
+- `$(IOC):Plg-ST$(PLG_ID)-ExeMsAct`
+
 ## App Build Helper
 
 This repo now also ships a reusable IOC/app-side build helper:

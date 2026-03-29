@@ -52,6 +52,7 @@ the startup script can stay minimal:
 require ecmccfg
 ${SCRIPTEXEC} ${ecmccfg_DIR}addSlave.cmd, "SLAVE_ID=14,HW_DESC=EL7041-0052"
 require ecmc_plugin_strucpp sandst_a "REPORT=1"
+# caqtdm -macro "IOC=c6025a-04,PLG_ID=0" $(ecmc_plugin_strucpp_DIR)qt/ecmc_plugin_strucpp_main.ui
 ```
 
 This example uses `// @ecmc ...` annotations in the ST source, so the plugin

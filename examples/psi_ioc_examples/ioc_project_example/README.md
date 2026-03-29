@@ -66,6 +66,10 @@ This example also shows a split ST project:
 - [`src/main_counter_fb.st`](src/main_counter_fb.st)
   reusable helper FB used by the default build path
 
+The generic built-in plugin panel lives in:
+
+- [`../../../qt/ecmc_plugin_strucpp_main.ui`](../../../qt/ecmc_plugin_strucpp_main.ui)
+
 The concrete sample now maps directly to EL7041 EtherCAT items:
 
 - `%IW0` -> `ec.s14.positionActual01`
