@@ -1,5 +1,6 @@
 O.*
 bin/
+**/generated/
 lib/
 !lib/
 lib/*
