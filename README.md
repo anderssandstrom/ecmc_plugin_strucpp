@@ -130,6 +130,58 @@ The first useful block set currently includes:
 - `MC_ReadActualPosition`
 - `MC_ReadActualVelocity`
 
+### Motion FB Interfaces
+
+The bundled library currently uses a simple integer-based axis reference:
+
+```iecst
+TYPE ECMC_AXIS_REF :
+STRUCT
+  AxisIndex : DINT;
+END_STRUCT
+END_TYPE
+```
+
+All `MC_*` blocks take `Axis : ECMC_AXIS_REF` and are intended to be called
+cyclically like normal IEC 61131-3 function blocks.
+
+Current ST interfaces:
+
+- `MC_Power`
+  Inputs: `Axis`, `Enable`
+  Outputs: `Status`, `Valid`, `Busy`, `Error`, `ErrorID`, `Active`
+- `MC_Reset`
+  Inputs: `Axis`, `Execute`
+  Outputs: `Done`, `Busy`, `Error`, `ErrorID`, `Active`
+- `MC_MoveAbsolute`
+  Inputs: `Axis`, `Execute`, `Position`, `Velocity`, `Acceleration`, `Deceleration`
+  Outputs: `Done`, `Busy`, `Active`, `CommandAborted`, `Error`, `ErrorID`
+- `MC_MoveRelative`
+  Inputs: `Axis`, `Execute`, `Distance`, `Velocity`, `Acceleration`, `Deceleration`
+  Outputs: `Done`, `Busy`, `Active`, `CommandAborted`, `Error`, `ErrorID`
+- `MC_MoveVelocity`
+  Inputs: `Axis`, `Execute`, `Velocity`, `Acceleration`, `Deceleration`
+  Outputs: `InVelocity`, `Busy`, `Active`, `CommandAborted`, `Error`, `ErrorID`
+- `MC_Home`
+  Inputs: `Axis`, `Execute`, `SeqId`, `HomePosition`, `VelocityTowardsCam`, `VelocityOffCam`, `Acceleration`, `Deceleration`
+  Outputs: `Done`, `Busy`, `Active`, `CommandAborted`, `Error`, `ErrorID`
+- `MC_Halt`
+  Inputs: `Axis`, `Execute`
+  Outputs: `Done`, `Busy`, `Active`, `CommandAborted`, `Error`, `ErrorID`
+- `MC_ReadStatus`
+  Inputs: `Axis`, `Enable`
+  Outputs: `Valid`, `Busy`, `Error`, `ErrorID`, `ErrorStop`, `Disabled`, `Stopping`, `Homing`, `StandStill`, `DiscreteMotion`, `ContinuousMotion`, `SynchronizedMotion`
+- `MC_ReadActualPosition`
+  Inputs: `Axis`, `Enable`
+  Outputs: `Valid`, `Busy`, `Error`, `ErrorID`, `Position`
+- `MC_ReadActualVelocity`
+  Inputs: `Axis`, `Enable`
+  Outputs: `Valid`, `Busy`, `Error`, `ErrorID`, `Velocity`
+
+The source of truth for these interfaces is:
+
+- [`lib/ecmc_motion.st`](lib/ecmc_motion.st)
+
 If the ST source changes, rebuild the bundled `.stlib` with:
 
 ```sh
