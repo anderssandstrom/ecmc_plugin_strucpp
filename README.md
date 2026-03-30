@@ -106,8 +106,12 @@ The bundled `ECMC_*` utility additions are:
 
 - `ECMC_DebounceBool`
 - `ECMC_ApplyDeadband`
+- `ECMC_Clamp`
+- `ECMC_InWindow`
 - `ECMC_RateLimiter`
 - `ECMC_FirstOrderFilter`
+- `ECMC_HysteresisBool`
+- `ECMC_Integrator`
 - `ECMC_EcMasterStatus`
 - `ECMC_EcSlaveStatus`
 - `ECMC_AxisGetTrajSource`
@@ -134,6 +138,8 @@ Example:
 ```iecst
 VAR
   filt    : ECMC_FirstOrderFilter;
+  hyst    : ECMC_HysteresisBool;
+  integ   : ECMC_Integrator;
   statusM : ECMC_EcMasterStatus;
   statusS : ECMC_EcSlaveStatus;
   axisPos  : LREAL;
@@ -141,6 +147,8 @@ VAR
 END_VAR
 
 filt(Input := velocity_cmd, Tau := 0.02, DT := 0.001);
+hyst(In := axis_load, Low := 20.0, High := 30.0);
+integ(In := ctrl_err, K := 0.5, DT := 0.001, Min := -10.0, Max := 10.0);
 statusM();
 statusS(SlaveId := 14);
 axisPos := ECMC_AxisGetActualPos(AxisId := 1);
@@ -159,6 +167,11 @@ required, own the external trajectory or encoder values. The
 `...UseInternal...` and `...UseExternal...` helpers avoid raw source constants
 in common ST code, while `ECMC_AxisSetTrajSource` and `ECMC_AxisSetEncSource`
 remain available when you want the explicit numeric source value.
+
+There is intentionally no separate `ECMC_SlewToTarget`, since
+`ECMC_RateLimiter` already covers that use case. I also did not add a
+dedicated pulse-stretch block because the standard IEC timer blocks `TP` and
+`TOF` already cover that behavior well.
 
 This is not limited to one flat `PROGRAM`. Normal IEC 61131-3
 `FUNCTION_BLOCK`s, `FUNCTION`s, and reusable helper code can be used as well.

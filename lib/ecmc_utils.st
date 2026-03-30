@@ -59,6 +59,63 @@ ELSE
 END_IF;
 END_FUNCTION
 
+FUNCTION ECMC_Clamp : LREAL
+VAR_INPUT
+  Value : LREAL;
+  Min   : LREAL := 0.0;
+  Max   : LREAL := 0.0;
+END_VAR
+VAR
+  Lo : LREAL;
+  Hi : LREAL;
+END_VAR
+
+Lo := Min;
+Hi := Max;
+IF Hi < Lo THEN
+  Lo := Max;
+  Hi := Min;
+END_IF;
+
+IF Hi > Lo THEN
+  IF Value < Lo THEN
+    ECMC_Clamp := Lo;
+  ELSIF Value > Hi THEN
+    ECMC_Clamp := Hi;
+  ELSE
+    ECMC_Clamp := Value;
+  END_IF;
+ELSE
+  ECMC_Clamp := Value;
+END_IF;
+END_FUNCTION
+
+FUNCTION ECMC_InWindow : BOOL
+VAR_INPUT
+  Value     : LREAL;
+  Low       : LREAL;
+  High      : LREAL;
+  Inclusive : BOOL := TRUE;
+END_VAR
+VAR
+  Lo : LREAL;
+  Hi : LREAL;
+END_VAR
+
+Lo := Low;
+Hi := High;
+IF Hi < Lo THEN
+  Lo := High;
+  Hi := Low;
+END_IF;
+
+IF Inclusive THEN
+  ECMC_InWindow := (Value >= Lo) AND (Value <= Hi);
+ELSE
+  ECMC_InWindow := (Value > Lo) AND (Value < Hi);
+END_IF;
+END_FUNCTION
+
 FUNCTION_BLOCK ECMC_RateLimiter
 VAR_INPUT
   Enable      : BOOL := TRUE;
@@ -142,6 +199,107 @@ ELSIF (Tau <= 0.0) OR (DT <= 0.0) THEN
 ELSE
   Alpha := DT / (Tau + DT);
   Output := Output + Alpha * (Input - Output);
+END_IF;
+END_FUNCTION_BLOCK
+
+FUNCTION_BLOCK ECMC_HysteresisBool
+VAR_INPUT
+  In        : LREAL;
+  Low       : LREAL := 0.0;
+  High      : LREAL := 0.0;
+  Reset     : BOOL := FALSE;
+  InitState : BOOL := FALSE;
+END_VAR
+VAR_OUTPUT
+  Out     : BOOL;
+  Rising  : BOOL;
+  Falling : BOOL;
+END_VAR
+VAR
+  Lo : LREAL;
+  Hi : LREAL;
+END_VAR
+
+Lo := Low;
+Hi := High;
+IF Hi < Lo THEN
+  Lo := High;
+  Hi := Low;
+END_IF;
+
+Rising := FALSE;
+Falling := FALSE;
+
+IF Reset THEN
+  IF Out <> InitState THEN
+    Rising := InitState;
+    Falling := NOT InitState;
+  END_IF;
+  Out := InitState;
+ELSE
+  IF NOT Out THEN
+    IF In >= Hi THEN
+      Out := TRUE;
+      Rising := TRUE;
+    END_IF;
+  ELSE
+    IF In <= Lo THEN
+      Out := FALSE;
+      Falling := TRUE;
+    END_IF;
+  END_IF;
+END_IF;
+END_FUNCTION_BLOCK
+
+FUNCTION_BLOCK ECMC_Integrator
+VAR_INPUT
+  Enable : BOOL := TRUE;
+  Reset  : BOOL := FALSE;
+  Hold   : BOOL := FALSE;
+  In     : LREAL;
+  K      : LREAL := 1.0;
+  DT     : LREAL := 1.0;
+  Min    : LREAL := 0.0;
+  Max    : LREAL := 0.0;
+  Init   : LREAL := 0.0;
+END_VAR
+VAR_OUTPUT
+  Out     : LREAL;
+  Limited : BOOL;
+END_VAR
+VAR
+  Candidate : LREAL;
+  Lo        : LREAL;
+  Hi        : LREAL;
+END_VAR
+
+Lo := Min;
+Hi := Max;
+IF Hi < Lo THEN
+  Lo := Max;
+  Hi := Min;
+END_IF;
+
+IF Reset THEN
+  Out := Init;
+  Limited := FALSE;
+ELSIF Enable AND (NOT Hold) AND (DT > 0.0) THEN
+  Candidate := Out + In * K * DT;
+  Limited := FALSE;
+
+  IF Hi > Lo THEN
+    IF Candidate < Lo THEN
+      Candidate := Lo;
+      Limited := TRUE;
+    ELSIF Candidate > Hi THEN
+      Candidate := Hi;
+      Limited := TRUE;
+    END_IF;
+  END_IF;
+
+  Out := Candidate;
+ELSE
+  Limited := FALSE;
 END_IF;
 END_FUNCTION_BLOCK
 
