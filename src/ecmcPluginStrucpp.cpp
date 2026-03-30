@@ -614,6 +614,7 @@ void logError(const char* fmt, ...) {
   std::fprintf(stderr, "[ecmc_plugin_strucpp] ERROR: ");
   std::vfprintf(stderr, fmt, args);
   std::fprintf(stderr, "\n");
+  std::fflush(stderr);
   va_end(args);
 }
 
@@ -623,6 +624,7 @@ void logInfo(const char* fmt, ...) {
   std::fprintf(stdout, "[ecmc_plugin_strucpp] ");
   std::vfprintf(stdout, fmt, args);
   std::fprintf(stdout, "\n");
+  std::fflush(stdout);
   va_end(args);
 }
 
@@ -2446,6 +2448,7 @@ bool loadLogicRuntime(const std::string& path, std::string* error_out) {
   unloadLogicRuntime();
   dlerror();
 
+  logInfo("loadLogicRuntime dlopen path=%s", path.c_str());
   g_logic.dl_handle = dlopen(path.c_str(), RTLD_NOW);
   if (!g_logic.dl_handle) {
     if (error_out) {
@@ -2468,6 +2471,7 @@ bool loadLogicRuntime(const std::string& path, std::string* error_out) {
     return false;
   }
 
+  logInfo("loadLogicRuntime get_api");
   g_logic.api = get_api();
   if (!g_logic.api) {
     if (error_out) {
@@ -2496,6 +2500,7 @@ bool loadLogicRuntime(const std::string& path, std::string* error_out) {
     return false;
   }
 
+  logInfo("loadLogicRuntime create_instance");
   g_logic.instance = g_logic.api->create_instance();
   if (!g_logic.instance) {
     if (error_out) {
@@ -2528,11 +2533,16 @@ static int construct(char* configStr) {
     return -1;
   }
 
+  logInfo("construct begin");
   std::string error;
   if (!parseConfigString(configStr, &g_config, &error)) {
     logError("%s", error.c_str());
     return -1;
   }
+  logInfo("construct parsed config logic_lib=%s asyn_port=%s sample_rate_ms=%g",
+          g_config.logic_lib.c_str(),
+          g_config.asyn_port_name.c_str(),
+          g_config.sample_rate_ms);
 
   double base_sample_time_ms = 0.0;
   if (!resolveExecuteDivider(g_config,
@@ -2542,6 +2552,9 @@ static int construct(char* configStr) {
     logError("%s", error.c_str());
     return -1;
   }
+  logInfo("construct resolved execute divider=%zu base_sample_ms=%g",
+          g_runtime_execute_divider,
+          base_sample_time_ms);
 
   applyControlWord(kControlWordEnableExecutionBit);
   g_execute_count = 0;
@@ -2549,17 +2562,20 @@ static int construct(char* configStr) {
     logError("%s", error.c_str());
     return -1;
   }
+  logInfo("construct applied runtime sample rate actual_ms=%g", g_actual_sample_rate_ms);
 
   if (!loadLogicRuntime(g_config.logic_lib, &error)) {
     logError("%s", error.c_str());
     return -1;
   }
+  logInfo("construct logic runtime loaded");
 
   if (!ensureAsynPort(&error)) {
     unloadLogicRuntime();
     logError("%s", error.c_str());
     return -1;
   }
+  logInfo("construct asyn port ready");
 
   if (!bindBuiltinVars(&error)) {
     destroyAsynPort();
@@ -2567,6 +2583,7 @@ static int construct(char* configStr) {
     logError("%s", error.c_str());
     return -1;
   }
+  logInfo("construct builtin vars bound");
 
   if (!bindExportedVars(&error)) {
     destroyAsynPort();
@@ -2574,6 +2591,7 @@ static int construct(char* configStr) {
     logError("%s", error.c_str());
     return -1;
   }
+  logInfo("construct exported vars bound");
 
   alreadyLoaded = 1;
   const std::string input_bindings = describeBindingSpecs(g_config.input_bindings);
