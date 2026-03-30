@@ -13,5 +13,8 @@ Start here:
   richer IOC project example with split ST files and optional C++ glue
 - [`ioc_project_mc_motion`](ioc_project_mc_motion)
   IOC example using the bundled `MC_*` motion library with EPICS-triggered commands
+- [`MTEST04-MTN-STRUCPP-MC`](MTEST04-MTN-STRUCPP-MC)
+  motion-library variant of the MTEST example that automatically bounces
+  between `0` and `12800` with `MC_MoveAbsolute`
 
 Only source examples are kept here. Build outputs are intentionally not tracked.

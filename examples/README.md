@@ -12,3 +12,7 @@ for the smallest end-to-end IOC example.
 
 For a motion-library IOC example with EPICS-triggered `MC_*` commands, see
 [`psi_ioc_examples/ioc_project_mc_motion`](psi_ioc_examples/ioc_project_mc_motion).
+
+For a self-running `MC_MoveAbsolute` bounce example derived from the MTEST
+layout, see
+[`psi_ioc_examples/MTEST04-MTN-STRUCPP-MC`](psi_ioc_examples/MTEST04-MTN-STRUCPP-MC).
