@@ -14,7 +14,7 @@
 require ecmccfg "ECMC_VER=strucpp"
 ${SCRIPTEXEC} ${ecmccfg_DIR}addSlave.cmd, "SLAVE_ID=14,HW_DESC=EL7041-0052"
 
-require ecmc_plugin_strucpp strucpp "REPORT=1,LOAD_APP_PVS=0"
+require ecmc_plugin_strucpp sandst_a "REPORT=1,LOAD_APP_PVS=0"
 
 # Optional plugin panel:
 # caqtdm -macro "IOC=c6025a-04,PLG_ID=0" $(ecmc_plugin_strucpp_DIR)qt/ecmc_plugin_strucpp_main.ui
