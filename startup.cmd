@@ -17,6 +17,8 @@
 #- OUTPUT_BINDINGS : Optional direct %Q bindings, <offset>:<item>[@bytes],...
 #- MEMORY_BYTES : Optional %M image size, default 256
 #- SAMPLE_RATE_MS : Optional ST logic sample period in milliseconds
+#- VALIDATE_REPORT : Print live mapped-item validation report before RT, default 0
+#- VALIDATE_ONLY : Validate live mapped items and stop before RT, default 0
 #- LOAD_DEFAULT_PVS : Load built-in plugin control/status PVs, default 1
 #- LOAD_APP_PVS  : Load generated app PVs from substitutions, default 1
 #- EPICS_SUBST  : Optional generated EPICS substitutions file to load
@@ -31,7 +33,7 @@ epicsEnvSet(ECMC_STRUCPP_LOGIC_LIB,"${LOGIC_LIB=bin/main.so}")
 epicsEnvSet(ECMC_STRUCPP_DB_MACROS_BASE,"P=${DB_PREFIX=$(IOC):},PORT=${ASYN_PORT=PLUGIN.STRUCPP0}")
 epicsEnvSet(ECMC_STRUCPP_CORE_EPICS_SUBST,"${ecmc_plugin_strucpp_DIR}ecmcStrucppCore.substitutions")
 epicsEnvSet(ECMC_STRUCPP_DEFAULT_EPICS_SUBST,"${ECMC_STRUCPP_LOGIC_LIB}.substitutions")
-epicsEnvSet(ECMC_STRUCPP_PLUGIN_CONFIG,"logic_lib=${ECMC_STRUCPP_LOGIC_LIB};asyn_port=${ASYN_PORT=PLUGIN.STRUCPP0};mapping_file=${MAPPING_FILE=};input_item=${INPUT_ITEM=};output_item=${OUTPUT_ITEM=};input_bindings=${INPUT_BINDINGS=};output_bindings=${OUTPUT_BINDINGS=};memory_bytes=${MEMORY_BYTES=256};sample_rate_ms=${SAMPLE_RATE_MS=}")
+epicsEnvSet(ECMC_STRUCPP_PLUGIN_CONFIG,"logic_lib=${ECMC_STRUCPP_LOGIC_LIB};asyn_port=${ASYN_PORT=PLUGIN.STRUCPP0};mapping_file=${MAPPING_FILE=};input_item=${INPUT_ITEM=};output_item=${OUTPUT_ITEM=};input_bindings=${INPUT_BINDINGS=};output_bindings=${OUTPUT_BINDINGS=};memory_bytes=${MEMORY_BYTES=256};sample_rate_ms=${SAMPLE_RATE_MS=};validate_report=${VALIDATE_REPORT=0};validate_only=${VALIDATE_ONLY=0}")
 
 ecmcIf("'${PLUGIN_ID=-1}'='-1'")
 ${IF_TRUE}${SCRIPTEXEC} ${ecmccfg_DIR}loadPlugin.cmd, "FILE='${ECMC_PLUGIN_FILENAME}',CONFIG='${ECMC_STRUCPP_PLUGIN_CONFIG}',REPORT=${REPORT=1}"

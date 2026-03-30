@@ -87,6 +87,8 @@ struct PluginConfig {
   std::vector<ItemBindingSpec> output_bindings;
   size_t memory_bytes {256};
   double sample_rate_ms {0.0};
+  bool validate_report {false};
+  bool validate_only {false};
 };
 
 struct LogicRuntime {
@@ -1226,6 +1228,35 @@ bool parseDoubleToken(const std::string& text,
   return true;
 }
 
+bool parseBoolToken(const std::string& text,
+                    const char* field_name,
+                    bool* out_value,
+                    std::string* error_out) {
+  if (!out_value) {
+    if (error_out) {
+      *error_out = std::string(field_name) + " output pointer is null";
+    }
+    return false;
+  }
+
+  if (text == "1" || text == "true" || text == "TRUE" || text == "True") {
+    *out_value = true;
+    return true;
+  }
+
+  if (text == "0" || text == "false" || text == "FALSE" || text == "False" ||
+      text.empty()) {
+    *out_value = false;
+    return true;
+  }
+
+  if (error_out) {
+    *error_out =
+      std::string("Invalid ") + field_name + " value: '" + text + "'";
+  }
+  return false;
+}
+
 bool resolveExecuteDivider(const PluginConfig& config,
                            size_t* out_divider,
                            double* out_sample_time_ms,
@@ -1410,6 +1441,18 @@ std::string formatAddress(const LocatedAddressKey& address) {
 std::string formatAddress(const strucpp::LocatedVar& var) {
   LocatedAddressKey key {var.area, var.size, var.byte_index, var.bit_index};
   return formatAddress(key);
+}
+
+const char* locatedAreaReportName(strucpp::LocatedArea area) {
+  switch (area) {
+  case strucpp::LocatedArea::Input:
+    return "Input";
+  case strucpp::LocatedArea::Output:
+    return "Output";
+  case strucpp::LocatedArea::Memory:
+    return "Memory";
+  }
+  return "Unknown";
 }
 
 const char* dataDirectionName(ecmcDataDir direction) {
@@ -1955,6 +1998,20 @@ bool parseConfigString(const char* raw_config,
             return false;
           }
         }
+      } else if (key == "validate_report") {
+        if (!parseBoolToken(value,
+                            "validate_report",
+                            &out_config->validate_report,
+                            error_out)) {
+          return false;
+        }
+      } else if (key == "validate_only") {
+        if (!parseBoolToken(value,
+                            "validate_only",
+                            &out_config->validate_only,
+                            error_out)) {
+          return false;
+        }
       } else {
         if (error_out) {
           *error_out = "Unsupported config key: '" + key + "'";
@@ -2011,6 +2068,91 @@ bool parseConfigString(const char* raw_config,
 
 int currentMasterIndex() {
   return getEcmcMasterIndex();
+}
+
+void logValidationReportHeader(const char* mode) {
+  logInfo("validation_report mode=%s begin", mode ? mode : "<unknown>");
+}
+
+void logValidationReportFooter(const char* mode, size_t checked) {
+  logInfo("validation_summary mode=%s checked=%zu result=OK",
+          mode ? mode : "<unknown>",
+          checked);
+}
+
+const strucpp::LocatedVar* findLocatedVarForAddress(const strucpp::LocatedVar* vars,
+                                                    size_t var_count,
+                                                    const LocatedAddressKey& address) {
+  if (!vars) {
+    return nullptr;
+  }
+
+  for (size_t index = 0; index < var_count; ++index) {
+    const auto& var = vars[index];
+    if (var.area == address.area && var.size == address.size &&
+        var.byte_index == address.byte_index &&
+        var.bit_index == address.bit_index) {
+      return &var;
+    }
+  }
+  return nullptr;
+}
+
+void logDirectMappingValidationReport(const std::vector<BoundAddressMapping>& mappings) {
+  logValidationReportHeader("direct_mapping");
+  const strucpp::LocatedVar* const vars = logicLocatedVars();
+  const size_t var_count = logicLocatedVarCount();
+  for (const auto& mapping : mappings) {
+    const strucpp::LocatedVar* const var = findLocatedVarForAddress(vars,
+                                                                    var_count,
+                                                                    mapping.address);
+    if (!var) {
+      continue;
+    }
+    logInfo("validate map %s -> %s direction=%s type=%s bytes=%zu bits=%u",
+            formatAddress(*var).c_str(),
+            mapping.item.name.c_str(),
+            dataDirectionName(mapping.info.dataDirection),
+            dataTypeName(mapping.info.dataType),
+            mapping.info.dataElementSize,
+            mapping.info.dataBitCount);
+  }
+  logValidationReportFooter("direct_mapping", mappings.size());
+}
+
+void logBindingValidationReport(const std::vector<BoundItemBinding>& bindings,
+                                strucpp::LocatedArea area,
+                                const char* mode) {
+  logValidationReportHeader(mode);
+  for (const auto& binding : bindings) {
+    logInfo("validate binding %s[%zu:%zu] -> %s direction=%s type=%s bytes=%zu bits=%u",
+            locatedAreaReportName(area),
+            binding.offset,
+            binding.offset + binding.bytes,
+            binding.item.name.c_str(),
+            dataDirectionName(binding.info.dataDirection),
+            dataTypeName(binding.info.dataType),
+            binding.info.dataElementSize,
+            binding.info.dataBitCount);
+  }
+  logValidationReportFooter(mode, bindings.size());
+}
+
+void logContiguousValidationReport(const char* label,
+                                   const ecmcStrucppIoImageSpan& image,
+                                   const ecmcDataItemInfo& info,
+                                   strucpp::LocatedArea area) {
+  logValidationReportHeader(label);
+  logInfo("validate image %s name=%s direction=%s type=%s bytes=%zu image_size=%zu bits=%u area=%s",
+          label,
+          image.name.c_str(),
+          dataDirectionName(info.dataDirection),
+          dataTypeName(info.dataType),
+          info.dataElementSize,
+          image.size,
+          info.dataBitCount,
+          locatedAreaReportName(area));
+  logValidationReportFooter(label, image.name.empty() ? 0 : 1);
 }
 
 bool resolveItemName(const std::string& item_name,
@@ -2687,7 +2829,8 @@ static void destruct(void) {
 
 static int enterRealtime(void) {
   std::string error;
-  ecmcDataItemInfo image_info {};
+  ecmcDataItemInfo input_image_info {};
+  ecmcDataItemInfo output_image_info {};
 
   const strucpp::LocatedVar* const vars = logicLocatedVars();
   const size_t var_count = logicLocatedVarCount();
@@ -2741,6 +2884,13 @@ static int enterRealtime(void) {
     logInfo("mapping_summary direct_mappings=%zu exports=%zu",
             g_bound_mappings.size(),
             g_exported_params.size() + g_grouped_bool_params.size());
+    if (g_config.validate_report || g_config.validate_only) {
+      logDirectMappingValidationReport(g_bound_mappings);
+    }
+    if (g_config.validate_only) {
+      logInfo("validate_only requested; skipping realtime start");
+      return -1;
+    }
     return 0;
   }
 
@@ -2773,12 +2923,12 @@ static int enterRealtime(void) {
       return -1;
     }
   } else if (!g_config.input_item.empty()) {
-    if (!bindItemSpan(g_config.input_item, &g_images.input, &image_info, &error)) {
+    if (!bindItemSpan(g_config.input_item, &g_images.input, &input_image_info, &error)) {
       logError("%s", error.c_str());
       return -1;
     }
     if (!validateDirectionForArea(strucpp::LocatedArea::Input,
-                                  image_info,
+                                  input_image_info,
                                   g_images.input.name,
                                   &error)) {
       logError("%s", error.c_str());
@@ -2819,12 +2969,12 @@ static int enterRealtime(void) {
       return -1;
     }
   } else if (!g_config.output_item.empty()) {
-    if (!bindItemSpan(g_config.output_item, &g_images.output, &image_info, &error)) {
+    if (!bindItemSpan(g_config.output_item, &g_images.output, &output_image_info, &error)) {
       logError("%s", error.c_str());
       return -1;
     }
     if (!validateDirectionForArea(strucpp::LocatedArea::Output,
-                                  image_info,
+                                  output_image_info,
                                   g_images.output.name,
                                   &error)) {
       logError("%s", error.c_str());
@@ -2859,6 +3009,33 @@ static int enterRealtime(void) {
             ((g_config.input_item.empty() && g_config.output_item.empty()) ? "none" :
              "contiguous_image"),
           g_exported_params.size() + g_grouped_bool_params.size());
+  if (g_config.validate_report || g_config.validate_only) {
+    if (!g_config.input_bindings.empty()) {
+      logBindingValidationReport(g_bound_input_bindings,
+                                 strucpp::LocatedArea::Input,
+                                 "explicit_input_bindings");
+    } else if (!g_config.input_item.empty()) {
+      logContiguousValidationReport("contiguous_input_image",
+                                    g_images.input,
+                                    input_image_info,
+                                    strucpp::LocatedArea::Input);
+    }
+
+    if (!g_config.output_bindings.empty()) {
+      logBindingValidationReport(g_bound_output_bindings,
+                                 strucpp::LocatedArea::Output,
+                                 "explicit_output_bindings");
+    } else if (!g_config.output_item.empty()) {
+      logContiguousValidationReport("contiguous_output_image",
+                                    g_images.output,
+                                    output_image_info,
+                                    strucpp::LocatedArea::Output);
+    }
+  }
+  if (g_config.validate_only) {
+    logInfo("validate_only requested; skipping realtime start");
+    return -1;
+  }
   return 0;
 }
 
