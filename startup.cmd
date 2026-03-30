@@ -20,7 +20,7 @@
 #- LOAD_DEFAULT_PVS : Load built-in plugin control/status PVs, default 1
 #- LOAD_APP_PVS  : Load generated app PVs from substitutions, default 1
 #- EPICS_SUBST  : Optional generated EPICS substitutions file to load
-#- DB_PREFIX    : Optional record prefix for dbLoadTemplate, default ${IOC}
+#- DB_PREFIX    : Optional record prefix for dbLoadTemplate, default ${IOC}:
 #- DB_MACROS    : Optional extra dbLoadTemplate macros, comma-separated
 #- REPORT       : Print plugin report, default 1
 #
@@ -28,7 +28,7 @@
 
 epicsEnvSet(ECMC_PLUGIN_FILENAME,"$(ecmc_plugin_strucpp_DIR)lib/${EPICS_HOST_ARCH=linux-x86_64}/libecmc_plugin_strucpp.so")
 epicsEnvSet(ECMC_STRUCPP_LOGIC_LIB,"${LOGIC_LIB=bin/main.so}")
-epicsEnvSet(ECMC_STRUCPP_DB_MACROS_BASE,"P=${DB_PREFIX=$(IOC=)},PORT=${ASYN_PORT=PLUGIN.STRUCPP0}")
+epicsEnvSet(ECMC_STRUCPP_DB_MACROS_BASE,"P=${DB_PREFIX=$(IOC):},PORT=${ASYN_PORT=PLUGIN.STRUCPP0}")
 epicsEnvSet(ECMC_STRUCPP_CORE_EPICS_SUBST,"${ecmc_plugin_strucpp_DIR}ecmcStrucppCore.substitutions")
 epicsEnvSet(ECMC_STRUCPP_DEFAULT_EPICS_SUBST,"${ECMC_STRUCPP_LOGIC_LIB}.substitutions")
 epicsEnvSet(ECMC_STRUCPP_PLUGIN_CONFIG,"logic_lib=${ECMC_STRUCPP_LOGIC_LIB};asyn_port=${ASYN_PORT=PLUGIN.STRUCPP0};mapping_file=${MAPPING_FILE=};input_item=${INPUT_ITEM=};output_item=${OUTPUT_ITEM=};input_bindings=${INPUT_BINDINGS=};output_bindings=${OUTPUT_BINDINGS=};memory_bytes=${MEMORY_BYTES=256};sample_rate_ms=${SAMPLE_RATE_MS=}")
