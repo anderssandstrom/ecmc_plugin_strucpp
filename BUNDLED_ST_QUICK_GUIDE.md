@@ -5,6 +5,10 @@ This file is a compact reference for the bundled ST helpers that ship with
 
 ## `lib/ecmc_debug.st`
 
+Detailed reference:
+
+- [`docs/ecmc_debug_lib.md`](docs/ecmc_debug_lib.md)
+
 - `ECMC_DebugPrint`
   Edge-triggered debug print FB. Prints only on the rising edge of `Execute`.
 - `ECMC_DebugPrintNow`
@@ -12,11 +16,19 @@ This file is a compact reference for the bundled ST helpers that ship with
 
 ## `lib/ecmc_control.st`
 
+Detailed reference:
+
+- [`docs/ecmc_control_lib.md`](docs/ecmc_control_lib.md)
+
 - `ECMC_PID`
   General PID FB with FF, output limiting, integrator limiting, anti-windup,
   and optional filtered D part.
 
 ## `lib/ecmc_utils.st`
+
+Detailed reference:
+
+- [`docs/ecmc_utils_lib.md`](docs/ecmc_utils_lib.md)
 
 - `ECMC_DebounceBool`
   Debounce a boolean with independent on/off delays.
@@ -83,6 +95,10 @@ Notes:
   blocks `TP` and `TOF` already cover that behavior well.
 
 ## `lib/ecmc_motion.st`
+
+Detailed reference:
+
+- [`docs/ecmc_motion_lib.md`](docs/ecmc_motion_lib.md)
 
 - `ECMC_AXIS_REF`
   Minimal axis reference type used by the bundled motion FBs.

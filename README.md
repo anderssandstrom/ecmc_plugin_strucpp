@@ -177,6 +177,13 @@ A compact helper overview is available in:
 
 - [`BUNDLED_ST_QUICK_GUIDE.md`](BUNDLED_ST_QUICK_GUIDE.md)
 
+Detailed per-library reference pages are available in:
+
+- [`docs/ecmc_debug_lib.md`](docs/ecmc_debug_lib.md)
+- [`docs/ecmc_control_lib.md`](docs/ecmc_control_lib.md)
+- [`docs/ecmc_utils_lib.md`](docs/ecmc_utils_lib.md)
+- [`docs/ecmc_motion_lib.md`](docs/ecmc_motion_lib.md)
+
 This is not limited to one flat `PROGRAM`. Normal IEC 61131-3
 `FUNCTION_BLOCK`s, `FUNCTION`s, and reusable helper code can be used as well.
 The repo also ships a bundled motion library with PLCopen-style `MC_*` blocks
