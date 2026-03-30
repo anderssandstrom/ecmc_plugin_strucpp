@@ -4,7 +4,7 @@
 
 #include "iec_located.hpp"
 
-#define ECMC_STRUCPP_LOGIC_ABI_VERSION 7
+#define ECMC_STRUCPP_LOGIC_ABI_VERSION 8
 
 constexpr uint32_t ECMC_STRUCPP_CONTROL_WORD_ENABLE_EXECUTION_BIT = 1u << 0;
 constexpr uint32_t ECMC_STRUCPP_CONTROL_WORD_MEASURE_EXEC_TIME_BIT = 1u << 1;
@@ -37,6 +37,16 @@ struct ecmcStrucppHostServices {
   uint32_t (*get_control_word)();
   uint32_t (*get_ec_master_state_word)(int32_t master_index);
   uint32_t (*get_ec_slave_state_word)(int32_t master_index, int32_t slave_index);
+  int32_t (*get_axis_traj_source)(int32_t axis_index);
+  int32_t (*get_axis_enc_source)(int32_t axis_index);
+  double (*get_axis_actual_pos)(int32_t axis_index);
+  double (*get_axis_setpoint_pos)(int32_t axis_index);
+  double (*get_axis_actual_vel)(int32_t axis_index);
+  double (*get_axis_setpoint_vel)(int32_t axis_index);
+  int32_t (*get_axis_enabled)(int32_t axis_index);
+  int32_t (*get_axis_busy)(int32_t axis_index);
+  int32_t (*get_axis_error)(int32_t axis_index);
+  int32_t (*get_axis_error_id)(int32_t axis_index);
   int32_t (*set_axis_traj_source)(int32_t axis_index, int32_t source);
   int32_t (*set_axis_enc_source)(int32_t axis_index, int32_t source);
   int32_t (*set_axis_ext_set_pos)(int32_t axis_index, double value);

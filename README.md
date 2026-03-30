@@ -110,6 +110,16 @@ The bundled `ECMC_*` utility additions are:
 - `ECMC_FirstOrderFilter`
 - `ECMC_EcMasterStatus`
 - `ECMC_EcSlaveStatus`
+- `ECMC_AxisGetTrajSource`
+- `ECMC_AxisGetEncSource`
+- `ECMC_AxisGetActualPos`
+- `ECMC_AxisGetSetpointPos`
+- `ECMC_AxisGetActualVel`
+- `ECMC_AxisGetSetpointVel`
+- `ECMC_AxisIsEnabled`
+- `ECMC_AxisIsBusy`
+- `ECMC_AxisHasError`
+- `ECMC_AxisGetErrorId`
 - `ECMC_AxisSetTrajSource`
 - `ECMC_AxisSetEncSource`
 - `ECMC_AxisUseInternalTraj`
@@ -126,12 +136,14 @@ VAR
   filt    : ECMC_FirstOrderFilter;
   statusM : ECMC_EcMasterStatus;
   statusS : ECMC_EcSlaveStatus;
+  axisPos  : LREAL;
   setErr   : DINT;
 END_VAR
 
 filt(Input := velocity_cmd, Tau := 0.02, DT := 0.001);
 statusM();
 statusS(SlaveId := 14);
+axisPos := ECMC_AxisGetActualPos(AxisId := 1);
 setErr := ECMC_AxisUseExternalTraj(AxisId := 1);
 setErr := ECMC_AxisSetExternalSetpointPos(AxisId := 1, Position := kin_pos_cmd);
 ```
@@ -141,8 +153,9 @@ without requiring you to map device-specific status words manually. For
 terminal or drive-specific status information like DS402 status words, direct
 `@ecmc` mapping is still the preferred path.
 
-The axis-source helpers are intended for kinematics and synchronization paths
-where ST owns the external trajectory or encoder values for an axis. The
+The axis getter and source helpers are intended for kinematics and
+synchronization paths where ST needs to supervise axis state and, when
+required, own the external trajectory or encoder values. The
 `...UseInternal...` and `...UseExternal...` helpers avoid raw source constants
 in common ST code, while `ECMC_AxisSetTrajSource` and `ECMC_AxisSetEncSource`
 remain available when you want the explicit numeric source value.

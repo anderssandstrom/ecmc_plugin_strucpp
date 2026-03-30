@@ -664,6 +664,46 @@ uint32_t getHostEcSlaveStateWord(int32_t master_index, int32_t slave_index) {
   return getEcmcSlaveStateWord(master_index, slave_index);
 }
 
+int32_t getHostAxisTrajSource(int32_t axis_index) {
+  return static_cast<int32_t>(getEcmcAxisTrajSource(axis_index));
+}
+
+int32_t getHostAxisEncSource(int32_t axis_index) {
+  return static_cast<int32_t>(getEcmcAxisEncSource(axis_index));
+}
+
+double getHostAxisActualPos(int32_t axis_index) {
+  return getEcmcAxisActualPos(axis_index);
+}
+
+double getHostAxisSetpointPos(int32_t axis_index) {
+  return getEcmcAxisSetpointPos(axis_index);
+}
+
+double getHostAxisActualVel(int32_t axis_index) {
+  return getEcmcAxisActualVel(axis_index);
+}
+
+double getHostAxisSetpointVel(int32_t axis_index) {
+  return getEcmcAxisSetpointVel(axis_index);
+}
+
+int32_t getHostAxisEnabled(int32_t axis_index) {
+  return static_cast<int32_t>(getEcmcAxisEnabled(axis_index));
+}
+
+int32_t getHostAxisBusy(int32_t axis_index) {
+  return static_cast<int32_t>(getEcmcAxisBusy(axis_index));
+}
+
+int32_t getHostAxisError(int32_t axis_index) {
+  return static_cast<int32_t>(getEcmcAxisError(axis_index));
+}
+
+int32_t getHostAxisErrorId(int32_t axis_index) {
+  return static_cast<int32_t>(getEcmcAxisErrorId(axis_index));
+}
+
 int32_t setHostAxisTrajSource(int32_t axis_index, int32_t source) {
   return static_cast<int32_t>(setEcmcAxisTrajSource(axis_index, source));
 }
@@ -688,10 +728,20 @@ void publishHostDebugText(const char* message) {
 }
 
 const ecmcStrucppHostServices g_host_services = {
-  3,
+  4,
   &getHostControlWord,
   &getHostEcMasterStateWord,
   &getHostEcSlaveStateWord,
+  &getHostAxisTrajSource,
+  &getHostAxisEncSource,
+  &getHostAxisActualPos,
+  &getHostAxisSetpointPos,
+  &getHostAxisActualVel,
+  &getHostAxisSetpointVel,
+  &getHostAxisEnabled,
+  &getHostAxisBusy,
+  &getHostAxisError,
+  &getHostAxisErrorId,
   &setHostAxisTrajSource,
   &setHostAxisEncSource,
   &setHostAxisExtSetPos,

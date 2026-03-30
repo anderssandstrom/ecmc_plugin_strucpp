@@ -210,6 +210,106 @@ END_VAR
 }
 END_FUNCTION_BLOCK
 
+FUNCTION ECMC_AxisGetTrajSource : DINT
+VAR_INPUT
+  AxisId : DINT;
+END_VAR
+{external
+  extern int32_t ecmcStrucppGetAxisTrajSource(int32_t axis_index);
+  ECMC_AXISGETTRAJSOURCE = ecmcStrucppGetAxisTrajSource(AXISID.get());
+}
+END_FUNCTION
+
+FUNCTION ECMC_AxisGetEncSource : DINT
+VAR_INPUT
+  AxisId : DINT;
+END_VAR
+{external
+  extern int32_t ecmcStrucppGetAxisEncSource(int32_t axis_index);
+  ECMC_AXISGETENCSOURCE = ecmcStrucppGetAxisEncSource(AXISID.get());
+}
+END_FUNCTION
+
+FUNCTION ECMC_AxisGetActualPos : LREAL
+VAR_INPUT
+  AxisId : DINT;
+END_VAR
+{external
+  extern double ecmcStrucppGetAxisActualPos(int32_t axis_index);
+  ECMC_AXISGETACTUALPOS = ecmcStrucppGetAxisActualPos(AXISID.get());
+}
+END_FUNCTION
+
+FUNCTION ECMC_AxisGetSetpointPos : LREAL
+VAR_INPUT
+  AxisId : DINT;
+END_VAR
+{external
+  extern double ecmcStrucppGetAxisSetpointPos(int32_t axis_index);
+  ECMC_AXISGETSETPOINTPOS = ecmcStrucppGetAxisSetpointPos(AXISID.get());
+}
+END_FUNCTION
+
+FUNCTION ECMC_AxisGetActualVel : LREAL
+VAR_INPUT
+  AxisId : DINT;
+END_VAR
+{external
+  extern double ecmcStrucppGetAxisActualVel(int32_t axis_index);
+  ECMC_AXISGETACTUALVEL = ecmcStrucppGetAxisActualVel(AXISID.get());
+}
+END_FUNCTION
+
+FUNCTION ECMC_AxisGetSetpointVel : LREAL
+VAR_INPUT
+  AxisId : DINT;
+END_VAR
+{external
+  extern double ecmcStrucppGetAxisSetpointVel(int32_t axis_index);
+  ECMC_AXISGETSETPOINTVEL = ecmcStrucppGetAxisSetpointVel(AXISID.get());
+}
+END_FUNCTION
+
+FUNCTION ECMC_AxisIsEnabled : BOOL
+VAR_INPUT
+  AxisId : DINT;
+END_VAR
+{external
+  extern int32_t ecmcStrucppGetAxisEnabled(int32_t axis_index);
+  ECMC_AXISISENABLED = ecmcStrucppGetAxisEnabled(AXISID.get()) != 0;
+}
+END_FUNCTION
+
+FUNCTION ECMC_AxisIsBusy : BOOL
+VAR_INPUT
+  AxisId : DINT;
+END_VAR
+{external
+  extern int32_t ecmcStrucppGetAxisBusy(int32_t axis_index);
+  ECMC_AXISISBUSY = ecmcStrucppGetAxisBusy(AXISID.get()) != 0;
+}
+END_FUNCTION
+
+FUNCTION ECMC_AxisHasError : BOOL
+VAR_INPUT
+  AxisId : DINT;
+END_VAR
+{external
+  extern int32_t ecmcStrucppGetAxisError(int32_t axis_index);
+  ECMC_AXISHASERROR = ecmcStrucppGetAxisError(AXISID.get()) != 0;
+}
+END_FUNCTION
+
+FUNCTION ECMC_AxisGetErrorId : DINT
+VAR_INPUT
+  AxisId : DINT;
+END_VAR
+{external
+  extern int32_t ecmcStrucppGetAxisErrorId(int32_t axis_index);
+  ECMC_AXISGETERRORID = ecmcStrucppGetAxisErrorId(AXISID.get());
+}
+END_FUNCTION
+
 FUNCTION ECMC_AxisSetTrajSource : DINT
 VAR_INPUT
   AxisId : DINT;
