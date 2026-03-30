@@ -26,16 +26,20 @@ dbg_position(Execute := dbg_sample_trigger,
              Message := CONCAT('actual_position=',
                                TO_STRING(actual_position)));
 
-IF actual_position < 0 THEN
+IF velocity_setpoint = 0 THEN
   velocity_setpoint := 1000;
-ELSIF actual_position > 1000 THEN
+END_IF;
+
+IF actual_position <= 0 THEN
+  velocity_setpoint := 1000;
+ELSIF actual_position >= 12800 THEN
   velocity_setpoint := -1000;
 END_IF;
 
-dbg_reverse_pos(Execute := actual_position < 0,
+dbg_reverse_pos(Execute := actual_position <= 0,
                 Message := CONCAT('reverse -> +1000 at pos=',
                                   TO_STRING(actual_position)));
-dbg_reverse_neg(Execute := actual_position > 1000,
+dbg_reverse_neg(Execute := actual_position >= 12800,
                 Message := CONCAT('reverse -> -1000 at pos=',
                                   TO_STRING(actual_position)));
 END_PROGRAM
