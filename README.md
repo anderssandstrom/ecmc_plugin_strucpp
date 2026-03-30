@@ -173,6 +173,10 @@ There is intentionally no separate `ECMC_SlewToTarget`, since
 dedicated pulse-stretch block because the standard IEC timer blocks `TP` and
 `TOF` already cover that behavior well.
 
+A compact helper overview is available in:
+
+- [`BUNDLED_ST_QUICK_GUIDE.md`](BUNDLED_ST_QUICK_GUIDE.md)
+
 This is not limited to one flat `PROGRAM`. Normal IEC 61131-3
 `FUNCTION_BLOCK`s, `FUNCTION`s, and reusable helper code can be used as well.
 The repo also ships a bundled motion library with PLCopen-style `MC_*` blocks
