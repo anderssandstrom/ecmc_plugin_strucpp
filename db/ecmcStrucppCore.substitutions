@@ -2,7 +2,7 @@
 
 file "ecmcStrucppLongOut.template" {
 pattern { P, REC_PREFIX, PORT, ADDR, TIMEOUT, REC, ASYN, DESC }
-{ "$(P=)", "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", "Plg-ST0-CtrlWord-RB", "plugin.strucpp0.ctrl.word", "Control word: bit0 enable, bit1 exec-time measure, bit2 ST debug prints" }
+{ "$(P=)", "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", "Plg-ST0-CtrlWord-RB", "plugin.strucpp0.ctrl.word", "bit0 en, bit1 meas, bit2 dbg" }
 }
 
 file "ecmcStrucppAo.template" {
