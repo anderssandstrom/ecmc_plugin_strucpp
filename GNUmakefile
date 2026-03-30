@@ -20,7 +20,7 @@ OPT_CXXFLAGS_YES = -O3
 ecmc_VERSION = strucpp
 
 ifndef STRUCPP
-STRUCPP = $(abspath ../../STruCpp)
+STRUCPP = $(abspath ../../strucpp)
 endif
 
 USR_CXXFLAGS += -I$(STRUCPP)/src/runtime/include
