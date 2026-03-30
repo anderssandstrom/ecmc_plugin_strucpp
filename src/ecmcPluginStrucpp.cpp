@@ -1912,16 +1912,17 @@ bool parseConfigString(const char* raw_config,
       } else if (key == "sample_rate_ms") {
         if (value.empty()) {
           out_config->sample_rate_ms = 0.0;
-          continue;
         }
-        if (!parseDoubleToken(value, "sample_rate_ms", &out_config->sample_rate_ms, error_out)) {
-          return false;
-        }
-        if (out_config->sample_rate_ms <= 0.0) {
-          if (error_out) {
-            *error_out = "Invalid sample_rate_ms value: '" + value + "'";
+        if (!value.empty()) {
+          if (!parseDoubleToken(value, "sample_rate_ms", &out_config->sample_rate_ms, error_out)) {
+            return false;
           }
-          return false;
+          if (out_config->sample_rate_ms <= 0.0) {
+            if (error_out) {
+              *error_out = "Invalid sample_rate_ms value: '" + value + "'";
+            }
+            return false;
+          }
         }
       } else {
         if (error_out) {
