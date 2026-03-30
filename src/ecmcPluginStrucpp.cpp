@@ -3029,6 +3029,8 @@ ecmcPluginData makePluginData() {
 
 static ecmcPluginData pluginDataDef = makePluginData();
 
-ecmc_plugin_register(pluginDataDef);
-
 }  // namespace
+
+extern "C" {
+ecmc_plugin_register(pluginDataDef);
+}
