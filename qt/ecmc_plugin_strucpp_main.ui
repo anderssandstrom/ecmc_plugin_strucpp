@@ -58,126 +58,36 @@
     <string>Control word</string>
    </property>
   </widget>
-  <widget class="caTextEntry" name="caTextEntryCtrlWord">
+  <widget class="caByteController" name="caByteControllerCtrlWord">
    <property name="geometry">
     <rect>
      <x>130</x>
      <y>62</y>
-     <width>81</width>
-     <height>22</height>
+     <width>21</width>
+     <height>84</height>
     </rect>
    </property>
    <property name="channel" stdset="0">
     <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-CtrlWord-RB</string>
+   </property>
+   <property name="endBit">
+    <number>2</number>
    </property>
   </widget>
   <widget class="caLabel" name="caLabelCtrlHint">
    <property name="geometry">
     <rect>
-     <x>220</x>
+     <x>165</x>
      <y>66</y>
-     <width>191</width>
-     <height>18</height>
+     <width>246</width>
+     <height>36</height>
     </rect>
    </property>
    <property name="text">
-    <string>bit0 enable, bit1 exec-time, bit2 ST debug</string>
-   </property>
-  </widget>
-  <widget class="caMessageButton" name="caMessageButtonEnable">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>92</y>
-     <width>91</width>
-     <height>24</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Enable</string>
-   </property>
-   <property name="channel" stdset="0">
-    <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-CtrlWord-RB</string>
-   </property>
-   <property name="releaseMessage">
-    <string notr="true">1</string>
-   </property>
-  </widget>
-  <widget class="caMessageButton" name="caMessageButtonDisable">
-   <property name="geometry">
-    <rect>
-     <x>110</x>
-     <y>92</y>
-     <width>91</width>
-     <height>24</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Disable</string>
-   </property>
-   <property name="channel" stdset="0">
-    <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-CtrlWord-RB</string>
-   </property>
-   <property name="releaseMessage">
-    <string notr="true">0</string>
-   </property>
-  </widget>
-  <widget class="caMessageButton" name="caMessageButtonEnableMeas">
-   <property name="geometry">
-    <rect>
-     <x>210</x>
-     <y>92</y>
-     <width>111</width>
-     <height>24</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Enable+Meas</string>
-   </property>
-   <property name="channel" stdset="0">
-    <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-CtrlWord-RB</string>
-   </property>
-   <property name="releaseMessage">
-    <string notr="true">3</string>
-   </property>
-  </widget>
-  <widget class="caMessageButton" name="caMessageButtonEnableDbg">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>122</y>
-     <width>121</width>
-     <height>24</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Enable+Dbg</string>
-   </property>
-   <property name="channel" stdset="0">
-    <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-CtrlWord-RB</string>
-   </property>
-   <property name="releaseMessage">
-    <string notr="true">5</string>
-   </property>
-  </widget>
-  <widget class="caMessageButton" name="caMessageButtonEnableMeasDbg">
-   <property name="geometry">
-    <rect>
-     <x>140</x>
-     <y>122</y>
-     <width>181</width>
-     <height>24</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Enable+Meas+Dbg</string>
-   </property>
-   <property name="channel" stdset="0">
-    <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-CtrlWord-RB</string>
-   </property>
-   <property name="releaseMessage">
-    <string notr="true">7</string>
-   </property>
+    <string>bit0 enable
+bit1 exec-time
+bit2 ST debug</string>
+    </property>
   </widget>
   <widget class="caLabel" name="caLabelRateReq">
    <property name="geometry">
@@ -367,6 +277,11 @@
    <class>caTextEntry</class>
    <extends>caLineEdit</extends>
    <header>caTextEntry</header>
+  </customwidget>
+  <customwidget>
+   <class>caByteController</class>
+   <extends>QWidget</extends>
+   <header>caByteController</header>
   </customwidget>
   <customwidget>
    <class>caMessageButton</class>
