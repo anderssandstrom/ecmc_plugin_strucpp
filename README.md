@@ -110,6 +110,14 @@ The bundled `ECMC_*` utility additions are:
 - `ECMC_FirstOrderFilter`
 - `ECMC_EcMasterStatus`
 - `ECMC_EcSlaveStatus`
+- `ECMC_AxisSetTrajSource`
+- `ECMC_AxisSetEncSource`
+- `ECMC_AxisUseInternalTraj`
+- `ECMC_AxisUseExternalTraj`
+- `ECMC_AxisUseInternalEnc`
+- `ECMC_AxisUseExternalEnc`
+- `ECMC_AxisSetExternalSetpointPos`
+- `ECMC_AxisSetExternalEncoderPos`
 
 Example:
 
@@ -118,17 +126,26 @@ VAR
   filt    : ECMC_FirstOrderFilter;
   statusM : ECMC_EcMasterStatus;
   statusS : ECMC_EcSlaveStatus;
+  setErr   : DINT;
 END_VAR
 
 filt(Input := velocity_cmd, Tau := 0.02, DT := 0.001);
 statusM();
 statusS(SlaveId := 14);
+setErr := ECMC_AxisUseExternalTraj(AxisId := 1);
+setErr := ECMC_AxisSetExternalSetpointPos(AxisId := 1, Position := kin_pos_cmd);
 ```
 
 `ECMC_EcMasterStatus` and `ECMC_EcSlaveStatus` expose generic EtherCAT state
 without requiring you to map device-specific status words manually. For
 terminal or drive-specific status information like DS402 status words, direct
 `@ecmc` mapping is still the preferred path.
+
+The axis-source helpers are intended for kinematics and synchronization paths
+where ST owns the external trajectory or encoder values for an axis. The
+`...UseInternal...` and `...UseExternal...` helpers avoid raw source constants
+in common ST code, while `ECMC_AxisSetTrajSource` and `ECMC_AxisSetEncSource`
+remain available when you want the explicit numeric source value.
 
 This is not limited to one flat `PROGRAM`. Normal IEC 61131-3
 `FUNCTION_BLOCK`s, `FUNCTION`s, and reusable helper code can be used as well.

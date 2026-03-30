@@ -209,3 +209,75 @@ END_VAR
   SLAVESRESPONDING.set(static_cast<uint16_t>((word >> 16u) & 0xFFFFu));
 }
 END_FUNCTION_BLOCK
+
+FUNCTION ECMC_AxisSetTrajSource : DINT
+VAR_INPUT
+  AxisId : DINT;
+  Source : DINT;
+END_VAR
+{external
+  extern int32_t ecmcStrucppSetAxisTrajSource(int32_t axis_index, int32_t source);
+  ECMC_AXISSETTRAJSOURCE = ecmcStrucppSetAxisTrajSource(AXISID.get(), SOURCE.get());
+}
+END_FUNCTION
+
+FUNCTION ECMC_AxisSetEncSource : DINT
+VAR_INPUT
+  AxisId : DINT;
+  Source : DINT;
+END_VAR
+{external
+  extern int32_t ecmcStrucppSetAxisEncSource(int32_t axis_index, int32_t source);
+  ECMC_AXISSETENCSOURCE = ecmcStrucppSetAxisEncSource(AXISID.get(), SOURCE.get());
+}
+END_FUNCTION
+
+FUNCTION ECMC_AxisUseInternalTraj : DINT
+VAR_INPUT
+  AxisId : DINT;
+END_VAR
+  ECMC_AxisUseInternalTraj := ECMC_AxisSetTrajSource(AxisId := AxisId, Source := 0);
+END_FUNCTION
+
+FUNCTION ECMC_AxisUseExternalTraj : DINT
+VAR_INPUT
+  AxisId : DINT;
+END_VAR
+  ECMC_AxisUseExternalTraj := ECMC_AxisSetTrajSource(AxisId := AxisId, Source := 1);
+END_FUNCTION
+
+FUNCTION ECMC_AxisUseInternalEnc : DINT
+VAR_INPUT
+  AxisId : DINT;
+END_VAR
+  ECMC_AxisUseInternalEnc := ECMC_AxisSetEncSource(AxisId := AxisId, Source := 0);
+END_FUNCTION
+
+FUNCTION ECMC_AxisUseExternalEnc : DINT
+VAR_INPUT
+  AxisId : DINT;
+END_VAR
+  ECMC_AxisUseExternalEnc := ECMC_AxisSetEncSource(AxisId := AxisId, Source := 1);
+END_FUNCTION
+
+FUNCTION ECMC_AxisSetExternalSetpointPos : DINT
+VAR_INPUT
+  AxisId   : DINT;
+  Position : LREAL;
+END_VAR
+{external
+  extern int32_t ecmcStrucppSetAxisExtSetPos(int32_t axis_index, double value);
+  ECMC_AXISSETEXTERNALSETPOINTPOS = ecmcStrucppSetAxisExtSetPos(AXISID.get(), POSITION.get());
+}
+END_FUNCTION
+
+FUNCTION ECMC_AxisSetExternalEncoderPos : DINT
+VAR_INPUT
+  AxisId   : DINT;
+  Position : LREAL;
+END_VAR
+{external
+  extern int32_t ecmcStrucppSetAxisExtActPos(int32_t axis_index, double value);
+  ECMC_AXISSETEXTERNALENCODERPOS = ecmcStrucppSetAxisExtActPos(AXISID.get(), POSITION.get());
+}
+END_FUNCTION

@@ -4,7 +4,7 @@
 
 #include "iec_located.hpp"
 
-#define ECMC_STRUCPP_LOGIC_ABI_VERSION 6
+#define ECMC_STRUCPP_LOGIC_ABI_VERSION 7
 
 constexpr uint32_t ECMC_STRUCPP_CONTROL_WORD_ENABLE_EXECUTION_BIT = 1u << 0;
 constexpr uint32_t ECMC_STRUCPP_CONTROL_WORD_MEASURE_EXEC_TIME_BIT = 1u << 1;
@@ -37,6 +37,10 @@ struct ecmcStrucppHostServices {
   uint32_t (*get_control_word)();
   uint32_t (*get_ec_master_state_word)(int32_t master_index);
   uint32_t (*get_ec_slave_state_word)(int32_t master_index, int32_t slave_index);
+  int32_t (*set_axis_traj_source)(int32_t axis_index, int32_t source);
+  int32_t (*set_axis_enc_source)(int32_t axis_index, int32_t source);
+  int32_t (*set_axis_ext_set_pos)(int32_t axis_index, double value);
+  int32_t (*set_axis_ext_act_pos)(int32_t axis_index, double value);
   void (*publish_debug_text)(const char* message);
 };
 

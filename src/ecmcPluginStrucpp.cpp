@@ -664,6 +664,22 @@ uint32_t getHostEcSlaveStateWord(int32_t master_index, int32_t slave_index) {
   return getEcmcSlaveStateWord(master_index, slave_index);
 }
 
+int32_t setHostAxisTrajSource(int32_t axis_index, int32_t source) {
+  return static_cast<int32_t>(setEcmcAxisTrajSource(axis_index, source));
+}
+
+int32_t setHostAxisEncSource(int32_t axis_index, int32_t source) {
+  return static_cast<int32_t>(setEcmcAxisEncSource(axis_index, source));
+}
+
+int32_t setHostAxisExtSetPos(int32_t axis_index, double value) {
+  return static_cast<int32_t>(setEcmcAxisExtSetPos(axis_index, value));
+}
+
+int32_t setHostAxisExtActPos(int32_t axis_index, double value) {
+  return static_cast<int32_t>(setEcmcAxisExtActPos(axis_index, value));
+}
+
 void publishHostDebugText(const char* message) {
   g_builtin_debug_text.assign(message ? message : "");
   if (g_builtin_debug_text.size() > kBuiltinDebugTextMaxChars) {
@@ -672,10 +688,14 @@ void publishHostDebugText(const char* message) {
 }
 
 const ecmcStrucppHostServices g_host_services = {
-  2,
+  3,
   &getHostControlWord,
   &getHostEcMasterStateWord,
   &getHostEcSlaveStateWord,
+  &setHostAxisTrajSource,
+  &setHostAxisEncSource,
+  &setHostAxisExtSetPos,
+  &setHostAxisExtActPos,
   &publishHostDebugText,
 };
 
