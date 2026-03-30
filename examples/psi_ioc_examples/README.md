@@ -21,3 +21,20 @@ Start here:
   the velocity setpoint while bouncing between `0` and `12800`
 
 Only source examples are kept here. Build outputs are intentionally not tracked.
+
+By default, each example root `Makefile` also generates a simple IOC-local
+caQtDM panel for the exported `@epics` records:
+
+- `qt/<IOC>_strucpp.ui`
+
+Example:
+
+```sh
+caqtdm qt/MINIMAL-STRUCPP-IOC_strucpp.ui
+```
+
+If you do not want that panel, build with:
+
+```sh
+make GENERATE_QT=0
+```

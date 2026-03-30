@@ -161,6 +161,20 @@ Typical flow:
 4. start the IOC with
    [`MINIMAL-STRUCPP-IOC_startup.script`](examples/psi_ioc_examples/ioc_project_minimal/MINIMAL-STRUCPP-IOC_startup.script)
 
+By default, the example root `Makefile` also generates a simple IOC-local
+caQtDM panel from the exported `@epics` records:
+
+```sh
+make
+caqtdm qt/MINIMAL-STRUCPP-IOC_strucpp.ui
+```
+
+If you do not want that panel, build with:
+
+```sh
+make GENERATE_QT=0
+```
+
 If you want a slightly richer example with helper FBs, custom record naming,
 and a split source layout, use:
 

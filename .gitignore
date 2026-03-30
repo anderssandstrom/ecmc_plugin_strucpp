@@ -1,6 +1,7 @@
 O.*
 bin/
 **/generated/
+examples/psi_ioc_examples/*/qt/
 lib/
 !lib/
 lib/*

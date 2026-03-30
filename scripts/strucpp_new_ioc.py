@@ -74,10 +74,14 @@ IOC_NAME := $(patsubst %_parameters.yaml,%,$(IOC_PARAMS_FILE))
 endif
 IOC_STRUCPP_SUBS := $(IOC_NAME)_strucpp.subs
 IOC_SUBSGEN := @PLUGIN_ROOT@/scripts/strucpp_ioc_subsgen.py
+IOC_QT_PANEL := qt/$(IOC_NAME)_strucpp.ui
+IOC_QTGEN := @PLUGIN_ROOT@/scripts/strucpp_ioc_qtgen.py
+GENERATE_QT ?= 1
 
 all:
 \t$(MAKE) -C src stage
 \tpython3 $(IOC_SUBSGEN) --ioc-name $(IOC_NAME) --output $(IOC_STRUCPP_SUBS) --input bin/@LOGIC_NAME@.so.substitutions
+\tif [ "$(GENERATE_QT)" = "1" ]; then python3 $(IOC_QTGEN) --input $(IOC_STRUCPP_SUBS) --output $(IOC_QT_PANEL); fi
 
 install: all
 \tioc install --clean -V --ioc $(IOC_NAME)
@@ -85,6 +89,7 @@ install: all
 clean:
 \t$(MAKE) -C src clean
 \t$(RM) $(IOC_STRUCPP_SUBS)
+\t$(RM) $(IOC_QT_PANEL)
 """
 
 
@@ -132,12 +137,20 @@ The startup script uses the standard runtime defaults:
 - `bin/main.so.map`
 - `bin/main.so.substitutions`
 - `@IOC_NAME@_strucpp.subs`
+- `qt/@IOC_NAME@_strucpp.ui`
 
 This sample uses direct EL7041 item mapping:
 
 - `%IW0` -> `ec0.s@SLAVE@.positionActual01`
 - `%QW0` -> `ec0.s@SLAVE@.driveControl01`
 - `%QW2` -> `ec0.s@SLAVE@.velocitySetpoint01`
+
+`make` also generates a simple IOC-local caQtDM panel for the exported
+`@epics` records:
+
+```sh
+caqtdm qt/@IOC_NAME@_strucpp.ui
+```
 """
 
 
