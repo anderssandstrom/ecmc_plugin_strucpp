@@ -50,7 +50,8 @@ usable for ad-hoc tracing without flooding every cycle. The shared IOC build
 helper also links the required C++ debug shim automatically. If you want to
 disable the default ST helper include, set `INCLUDE_DEBUG_ST := 0`. Debug
 printouts are disabled by default and only appear when `ctrl.word` bit 2 is
-set.
+set. A separate total-cycle timing measurement is available on `ctrl.word`
+bit 3.
 
 The shared IOC build helper also includes a small bundled control helper in
 [`lib/ecmc_control.st`](lib/ecmc_control.st):
@@ -812,6 +813,7 @@ The plugin also publishes a small built-in control/status set on the same port:
 - `plugin.strucpp0.ctrl.rate_ms`
 - `plugin.strucpp0.stat.rate_ms`
 - `plugin.strucpp0.stat.exec_ms`
+- `plugin.strucpp0.stat.total_ms`
 - `plugin.strucpp0.stat.div`
 - `plugin.strucpp0.stat.count`
 
@@ -822,16 +824,23 @@ shorter plugin-style record names:
 - `Plg-ST0-SmpMs-RB`
 - `Plg-ST0-SmpMsAct`
 - `Plg-ST0-ExeMsAct`
+- `Plg-ST0-TotMsAct`
 - `Plg-ST0-DivAct`
 - `Plg-ST0-CntAct`
 
 `ctrl.word` uses:
 
 - bit 0: enable ST execution
-- bit 1: enable execution-time measurement
+- bit 1: enable ST-only execution-time measurement
+- bit 2: enable ST debug prints
+- bit 3: enable total plugin-cycle measurement
 
 `stat.exec_ms` is the last measured ST execution time and is only updated while
 the measurement bit is enabled.
+
+`stat.total_ms` is the last measured total plugin cycle time around the ST
+execution path, including plugin-side copying and export work, and is only
+updated while the total-measurement bit is enabled.
 
 `stat.count` is intentionally rate-limited to a maximum PV update rate of
 10 Hz.

@@ -13,11 +13,13 @@ The panel expects `IOC` without a trailing `:` and builds PV names like:
 - `$(IOC):Plg-ST$(PLG_ID)-CtrlWord-RB`
 - `$(IOC):Plg-ST$(PLG_ID)-SmpMs-RB`
 - `$(IOC):Plg-ST$(PLG_ID)-ExeMsAct`
+- `$(IOC):Plg-ST$(PLG_ID)-TotMsAct`
 
-Built-in control shortcuts:
+The control word is edited through a `caByteController` with:
 
-- `Enable` writes `1` to the control word
-- `Disable` writes `0`
-- `Enable+Meas` writes `3`
+- bit 0: enable ST execution
+- bit 1: measure ST logic time
+- bit 2: enable ST debug prints
+- bit 3: measure total plugin cycle time
 
-The raw control word and requested sample period are also editable directly.
+The requested sample period is also editable directly.

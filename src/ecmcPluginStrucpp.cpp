@@ -145,6 +145,7 @@ constexpr const char* kBuiltinControlWordName = "plugin.strucpp0.ctrl.word";
 constexpr const char* kBuiltinSampleRateName = "plugin.strucpp0.ctrl.rate_ms";
 constexpr const char* kBuiltinActualSampleRateName = "plugin.strucpp0.stat.rate_ms";
 constexpr const char* kBuiltinLastExecTimeName = "plugin.strucpp0.stat.exec_ms";
+constexpr const char* kBuiltinLastTotalTimeName = "plugin.strucpp0.stat.total_ms";
 constexpr const char* kBuiltinExecuteDividerName = "plugin.strucpp0.stat.div";
 constexpr const char* kBuiltinExecuteCountName = "plugin.strucpp0.stat.count";
 constexpr uint32_t kControlWordEnableExecutionBit =
@@ -153,6 +154,8 @@ constexpr uint32_t kControlWordMeasureExecTimeBit =
   ECMC_STRUCPP_CONTROL_WORD_MEASURE_EXEC_TIME_BIT;
 constexpr uint32_t kControlWordEnableDebugPrintsBit =
   ECMC_STRUCPP_CONTROL_WORD_ENABLE_DEBUG_PRINTS_BIT;
+constexpr uint32_t kControlWordMeasureTotalTimeBit =
+  ECMC_STRUCPP_CONTROL_WORD_MEASURE_TOTAL_TIME_BIT;
 
 class StrucppAsynPort : public asynPortDriver {
  public:
@@ -599,9 +602,11 @@ size_t g_execute_divider_counter = 0;
 int32_t g_control_word = 1;
 uint8_t g_execution_enabled = 1;
 uint8_t g_measure_exec_time_enabled = 0;
+uint8_t g_measure_total_time_enabled = 0;
 double g_requested_sample_rate_ms = 0.0;
 double g_actual_sample_rate_ms = 0.0;
 double g_last_exec_time_ms = 0.0;
+double g_last_total_time_ms = 0.0;
 int32_t g_execute_divider_pv = 1;
 int32_t g_execute_count = 0;
 size_t g_execute_count_publish_divider = 1;
@@ -921,6 +926,14 @@ bool bindBuiltinVars(std::string* error_out) {
                         ECMC_STRUCPP_EXPORT_F64,
                         0,
                         &g_last_exec_time_ms,
+                        &g_builtin_params,
+                        error_out)) {
+    return false;
+  }
+  if (!createBoundParam(kBuiltinLastTotalTimeName,
+                        ECMC_STRUCPP_EXPORT_F64,
+                        0,
+                        &g_last_total_time_ms,
                         &g_builtin_params,
                         error_out)) {
     return false;
@@ -1259,8 +1272,13 @@ void applyControlWord(uint32_t control_word) {
     (control_word & kControlWordEnableExecutionBit) != 0 ? 1u : 0u;
   g_measure_exec_time_enabled =
     (control_word & kControlWordMeasureExecTimeBit) != 0 ? 1u : 0u;
+  g_measure_total_time_enabled =
+    (control_word & kControlWordMeasureTotalTimeBit) != 0 ? 1u : 0u;
   if (!g_measure_exec_time_enabled) {
     g_last_exec_time_ms = 0.0;
+  }
+  if (!g_measure_total_time_enabled) {
+    g_last_total_time_ms = 0.0;
   }
 }
 
@@ -2654,9 +2672,11 @@ static void destruct(void) {
   g_control_word = static_cast<int32_t>(kControlWordEnableExecutionBit);
   g_execution_enabled = 1;
   g_measure_exec_time_enabled = 0;
+  g_measure_total_time_enabled = 0;
   g_requested_sample_rate_ms = 0.0;
   g_actual_sample_rate_ms = 0.0;
   g_last_exec_time_ms = 0.0;
+  g_last_total_time_ms = 0.0;
   g_execute_divider_pv = 1;
   g_execute_count = 0;
   g_execute_count_publish_divider = 1;
@@ -2855,13 +2875,21 @@ static int realtime(int) {
   }
 
   if (g_execution_enabled == 0u) {
+    g_last_exec_time_ms = 0.0;
+    g_last_total_time_ms = 0.0;
     syncBuiltinParams(false, true);
     return 0;
   }
 
+  timespec total_start {};
+  timespec total_end {};
   timespec exec_start {};
   timespec exec_end {};
   const bool measure_exec_time = g_measure_exec_time_enabled != 0u;
+  const bool measure_total_time = g_measure_total_time_enabled != 0u;
+  if (measure_total_time) {
+    clock_gettime(CLOCK_MONOTONIC, &total_start);
+  }
   if (measure_exec_time) {
     clock_gettime(CLOCK_MONOTONIC, &exec_start);
   }
@@ -2909,15 +2937,25 @@ static int realtime(int) {
     scatterBindings(g_images.output, g_bound_output_bindings);
   }
 
-  syncBuiltinParams(false, true);
-  g_execute_count_publish_due = false;
-
   if (g_asyn_port && !g_exported_params.empty()) {
     g_asyn_port->syncExportedParams(&g_exported_params, false, true);
   }
   if (g_asyn_port && !g_grouped_bool_params.empty()) {
     g_asyn_port->syncGroupedBoolParams(&g_grouped_bool_params, false, true);
   }
+  if (measure_total_time) {
+    clock_gettime(CLOCK_MONOTONIC, &total_end);
+    const int64_t start_ns =
+      static_cast<int64_t>(total_start.tv_sec) * 1000000000ll + total_start.tv_nsec;
+    const int64_t end_ns =
+      static_cast<int64_t>(total_end.tv_sec) * 1000000000ll + total_end.tv_nsec;
+    g_last_total_time_ms =
+      static_cast<double>(end_ns - start_ns) / 1000000.0;
+  } else {
+    g_last_total_time_ms = 0.0;
+  }
+  syncBuiltinParams(false, true);
+  g_execute_count_publish_due = false;
   return 0;
 }
 

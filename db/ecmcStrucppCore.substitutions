@@ -2,7 +2,7 @@
 
 file "ecmcStrucppLongOut.template" {
 pattern { P, REC_PREFIX, PORT, ADDR, TIMEOUT, REC, ASYN, DESC }
-{ "$(P=)", "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", "Plg-ST0-CtrlWord-RB", "plugin.strucpp0.ctrl.word", "bit0 en, bit1 meas, bit2 dbg" }
+{ "$(P=)", "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", "Plg-ST0-CtrlWord-RB", "plugin.strucpp0.ctrl.word", "b0 en,b1 st,b2 dbg,b3 tot" }
 }
 
 file "ecmcStrucppAo.template" {
@@ -14,6 +14,7 @@ file "ecmcStrucppAi.template" {
 pattern { P, REC_PREFIX, PORT, ADDR, TIMEOUT, REC, ASYN, DESC, EGU, PREC }
 { "$(P=)", "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", "Plg-ST0-SmpMsAct", "plugin.strucpp0.stat.rate_ms", "Actual ST sample period", "ms", "3" }
 { "$(P=)", "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", "Plg-ST0-ExeMsAct", "plugin.strucpp0.stat.exec_ms", "Last ST execution time", "ms", "3" }
+{ "$(P=)", "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", "Plg-ST0-TotMsAct", "plugin.strucpp0.stat.total_ms", "Last plugin cycle time", "ms", "3" }
 }
 
 file "ecmcStrucppLongIn.template" {

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>430</width>
-    <height>290</height>
+    <height>310</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -64,14 +64,14 @@
      <x>130</x>
      <y>62</y>
      <width>21</width>
-     <height>78</height>
+     <height>102</height>
     </rect>
    </property>
    <property name="channel" stdset="0">
     <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-CtrlWord-RB</string>
    </property>
    <property name="endBit">
-    <number>2</number>
+    <number>3</number>
    </property>
   </widget>
   <widget class="caLabel" name="caLabelBit0">
@@ -113,11 +113,24 @@
     <string>bit2 ST debug</string>
     </property>
   </widget>
+  <widget class="caLabel" name="caLabelBit3">
+   <property name="geometry">
+    <rect>
+     <x>165</x>
+     <y>138</y>
+     <width>181</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>bit3 total time</string>
+   </property>
+  </widget>
   <widget class="caLabel" name="caLabelRateReq">
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>162</y>
+     <y>186</y>
      <width>111</width>
      <height>18</height>
     </rect>
@@ -130,7 +143,7 @@
    <property name="geometry">
     <rect>
      <x>130</x>
-     <y>158</y>
+     <y>182</y>
      <width>81</width>
      <height>22</height>
     </rect>
@@ -143,7 +156,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>192</y>
+     <y>216</y>
      <width>111</width>
      <height>18</height>
     </rect>
@@ -156,7 +169,7 @@
    <property name="geometry">
     <rect>
      <x>130</x>
-     <y>188</y>
+     <y>212</y>
      <width>81</width>
      <height>22</height>
     </rect>
@@ -181,7 +194,7 @@
    <property name="geometry">
     <rect>
      <x>220</x>
-     <y>162</y>
+     <y>186</y>
      <width>101</width>
      <height>18</height>
     </rect>
@@ -194,7 +207,7 @@
    <property name="geometry">
     <rect>
      <x>330</x>
-     <y>158</y>
+     <y>182</y>
      <width>81</width>
      <height>22</height>
     </rect>
@@ -215,11 +228,49 @@
     <bool>true</bool>
    </property>
   </widget>
+  <widget class="caLabel" name="caLabelTotal">
+   <property name="geometry">
+    <rect>
+     <x>220</x>
+     <y>216</y>
+     <width>101</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Total time [ms]</string>
+   </property>
+  </widget>
+  <widget class="caLineEdit" name="caLineEditTotal">
+   <property name="geometry">
+    <rect>
+     <x>330</x>
+     <y>212</y>
+     <width>81</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="channel" stdset="0">
+    <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-TotMsAct</string>
+   </property>
+   <property name="colorMode">
+    <enum>caLineEdit::Static</enum>
+   </property>
+   <property name="precisionMode">
+    <enum>caLineEdit::Channel</enum>
+   </property>
+   <property name="limitsMode">
+    <enum>caLineEdit::Channel</enum>
+   </property>
+   <property name="unitsEnabled">
+    <bool>true</bool>
+   </property>
+  </widget>
   <widget class="caLabel" name="caLabelDiv">
    <property name="geometry">
     <rect>
      <x>220</x>
-     <y>192</y>
+     <y>246</y>
      <width>101</width>
      <height>18</height>
     </rect>
@@ -232,7 +283,7 @@
    <property name="geometry">
     <rect>
      <x>330</x>
-     <y>188</y>
+     <y>242</y>
      <width>81</width>
      <height>22</height>
     </rect>
@@ -254,7 +305,7 @@
    <property name="geometry">
     <rect>
      <x>220</x>
-     <y>222</y>
+     <y>276</y>
      <width>101</width>
      <height>18</height>
     </rect>
@@ -267,7 +318,7 @@
    <property name="geometry">
     <rect>
      <x>330</x>
-     <y>218</y>
+     <y>272</y>
      <width>81</width>
      <height>22</height>
     </rect>
