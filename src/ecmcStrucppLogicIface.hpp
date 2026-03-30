@@ -4,7 +4,11 @@
 
 #include "iec_located.hpp"
 
-#define ECMC_STRUCPP_LOGIC_ABI_VERSION 3
+#define ECMC_STRUCPP_LOGIC_ABI_VERSION 4
+
+constexpr uint32_t ECMC_STRUCPP_CONTROL_WORD_ENABLE_EXECUTION_BIT = 1u << 0;
+constexpr uint32_t ECMC_STRUCPP_CONTROL_WORD_MEASURE_EXEC_TIME_BIT = 1u << 1;
+constexpr uint32_t ECMC_STRUCPP_CONTROL_WORD_ENABLE_DEBUG_PRINTS_BIT = 1u << 2;
 
 enum ecmcStrucppExportType : uint32_t {
   ECMC_STRUCPP_EXPORT_BOOL = 1,
@@ -27,6 +31,11 @@ struct ecmcStrucppExportedVar {
   uint32_t bit_index;
 };
 
+struct ecmcStrucppHostServices {
+  uint32_t version;
+  uint32_t (*get_control_word)();
+};
+
 enum ecmcStrucppExportFlags : uint32_t {
   ECMC_STRUCPP_EXPORT_FLAG_NONE = 0,
   ECMC_STRUCPP_EXPORT_FLAG_GROUPED_BOOL = 1u << 0,
@@ -35,6 +44,7 @@ enum ecmcStrucppExportFlags : uint32_t {
 struct ecmcStrucppLogicApi {
   uint32_t abi_version;
   const char* name;
+  void (*set_host_services)(const ecmcStrucppHostServices* services);
   void* (*create_instance)();
   void (*destroy_instance)(void* instance);
   void (*run_cycle)(void* instance);

@@ -147,8 +147,12 @@ constexpr const char* kBuiltinActualSampleRateName = "plugin.strucpp0.stat.rate_
 constexpr const char* kBuiltinLastExecTimeName = "plugin.strucpp0.stat.exec_ms";
 constexpr const char* kBuiltinExecuteDividerName = "plugin.strucpp0.stat.div";
 constexpr const char* kBuiltinExecuteCountName = "plugin.strucpp0.stat.count";
-constexpr uint32_t kControlWordEnableExecutionBit = 1u << 0;
-constexpr uint32_t kControlWordMeasureExecTimeBit = 1u << 1;
+constexpr uint32_t kControlWordEnableExecutionBit =
+  ECMC_STRUCPP_CONTROL_WORD_ENABLE_EXECUTION_BIT;
+constexpr uint32_t kControlWordMeasureExecTimeBit =
+  ECMC_STRUCPP_CONTROL_WORD_MEASURE_EXEC_TIME_BIT;
+constexpr uint32_t kControlWordEnableDebugPrintsBit =
+  ECMC_STRUCPP_CONTROL_WORD_ENABLE_DEBUG_PRINTS_BIT;
 
 class StrucppAsynPort : public asynPortDriver {
  public:
@@ -603,6 +607,15 @@ int32_t g_execute_count = 0;
 size_t g_execute_count_publish_divider = 1;
 size_t g_execute_count_publish_counter = 0;
 bool g_execute_count_publish_due = false;
+
+uint32_t getHostControlWord() {
+  return static_cast<uint32_t>(g_control_word);
+}
+
+const ecmcStrucppHostServices g_host_services = {
+  1,
+  &getHostControlWord,
+};
 
 double plcNaN() {
   return std::numeric_limits<double>::quiet_NaN();
@@ -2500,6 +2513,16 @@ bool loadLogicRuntime(const std::string& path, std::string* error_out) {
     unloadLogicRuntime();
     return false;
   }
+
+  if (!g_logic.api->set_host_services) {
+    if (error_out) {
+      *error_out = "Logic API is missing host services hook";
+    }
+    unloadLogicRuntime();
+    return false;
+  }
+
+  g_logic.api->set_host_services(&g_host_services);
 
   logInfo("loadLogicRuntime create_instance");
   g_logic.instance = g_logic.api->create_instance();

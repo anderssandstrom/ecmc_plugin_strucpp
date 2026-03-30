@@ -48,7 +48,9 @@ dbgMoveDone(Execute := move_done,
 `ECMC_DebugPrint` prints one line on the rising edge of `Execute`, so it is
 usable for ad-hoc tracing without flooding every cycle. The shared IOC build
 helper also links the required C++ debug shim automatically. If you want to
-disable the default ST helper include, set `INCLUDE_DEBUG_ST := 0`.
+disable the default ST helper include, set `INCLUDE_DEBUG_ST := 0`. Debug
+printouts are disabled by default and only appear when `ctrl.word` bit 2 is
+set.
 
 This is not limited to one flat `PROGRAM`. Normal IEC 61131-3
 `FUNCTION_BLOCK`s, `FUNCTION`s, and reusable helper code can be used as well.

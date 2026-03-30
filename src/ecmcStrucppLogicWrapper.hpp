@@ -12,6 +12,19 @@ namespace ecmcStrucpp {
 template <typename ProgramT>
 using InitExportedVarsFn = void (*)(ProgramT&, std::vector<ecmcStrucppExportedVar>&);
 
+inline const ecmcStrucppHostServices*& hostServicesStorage() {
+  static const ecmcStrucppHostServices* services = nullptr;
+  return services;
+}
+
+inline void setHostServices(const ecmcStrucppHostServices* services) {
+  hostServicesStorage() = services;
+}
+
+inline const ecmcStrucppHostServices* getHostServices() {
+  return hostServicesStorage();
+}
+
 template <typename ProgramT, size_t N>
 struct LogicInstance {
   ProgramT program;
@@ -78,6 +91,9 @@ uint32_t getLogicExportedVarCount(void* instance) {
   const ecmcStrucppLogicApi logic_api = { \
     ECMC_STRUCPP_LOGIC_ABI_VERSION, \
     LOGIC_NAME, \
+    +[](const ecmcStrucppHostServices* services) { \
+      ecmcStrucpp::setHostServices(services); \
+    }, \
     +[]() -> void* { \
       return ecmcStrucpp::createLogicInstance<EcmcStrucppProgramType_, \
                                               EcmcStrucppLocatedVarCount_>(LocatedVarsSymbol, InitExportsFn); \
