@@ -93,6 +93,39 @@ actually care about:
 Output and integrator limits are disabled unless `Max > Min`. If you want to
 disable the default control-helper include, set `INCLUDE_CONTROL_ST := 0`.
 
+The shared IOC build helper also includes a bundled utility library in
+[`lib/ecmc_utils.st`](lib/ecmc_utils.st). It complements the normal IEC
+standard FBs, so `TON`, `TOF`, `TP`, `R_TRIG`, and similar blocks still come
+from the standard ST library and are not redefined here.
+
+The bundled `ECMC_*` utility additions are:
+
+- `ECMC_DebounceBool`
+- `ECMC_ApplyDeadband`
+- `ECMC_RateLimiter`
+- `ECMC_FirstOrderFilter`
+- `ECMC_EcMasterStatus`
+- `ECMC_EcSlaveStatus`
+
+Example:
+
+```iecst
+VAR
+  filt    : ECMC_FirstOrderFilter;
+  statusM : ECMC_EcMasterStatus;
+  statusS : ECMC_EcSlaveStatus;
+END_VAR
+
+filt(Input := velocity_cmd, Tau := 0.02, DT := 0.001);
+statusM();
+statusS(SlaveId := 14);
+```
+
+`ECMC_EcMasterStatus` and `ECMC_EcSlaveStatus` expose generic EtherCAT state
+without requiring you to map device-specific status words manually. For
+terminal or drive-specific status information like DS402 status words, direct
+`@ecmc` mapping is still the preferred path.
+
 This is not limited to one flat `PROGRAM`. Normal IEC 61131-3
 `FUNCTION_BLOCK`s, `FUNCTION`s, and reusable helper code can be used as well.
 The repo also ships a bundled motion library with PLCopen-style `MC_*` blocks

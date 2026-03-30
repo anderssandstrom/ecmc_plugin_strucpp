@@ -624,9 +624,19 @@ uint32_t getHostControlWord() {
   return static_cast<uint32_t>(g_control_word);
 }
 
+uint32_t getHostEcMasterStateWord(int32_t master_index) {
+  return getEcmcMasterStateWord(master_index);
+}
+
+uint32_t getHostEcSlaveStateWord(int32_t master_index, int32_t slave_index) {
+  return getEcmcSlaveStateWord(master_index, slave_index);
+}
+
 const ecmcStrucppHostServices g_host_services = {
   1,
   &getHostControlWord,
+  &getHostEcMasterStateWord,
+  &getHostEcSlaveStateWord,
 };
 
 double plcNaN() {

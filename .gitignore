@@ -8,6 +8,7 @@ lib/*
 !lib/ecmc_control.st
 !lib/ecmc_debug.st
 !lib/ecmc_motion.st
+!lib/ecmc_utils.st
 configure/
 autom4te.cache/
 .DS_Store

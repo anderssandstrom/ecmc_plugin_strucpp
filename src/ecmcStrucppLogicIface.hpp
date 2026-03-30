@@ -4,7 +4,7 @@
 
 #include "iec_located.hpp"
 
-#define ECMC_STRUCPP_LOGIC_ABI_VERSION 4
+#define ECMC_STRUCPP_LOGIC_ABI_VERSION 5
 
 constexpr uint32_t ECMC_STRUCPP_CONTROL_WORD_ENABLE_EXECUTION_BIT = 1u << 0;
 constexpr uint32_t ECMC_STRUCPP_CONTROL_WORD_MEASURE_EXEC_TIME_BIT = 1u << 1;
@@ -35,6 +35,8 @@ struct ecmcStrucppExportedVar {
 struct ecmcStrucppHostServices {
   uint32_t version;
   uint32_t (*get_control_word)();
+  uint32_t (*get_ec_master_state_word)(int32_t master_index);
+  uint32_t (*get_ec_slave_state_word)(int32_t master_index, int32_t slave_index);
 };
 
 enum ecmcStrucppExportFlags : uint32_t {
