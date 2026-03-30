@@ -8,8 +8,8 @@ The source tree is:
 
 - [`src/main.st`](src/main.st)
 - [`src/Makefile`](src/Makefile)
-- [`MTEST04-MTN-STRUCPP-MC_startup.script`](MTEST04-MTN-STRUCPP-MC_startup.script)
-- [`MTEST04-MTN-STRUCPP-MC_parameters.yaml`](MTEST04-MTN-STRUCPP-MC_parameters.yaml)
+- [`MTEST04-MTN-STRUCPP_startup.script`](MTEST04-MTN-STRUCPP_startup.script)
+- [`MTEST04-MTN-STRUCPP_parameters.yaml`](MTEST04-MTN-STRUCPP_parameters.yaml)
 
 It shows:
 
@@ -26,9 +26,9 @@ It shows:
 The expected flow is:
 
 1. `make`
-2. `ioc install --clean -V --ioc MTEST04-MTN-STRUCPP-MC`
+2. `ioc install --clean -V --ioc MTEST04-MTN-STRUCPP`
 3. start the IOC with
-   [`MTEST04-MTN-STRUCPP-MC_startup.script`](MTEST04-MTN-STRUCPP-MC_startup.script)
+   [`MTEST04-MTN-STRUCPP_startup.script`](MTEST04-MTN-STRUCPP_startup.script)
 
 The build produces and stages:
 
@@ -36,7 +36,7 @@ The build produces and stages:
 - `bin/main.so.map`
 - `bin/main.so.substitutions`
 - `bin/main.so.summary.txt`
-- `MTEST04-MTN-STRUCPP-MC_strucpp.subs`
+- `MTEST04-MTN-STRUCPP_strucpp.subs`
 
 The generic plugin panel can be opened with:
 

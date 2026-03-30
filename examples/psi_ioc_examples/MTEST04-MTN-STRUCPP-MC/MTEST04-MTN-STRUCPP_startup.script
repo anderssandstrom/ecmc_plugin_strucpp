@@ -1,4 +1,5 @@
 # MC_MoveAbsolute-based motion example for ecmc_plugin_strucpp.
+# The directory keeps the -MC suffix, but the IOC name stays MTEST04-MTN-STRUCPP.
 #
 # The logic library lives in the installed IOC-local bin directory:
 #   bin/main.so
