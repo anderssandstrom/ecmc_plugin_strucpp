@@ -19,6 +19,10 @@ void ecmcStrucppDebugPrint(const char* message) {
                "[ecmc_plugin_strucpp] ST: %s\n",
                message ? message : "");
   std::fflush(stdout);
+
+  if (services->publish_debug_text) {
+    services->publish_debug_text(message ? message : "");
+  }
 }
 
 }  // namespace strucpp

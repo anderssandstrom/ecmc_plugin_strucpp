@@ -22,3 +22,8 @@ pattern { P, REC_PREFIX, PORT, ADDR, TIMEOUT, REC, ASYN, DESC }
 { "$(P=)", "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", "Plg-ST0-DivAct", "plugin.strucpp0.stat.div", "Derived ST execute divider" }
 { "$(P=)", "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", "Plg-ST0-CntAct", "plugin.strucpp0.stat.count", "Executed ST cycles" }
 }
+
+file "ecmcStrucppStringIn.template" {
+pattern { P, REC_PREFIX, PORT, ADDR, TIMEOUT, REC, ASYN, DESC }
+{ "$(P=)", "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", "Plg-ST0-DbgTxtAct", "plugin.strucpp0.stat.dbg_txt", "Latest ST debug text" }
+}

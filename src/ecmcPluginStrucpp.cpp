@@ -149,6 +149,8 @@ constexpr const char* kBuiltinLastExecTimeName = "plugin.strucpp0.stat.exec_ms";
 constexpr const char* kBuiltinLastTotalTimeName = "plugin.strucpp0.stat.total_ms";
 constexpr const char* kBuiltinExecuteDividerName = "plugin.strucpp0.stat.div";
 constexpr const char* kBuiltinExecuteCountName = "plugin.strucpp0.stat.count";
+constexpr const char* kBuiltinDebugTextName = "plugin.strucpp0.stat.dbg_txt";
+constexpr size_t kBuiltinDebugTextMaxChars = 39;
 constexpr uint32_t kControlWordEnableExecutionBit =
   ECMC_STRUCPP_CONTROL_WORD_ENABLE_EXECUTION_BIT;
 constexpr uint32_t kControlWordMeasureExecTimeBit =
@@ -164,9 +166,9 @@ class StrucppAsynPort : public asynPortDriver {
     : asynPortDriver(port_name,
                      1,
                      asynInt32Mask | asynUInt32DigitalMask | asynFloat64Mask |
-                       asynDrvUserMask,
+                       asynOctetMask | asynDrvUserMask,
                      asynInt32Mask | asynUInt32DigitalMask | asynFloat64Mask |
-                     asynDrvUserMask,
+                     asynOctetMask | asynDrvUserMask,
                      0,
                      1,
                      0,
@@ -230,6 +232,32 @@ class StrucppAsynPort : public asynPortDriver {
       } else {
         callParamCallbacks();
       }
+    }
+    return true;
+  }
+
+  bool syncOctetParam(int param_id,
+                      const std::string& value,
+                      std::string* last_value,
+                      bool* initialized,
+                      bool force,
+                      bool defer_callbacks) {
+    if (param_id < 0 || !last_value || !initialized) {
+      return false;
+    }
+
+    if (!force && *initialized && *last_value == value) {
+      return true;
+    }
+
+    setStringParam(param_id, value.c_str());
+    *last_value = value;
+    *initialized = true;
+
+    if (defer_callbacks) {
+      scheduleCallbacks();
+    } else {
+      callParamCallbacks();
     }
     return true;
   }
@@ -619,6 +647,10 @@ int32_t g_execute_count = 0;
 size_t g_execute_count_publish_divider = 1;
 size_t g_execute_count_publish_counter = 0;
 bool g_execute_count_publish_due = false;
+int g_builtin_debug_text_param_id = -1;
+std::string g_builtin_debug_text;
+std::string g_builtin_debug_text_last_value;
+bool g_builtin_debug_text_initialized = false;
 
 uint32_t getHostControlWord() {
   return static_cast<uint32_t>(g_control_word);
@@ -632,11 +664,19 @@ uint32_t getHostEcSlaveStateWord(int32_t master_index, int32_t slave_index) {
   return getEcmcSlaveStateWord(master_index, slave_index);
 }
 
+void publishHostDebugText(const char* message) {
+  g_builtin_debug_text.assign(message ? message : "");
+  if (g_builtin_debug_text.size() > kBuiltinDebugTextMaxChars) {
+    g_builtin_debug_text.resize(kBuiltinDebugTextMaxChars);
+  }
+}
+
 const ecmcStrucppHostServices g_host_services = {
-  1,
+  2,
   &getHostControlWord,
   &getHostEcMasterStateWord,
   &getHostEcSlaveStateWord,
+  &publishHostDebugText,
 };
 
 double plcNaN() {
@@ -914,6 +954,10 @@ size_t logicExportedVarCount() {
 
 bool bindBuiltinVars(std::string* error_out) {
   g_builtin_params.clear();
+  g_builtin_debug_text_param_id = -1;
+  g_builtin_debug_text.clear();
+  g_builtin_debug_text_last_value.clear();
+  g_builtin_debug_text_initialized = false;
 
   if (!createBoundParam(kBuiltinControlWordName,
                         ECMC_STRUCPP_EXPORT_S32,
@@ -969,6 +1013,17 @@ bool bindBuiltinVars(std::string* error_out) {
                         &g_execute_count,
                         &g_builtin_params,
                         error_out)) {
+    return false;
+  }
+
+  if (g_asyn_port->createParam(0,
+                               kBuiltinDebugTextName,
+                               asynParamOctet,
+                               &g_builtin_debug_text_param_id) != asynSuccess) {
+    if (error_out) {
+      *error_out = std::string("Failed to create asyn parameter '") +
+                   kBuiltinDebugTextName + "'";
+    }
     return false;
   }
 
@@ -1436,10 +1491,23 @@ GroupedBoolParamBinding* groupedBoolBindingForReason(int reason) {
 }
 
 bool syncBuiltinParams(bool force, bool defer_callbacks) {
-  if (!g_asyn_port || g_builtin_params.empty()) {
+  if (!g_asyn_port) {
     return true;
   }
-  return g_asyn_port->syncExportedParams(&g_builtin_params, force, defer_callbacks);
+
+  bool ok = true;
+  if (!g_builtin_params.empty()) {
+    ok = g_asyn_port->syncExportedParams(&g_builtin_params, force, defer_callbacks) && ok;
+  }
+  if (g_builtin_debug_text_param_id >= 0) {
+    ok = g_asyn_port->syncOctetParam(g_builtin_debug_text_param_id,
+                                     g_builtin_debug_text,
+                                     &g_builtin_debug_text_last_value,
+                                     &g_builtin_debug_text_initialized,
+                                     force,
+                                     defer_callbacks) && ok;
+  }
+  return ok;
 }
 
 std::string formatAddress(const LocatedAddressKey& address) {
@@ -2618,6 +2686,9 @@ void clearRuntimeState() {
   g_rt_has_scalar_export_sync = false;
   g_rt_has_grouped_export_sync = false;
   g_rt_has_any_export_sync = false;
+  g_builtin_debug_text.clear();
+  g_builtin_debug_text_last_value.clear();
+  g_builtin_debug_text_initialized = false;
 }
 
 void unloadLogicRuntime() {

@@ -50,8 +50,9 @@ usable for ad-hoc tracing without flooding every cycle. The shared IOC build
 helper also links the required C++ debug shim automatically. If you want to
 disable the default ST helper include, set `INCLUDE_DEBUG_ST := 0`. Debug
 printouts are disabled by default and only appear when `ctrl.word` bit 2 is
-set. A separate total-cycle timing measurement is available on `ctrl.word`
-bit 3.
+set. When enabled, the latest short debug message is also published on the
+plugin's own asyn interface as `Plg-ST0-DbgTxtAct`. A separate total-cycle
+timing measurement is available on `ctrl.word` bit 3.
 
 The shared IOC build helper also includes a small bundled control helper in
 [`lib/ecmc_control.st`](lib/ecmc_control.st):
@@ -874,6 +875,7 @@ The plugin also publishes a small built-in control/status set on the same port:
 - `plugin.strucpp0.stat.total_ms`
 - `plugin.strucpp0.stat.div`
 - `plugin.strucpp0.stat.count`
+- `plugin.strucpp0.stat.dbg_txt`
 
 The default substitutions file maps those internal asyn parameter names to
 shorter plugin-style record names:
@@ -885,6 +887,7 @@ shorter plugin-style record names:
 - `Plg-ST0-TotMsAct`
 - `Plg-ST0-DivAct`
 - `Plg-ST0-CntAct`
+- `Plg-ST0-DbgTxtAct`
 
 `ctrl.word` uses:
 
