@@ -23,3 +23,15 @@ END_VAR
   PREVEXECUTE.set(execute);
 }
 END_FUNCTION_BLOCK
+
+FUNCTION ECMC_DebugPrintNow : BOOL
+VAR_INPUT
+  Message : STRING;
+END_VAR
+{external
+  const auto message = MESSAGE.get();
+  extern void ecmcStrucppDebugPrint(const char* message);
+  ecmcStrucppDebugPrint(message.c_str());
+  ECMC_DEBUGPRINTNOW = true;
+}
+END_FUNCTION

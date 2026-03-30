@@ -54,6 +54,9 @@ set. When enabled, the latest short debug message is also published on the
 plugin's own asyn interface as `Plg-ST0-DbgTxtAct`. A separate total-cycle
 timing measurement is available on `ctrl.word` bit 3.
 
+If you want an unconditional print whenever the call is executed, the same
+library also provides `ECMC_DebugPrintNow(Message := '...')`.
+
 The shared IOC build helper also includes a small bundled control helper in
 [`lib/ecmc_control.st`](lib/ecmc_control.st):
 
