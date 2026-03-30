@@ -64,7 +64,7 @@
      <x>130</x>
      <y>62</y>
      <width>21</width>
-     <height>84</height>
+     <height>78</height>
     </rect>
    </property>
    <property name="channel" stdset="0">
@@ -74,19 +74,43 @@
     <number>2</number>
    </property>
   </widget>
-  <widget class="caLabel" name="caLabelCtrlHint">
+  <widget class="caLabel" name="caLabelBit0">
    <property name="geometry">
     <rect>
      <x>165</x>
      <y>66</y>
-     <width>246</width>
-     <height>36</height>
+     <width>181</width>
+     <height>18</height>
     </rect>
    </property>
    <property name="text">
-    <string>bit0 enable
-bit1 exec-time
-bit2 ST debug</string>
+    <string>bit0 enable</string>
+   </property>
+  </widget>
+  <widget class="caLabel" name="caLabelBit1">
+   <property name="geometry">
+    <rect>
+     <x>165</x>
+     <y>90</y>
+     <width>181</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>bit1 exec-time</string>
+   </property>
+  </widget>
+  <widget class="caLabel" name="caLabelBit2">
+   <property name="geometry">
+    <rect>
+     <x>165</x>
+     <y>114</y>
+     <width>181</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>bit2 ST debug</string>
     </property>
   </widget>
   <widget class="caLabel" name="caLabelRateReq">
