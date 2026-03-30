@@ -44,6 +44,7 @@ The expected flow is:
    - `bin/main.so`
    - `bin/main.so.map`
    - `bin/main.so.substitutions`
+   - `MINIMAL-STRUCPP-IOC_strucpp.subs`
 
 Because the helper stages the map and substitutions next to the logic library,
 the startup script can stay minimal:

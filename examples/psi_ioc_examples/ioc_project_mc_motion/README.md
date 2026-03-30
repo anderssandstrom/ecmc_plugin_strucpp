@@ -39,4 +39,5 @@ and monitor:
 - `ActualPos`
 
 Because these are normal `@epics` exports, the generated records come from
-`bin/main.so.substitutions` with the normal startup defaults.
+`bin/main.so.substitutions` and are written into
+`MC-MOTION-STRUCPP-IOC_strucpp.subs` for IOC auto-loading.

@@ -45,6 +45,10 @@ standard `bin/main.so` default and the plugin will also find:
 - `bin/main.so.map`
 - `bin/main.so.substitutions`
 
+The IOC project itself also generates:
+
+- `STRUCPP-IOC-EXAMPLE_strucpp.subs`
+
 To reduce boilerplate further, the example now uses the reusable helper from:
 
 - [`../../../templates/strucpp_ioc_logic.make`](../../../templates/strucpp_ioc_logic.make)

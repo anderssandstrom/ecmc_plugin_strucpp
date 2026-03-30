@@ -92,6 +92,8 @@ That example is intentionally small and shows the preferred default workflow:
 - optional `@epics` export from the same ST file
 - default output files in `bin/`:
   `main.so`, `main.so.map`, `main.so.substitutions`
+- a dedicated IOC-level substitutions file:
+  `<IOC>_strucpp.subs`
 - startup with a simple `require ecmc_plugin_strucpp ...`
 
 Typical flow:
