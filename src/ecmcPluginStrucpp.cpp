@@ -598,6 +598,12 @@ std::vector<ExportedParamBinding> g_builtin_params;
 std::vector<ExportedParamBinding> g_exported_params;
 std::vector<GroupedBoolParamBinding> g_grouped_bool_params;
 StrucppAsynPort* g_asyn_port = nullptr;
+bool g_rt_has_input_binding_gather = false;
+bool g_rt_has_output_binding_gather = false;
+bool g_rt_has_output_binding_scatter = false;
+bool g_rt_has_scalar_export_sync = false;
+bool g_rt_has_grouped_export_sync = false;
+bool g_rt_has_any_export_sync = false;
 size_t g_runtime_execute_divider = 1;
 size_t g_execute_divider_counter = 0;
 int32_t g_control_word = 1;
@@ -2596,6 +2602,12 @@ void clearRuntimeState() {
   g_bound_output_bindings.clear();
   g_mapping_specs.clear();
   g_bound_mappings.clear();
+  g_rt_has_input_binding_gather = false;
+  g_rt_has_output_binding_gather = false;
+  g_rt_has_output_binding_scatter = false;
+  g_rt_has_scalar_export_sync = false;
+  g_rt_has_grouped_export_sync = false;
+  g_rt_has_any_export_sync = false;
 }
 
 void unloadLogicRuntime() {
@@ -2868,6 +2880,11 @@ static int enterRealtime(void) {
 
     g_images.input.name = "direct_mapping";
     g_images.output.name = "direct_mapping";
+    g_rt_has_scalar_export_sync = g_asyn_port != nullptr && !g_exported_params.empty();
+    g_rt_has_grouped_export_sync =
+      g_asyn_port != nullptr && !g_grouped_bool_params.empty();
+    g_rt_has_any_export_sync =
+      g_rt_has_scalar_export_sync || g_rt_has_grouped_export_sync;
     logInfo("bound logic=%s using mapping_file=%s with %zu direct mappings, memory=%zu bytes",
             g_logic.api->name ? g_logic.api->name : "<unnamed>",
             g_config.mapping_file.c_str(),
@@ -2979,6 +2996,15 @@ static int enterRealtime(void) {
     return -1;
   }
 
+  g_rt_has_input_binding_gather = !g_bound_input_bindings.empty();
+  g_rt_has_output_binding_gather = !g_bound_output_bindings.empty();
+  g_rt_has_output_binding_scatter = !g_bound_output_bindings.empty();
+  g_rt_has_scalar_export_sync = g_asyn_port != nullptr && !g_exported_params.empty();
+  g_rt_has_grouped_export_sync =
+    g_asyn_port != nullptr && !g_grouped_bool_params.empty();
+  g_rt_has_any_export_sync =
+    g_rt_has_scalar_export_sync || g_rt_has_grouped_export_sync;
+
   logInfo("bound logic=%s input=%s (%zu bytes) output=%s (%zu bytes) memory=%zu bytes",
           g_logic.api->name ? g_logic.api->name : "<unnamed>",
           g_images.input.name.empty() ? "<none>" : g_images.input.name.c_str(),
@@ -3055,12 +3081,12 @@ static int realtime(int) {
     clock_gettime(CLOCK_MONOTONIC, &exec_start);
   }
 
-  if (!g_bound_input_bindings.empty()) {
+  if (g_rt_has_input_binding_gather) {
     zeroImage(&g_images.input);
     gatherBindings(g_bound_input_bindings, &g_images.input);
   }
 
-  if (!g_bound_output_bindings.empty()) {
+  if (g_rt_has_output_binding_gather) {
     zeroImage(&g_images.output);
     gatherBindings(g_bound_output_bindings, &g_images.output);
   }
@@ -3094,15 +3120,17 @@ static int realtime(int) {
   ecmcStrucppExecuteMemoryPostCopyPlan(g_copy_plan);
   ecmcStrucppExecuteOutputCopyPlan(g_copy_plan);
 
-  if (!g_bound_output_bindings.empty()) {
+  if (g_rt_has_output_binding_scatter) {
     scatterBindings(g_images.output, g_bound_output_bindings);
   }
 
-  if (g_asyn_port && !g_exported_params.empty()) {
-    g_asyn_port->syncExportedParams(&g_exported_params, false, true);
-  }
-  if (g_asyn_port && !g_grouped_bool_params.empty()) {
-    g_asyn_port->syncGroupedBoolParams(&g_grouped_bool_params, false, true);
+  if (g_rt_has_any_export_sync) {
+    if (g_rt_has_scalar_export_sync) {
+      g_asyn_port->syncExportedParams(&g_exported_params, false, true);
+    }
+    if (g_rt_has_grouped_export_sync) {
+      g_asyn_port->syncGroupedBoolParams(&g_grouped_bool_params, false, true);
+    }
   }
   if (measure_total_time) {
     clock_gettime(CLOCK_MONOTONIC, &total_end);
