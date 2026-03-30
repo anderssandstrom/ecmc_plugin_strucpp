@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>430</width>
-    <height>255</height>
+    <height>290</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -81,7 +81,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>bit0 enable, bit1 exec-time</string>
+    <string>bit0 enable, bit1 exec-time, bit2 ST debug</string>
    </property>
   </widget>
   <widget class="caMessageButton" name="caMessageButtonEnable">
@@ -141,11 +141,49 @@
     <string notr="true">3</string>
    </property>
   </widget>
+  <widget class="caMessageButton" name="caMessageButtonEnableDbg">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>122</y>
+     <width>121</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Enable+Dbg</string>
+   </property>
+   <property name="channel" stdset="0">
+    <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-CtrlWord-RB</string>
+   </property>
+   <property name="releaseMessage">
+    <string notr="true">5</string>
+   </property>
+  </widget>
+  <widget class="caMessageButton" name="caMessageButtonEnableMeasDbg">
+   <property name="geometry">
+    <rect>
+     <x>140</x>
+     <y>122</y>
+     <width>181</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Enable+Meas+Dbg</string>
+   </property>
+   <property name="channel" stdset="0">
+    <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-CtrlWord-RB</string>
+   </property>
+   <property name="releaseMessage">
+    <string notr="true">7</string>
+   </property>
+  </widget>
   <widget class="caLabel" name="caLabelRateReq">
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>132</y>
+     <y>162</y>
      <width>111</width>
      <height>18</height>
     </rect>
@@ -158,7 +196,7 @@
    <property name="geometry">
     <rect>
      <x>130</x>
-     <y>128</y>
+     <y>158</y>
      <width>81</width>
      <height>22</height>
     </rect>
@@ -171,7 +209,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>162</y>
+     <y>192</y>
      <width>111</width>
      <height>18</height>
     </rect>
@@ -184,7 +222,7 @@
    <property name="geometry">
     <rect>
      <x>130</x>
-     <y>158</y>
+     <y>188</y>
      <width>81</width>
      <height>22</height>
     </rect>
@@ -209,7 +247,7 @@
    <property name="geometry">
     <rect>
      <x>220</x>
-     <y>132</y>
+     <y>162</y>
      <width>101</width>
      <height>18</height>
     </rect>
@@ -222,7 +260,7 @@
    <property name="geometry">
     <rect>
      <x>330</x>
-     <y>128</y>
+     <y>158</y>
      <width>81</width>
      <height>22</height>
     </rect>
@@ -247,7 +285,7 @@
    <property name="geometry">
     <rect>
      <x>220</x>
-     <y>162</y>
+     <y>192</y>
      <width>101</width>
      <height>18</height>
     </rect>
@@ -260,7 +298,7 @@
    <property name="geometry">
     <rect>
      <x>330</x>
-     <y>158</y>
+     <y>188</y>
      <width>81</width>
      <height>22</height>
     </rect>
@@ -282,7 +320,7 @@
    <property name="geometry">
     <rect>
      <x>220</x>
-     <y>192</y>
+     <y>222</y>
      <width>101</width>
      <height>18</height>
     </rect>
@@ -295,7 +333,7 @@
    <property name="geometry">
     <rect>
      <x>330</x>
-     <y>188</y>
+     <y>218</y>
      <width>81</width>
      <height>22</height>
     </rect>
