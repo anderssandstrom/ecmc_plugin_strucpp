@@ -1908,6 +1908,10 @@ bool parseConfigString(const char* raw_config,
           return false;
         }
       } else if (key == "sample_rate_ms") {
+        if (value.empty()) {
+          out_config->sample_rate_ms = 0.0;
+          continue;
+        }
         if (!parseDoubleToken(value, "sample_rate_ms", &out_config->sample_rate_ms, error_out)) {
           return false;
         }
