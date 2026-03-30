@@ -64,18 +64,27 @@ def render(template: str, mapping: dict) -> str:
     return rendered
 
 
-TOP_MAKEFILE = """IOC_STARTUP_FILE := $(notdir $(firstword $(wildcard *_startup.script)))
+TOP_MAKEFILE = """.PHONY: all install clean
+
+IOC_STARTUP_FILE := $(notdir $(firstword $(wildcard *_startup.script)))
 IOC_PARAMS_FILE := $(notdir $(firstword $(wildcard *_parameters.yaml)))
 IOC_NAME ?= $(patsubst %_startup.script,%,$(IOC_STARTUP_FILE))
 ifeq ($(IOC_NAME),)
 IOC_NAME := $(patsubst %_parameters.yaml,%,$(IOC_PARAMS_FILE))
 endif
+IOC_STRUCPP_SUBS := $(IOC_NAME)_strucpp.subs
+IOC_SUBSGEN := @PLUGIN_ROOT@/scripts/strucpp_ioc_subsgen.py
 
 all:
 \t$(MAKE) -C src stage
+\tpython3 $(IOC_SUBSGEN) --ioc-name $(IOC_NAME) --output $(IOC_STRUCPP_SUBS) --input bin/@LOGIC_NAME@.so.substitutions
 
 install: all
 \tioc install --clean -V --ioc $(IOC_NAME)
+
+clean:
+\t$(MAKE) -C src clean
+\t$(RM) $(IOC_STRUCPP_SUBS)
 """
 
 
@@ -114,7 +123,7 @@ This scaffold is intentionally small:
 The expected flow is:
 
 1. `make`
-2. `ioc install --source .`
+2. `ioc install --clean -V --ioc @IOC_NAME@`
 3. start the IOC
 
 The startup script uses the standard runtime defaults:
@@ -122,6 +131,7 @@ The startup script uses the standard runtime defaults:
 - `bin/main.so`
 - `bin/main.so.map`
 - `bin/main.so.substitutions`
+- `@IOC_NAME@_strucpp.subs`
 
 This sample uses direct EL7041 item mapping:
 
