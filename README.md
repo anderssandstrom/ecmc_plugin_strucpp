@@ -117,6 +117,10 @@ This repo now ships a reusable ST motion library:
 Application repos can consume it directly with `-L $(ECMC_PLUGIN_STRUCPP)/libs`
 instead of rebuilding a private copy of the motion library.
 
+The current motion blocks follow the common PLCopen naming and calling pattern,
+but they should be understood as PLCopen-style interfaces implemented on top
+of `ecmc`, not as a formal or complete PLCopen compliance claim.
+
 The first useful block set currently includes:
 
 - `MC_Power`
