@@ -1,6 +1,11 @@
 .PHONY: all install clean
 
-IOC_NAME := MC-MOTION-STRUCPP-IOC
+IOC_STARTUP_FILE := $(notdir $(firstword $(wildcard *_startup.script)))
+IOC_PARAMS_FILE := $(notdir $(firstword $(wildcard *_parameters.yaml)))
+IOC_NAME ?= $(patsubst %_startup.script,%,$(IOC_STARTUP_FILE))
+ifeq ($(IOC_NAME),)
+IOC_NAME := $(patsubst %_parameters.yaml,%,$(IOC_PARAMS_FILE))
+endif
 IOC_STRUCPP_SUBS := $(IOC_NAME)_strucpp.subs
 IOC_SUBSGEN := ../../../scripts/strucpp_ioc_subsgen.py
 

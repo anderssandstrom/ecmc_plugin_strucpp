@@ -64,11 +64,18 @@ def render(template: str, mapping: dict) -> str:
     return rendered
 
 
-TOP_MAKEFILE = """all:
+TOP_MAKEFILE = """IOC_STARTUP_FILE := $(notdir $(firstword $(wildcard *_startup.script)))
+IOC_PARAMS_FILE := $(notdir $(firstword $(wildcard *_parameters.yaml)))
+IOC_NAME ?= $(patsubst %_startup.script,%,$(IOC_STARTUP_FILE))
+ifeq ($(IOC_NAME),)
+IOC_NAME := $(patsubst %_parameters.yaml,%,$(IOC_PARAMS_FILE))
+endif
+
+all:
 \t$(MAKE) -C src stage
 
 install: all
-\tioc install --source .
+\tioc install --clean -V --ioc $(IOC_NAME)
 """
 
 
