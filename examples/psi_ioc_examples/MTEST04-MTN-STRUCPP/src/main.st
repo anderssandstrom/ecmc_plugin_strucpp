@@ -5,6 +5,8 @@ VAR
   velocity_setpoint  AT %QW2 : INT;   // @ecmc ec.s${SLAVE_ID=14}.velocitySetpoint${CH_ID}
   cycle_counter      AT %MW0 : INT;   // @epics rec=Main-CycleCounterAct
   actual_pos_export          : INT;   // @epics prefix=$(IOC): rec=Main-PosActMini
+  startup_printed            : BOOL;
+  dbg_startup                : ECMC_DebugPrint;
   dbg_reverse_pos            : ECMC_DebugPrint;
   dbg_reverse_neg            : ECMC_DebugPrint;
 END_VAR
@@ -12,6 +14,10 @@ END_VAR
 actual_pos_export := actual_position;
 cycle_counter := cycle_counter + 1;
 drive_control := 16#0001;
+
+dbg_startup(Execute := NOT startup_printed,
+            Message := 'ST program started');
+startup_printed := TRUE;
 
 IF actual_position < 0 THEN
   velocity_setpoint := 1000;
