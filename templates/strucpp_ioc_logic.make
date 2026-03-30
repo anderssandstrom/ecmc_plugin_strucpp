@@ -1,7 +1,12 @@
 PROGRAM ?= main
 LOGIC_NAME ?= $(PROGRAM)
 ST_SOURCE ?= $(PROGRAM).st
-ST_SOURCES ?= $(ST_SOURCE)
+INCLUDE_DEBUG_ST ?= 1
+COMMON_ST_SOURCES :=
+ifeq ($(INCLUDE_DEBUG_ST),1)
+COMMON_ST_SOURCES += $(ECMC_PLUGIN_STRUCPP)/lib/ecmc_debug.st
+endif
+ST_SOURCES ?= $(COMMON_ST_SOURCES) $(ST_SOURCE)
 ANNOTATION_DEFINES ?=
 EXTRA_CPP_SOURCES ?=
 PROJECT_BIN_DIR ?= ../bin
@@ -30,6 +35,7 @@ WRAPPERGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_logic_wrappergen.py
 BUNDLEGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_bundle_st.py
 REPORTGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_logic_report.py
 ANNOTATION_DEFINE_ARGS := $(foreach def,$(ANNOTATION_DEFINES),--define $(def))
+HELPER_CPP_SOURCES := $(ECMC_PLUGIN_STRUCPP)/src/ecmcStrucppDebug.cpp
 
 CXX ?= c++
 CXXFLAGS += -std=c++17 -fPIC -Wall -Wextra
@@ -60,10 +66,11 @@ STAGED_MAP_FILE := $(STAGED_LOGIC_LIB).map
 STAGED_SUBST_FILE := $(STAGED_LOGIC_LIB).substitutions
 STAGED_SUMMARY_FILE := $(STAGED_LOGIC_LIB).summary.txt
 
+HELPER_OBJ := $(ODIR)/ecmcStrucppDebug_helper.o
 EXTRA_OBJS := $(patsubst %.cpp,$(ODIR)/%.o,$(EXTRA_CPP_SOURCES))
 PROGRAM_OBJ := $(ODIR)/$(PROGRAM)_program.o
 WRAPPER_OBJ := $(ODIR)/$(LOGIC_NAME)_wrapper.o
-OBJS := $(PROGRAM_OBJ) $(WRAPPER_OBJ) $(EXTRA_OBJS)
+OBJS := $(PROGRAM_OBJ) $(WRAPPER_OBJ) $(EXTRA_OBJS) $(HELPER_OBJ)
 
 .PHONY: all clean regen maps stage validate
 
@@ -112,6 +119,10 @@ $(WRAPPER_OBJ): $(WRAPPER_CPP) $(EXPORTS_HPP)
 
 $(ODIR)/%.o: %.cpp
 	mkdir -p $(dir $@)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
+$(HELPER_OBJ): $(HELPER_CPP_SOURCES)
+	mkdir -p $(ODIR)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 $(LOGIC_LIB): $(OBJS)
