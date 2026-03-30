@@ -1,0 +1,25 @@
+FUNCTION_BLOCK ECMC_DebugPrint
+VAR_INPUT
+  Execute : BOOL;
+  Message : STRING;
+END_VAR
+VAR_OUTPUT
+  Fired : BOOL;
+END_VAR
+VAR
+  PrevExecute : BOOL;
+END_VAR
+{external
+  const bool execute = EXECUTE.get();
+  FIRED.set(false);
+
+  if (execute && !PREVEXECUTE.get()) {
+    const auto message = MESSAGE.get();
+    extern void ecmcStrucppDebugPrint(const char* message);
+    ecmcStrucppDebugPrint(message.c_str());
+    FIRED.set(true);
+  }
+
+  PREVEXECUTE.set(execute);
+}
+END_FUNCTION_BLOCK

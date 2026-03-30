@@ -3,6 +3,7 @@ bin/
 lib/
 !lib/
 lib/*
+!lib/ecmc_debug.st
 !lib/ecmc_motion.st
 configure/
 autom4te.cache/

@@ -44,6 +44,7 @@ SCRIPTS += $(BASE_DIR)/startup.cmd
 SCRIPTS += $(wildcard $(SCRIPTS_DIR)/*.cmd)
 SCRIPTS += $(wildcard $(SCRIPTS_DIR)/*.py)
 SCRIPTS += $(wildcard $(SCRIPTS_DIR)/*.sh)
+SCRIPTS += $(SRC_DIR)/ecmcStrucppDebug.cpp
 SCRIPTS += $(wildcard $(EXAMPLES_DIR)/*.cmd)
 SCRIPTS += $(wildcard $(DB_DIR)/*.template)
 SCRIPTS += $(wildcard $(DB_DIR)/*.substitutions)
