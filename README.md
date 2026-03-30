@@ -566,7 +566,7 @@ substitutions file against the bundled ST source before runtime.
 The host expects the normal `Cfg.LoadPlugin(...)` config string format:
 
 ```text
-logic_lib=<path>;asyn_port=<plugin asyn port>;[mapping_file=<path>|input_item=<ecmc data item>|input_bindings=<offset:item[@bytes],...>];[output_item=<ecmc data item>|output_bindings=<offset:item[@bytes],...>];memory_bytes=<n>;sample_rate_ms=<n>;validate_report=<0|1>;validate_only=<0|1>
+logic_lib=<path>;asyn_port=<plugin asyn port>;[mapping_file=<path>|input_item=<ecmc data item>|input_bindings=<offset:item[@bytes],...>];[output_item=<ecmc data item>|output_bindings=<offset:item[@bytes],...>];memory_bytes=<n>;sample_rate_ms=<n>;validate_report=<0|1>
 ```
 
 Startup-linked mapping example:
@@ -610,8 +610,6 @@ logic_lib=/abs/path/to/el7041_velocity_logic.so;input_bindings=0:ec.s14.position
   EtherCAT/plugin rate
 - `validate_report`
   optional live startup validation report, defaults to `0`
-- `validate_only`
-  optional validation-only mode that stops before realtime, defaults to `0`
 
 Use `mapping_file` when you want the plugin to inspect the current ST code at
 startup, verify every used `%I/%Q` address, and link it directly to final
@@ -633,10 +631,6 @@ host derives `execute_divider=10` and the ST logic runs every 10 ms.
 bindings against the current `ecmc` items before realtime starts. This is
 useful during bring-up when you want to confirm item names, directions, sizes,
 and direct `%I/%Q` mappings from the actual IOC environment.
-
-`validate_only=1` performs the same live checks and prints the same report, but
-then stops before entering realtime. Use that when you want a pre-RT sanity
-check without running the ST logic.
 
 If `MAPPING_FILE` is not provided and none of `INPUT_ITEM`, `OUTPUT_ITEM`,
 `INPUT_BINDINGS`, or `OUTPUT_BINDINGS` are set, the plugin defaults the
@@ -1038,7 +1032,6 @@ The startup helper accepts:
 - `MEMORY_BYTES`
 - `SAMPLE_RATE_MS`
 - `VALIDATE_REPORT`
-- `VALIDATE_ONLY`
 - `LOAD_DEFAULT_PVS`
 - `EPICS_SUBST`
 - `DB_PREFIX`
@@ -1048,14 +1041,12 @@ The startup helper accepts:
 `SAMPLE_RATE_MS` is forwarded by [`startup.cmd`](startup.cmd) as
 `sample_rate_ms=<n>` in the plugin config string.
 
-`VALIDATE_REPORT` and `VALIDATE_ONLY` are forwarded as
-`validate_report=<0|1>` and `validate_only=<0|1>`.
+`VALIDATE_REPORT` is forwarded as `validate_report=<0|1>`.
 
 Examples:
 
 ```iocsh
 require ecmc_plugin_strucpp sandst_a "REPORT=1,VALIDATE_REPORT=1"
-require ecmc_plugin_strucpp sandst_a "REPORT=1,VALIDATE_REPORT=1,VALIDATE_ONLY=1"
 ```
 
 There is also a concrete IOC example in

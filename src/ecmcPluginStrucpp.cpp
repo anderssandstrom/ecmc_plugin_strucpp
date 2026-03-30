@@ -88,7 +88,6 @@ struct PluginConfig {
   size_t memory_bytes {256};
   double sample_rate_ms {0.0};
   bool validate_report {false};
-  bool validate_only {false};
 };
 
 struct LogicRuntime {
@@ -2005,13 +2004,6 @@ bool parseConfigString(const char* raw_config,
                             error_out)) {
           return false;
         }
-      } else if (key == "validate_only") {
-        if (!parseBoolToken(value,
-                            "validate_only",
-                            &out_config->validate_only,
-                            error_out)) {
-          return false;
-        }
       } else {
         if (error_out) {
           *error_out = "Unsupported config key: '" + key + "'";
@@ -2884,12 +2876,8 @@ static int enterRealtime(void) {
     logInfo("mapping_summary direct_mappings=%zu exports=%zu",
             g_bound_mappings.size(),
             g_exported_params.size() + g_grouped_bool_params.size());
-    if (g_config.validate_report || g_config.validate_only) {
+    if (g_config.validate_report) {
       logDirectMappingValidationReport(g_bound_mappings);
-    }
-    if (g_config.validate_only) {
-      logInfo("validate_only requested; skipping realtime start");
-      return -1;
     }
     return 0;
   }
@@ -3009,7 +2997,7 @@ static int enterRealtime(void) {
             ((g_config.input_item.empty() && g_config.output_item.empty()) ? "none" :
              "contiguous_image"),
           g_exported_params.size() + g_grouped_bool_params.size());
-  if (g_config.validate_report || g_config.validate_only) {
+  if (g_config.validate_report) {
     if (!g_config.input_bindings.empty()) {
       logBindingValidationReport(g_bound_input_bindings,
                                  strucpp::LocatedArea::Input,
@@ -3031,10 +3019,6 @@ static int enterRealtime(void) {
                                     output_image_info,
                                     strucpp::LocatedArea::Output);
     }
-  }
-  if (g_config.validate_only) {
-    logInfo("validate_only requested; skipping realtime start");
-    return -1;
   }
   return 0;
 }
