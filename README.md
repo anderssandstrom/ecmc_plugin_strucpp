@@ -33,11 +33,10 @@ That example reads and writes named `ecmc` data items through `%I/%Q`, keeps
 internal state in `%M`, and exposes one variable to EPICS with `@epics`.
 
 If you want simple IOC-shell debug output from ST while bringing logic up,
-the repo also ships a small helper in [`lib/ecmc_debug.st`](lib/ecmc_debug.st):
+the repo also ships a small helper in [`lib/ecmc_debug.st`](lib/ecmc_debug.st).
+When you use the shared IOC build helper, this ST file is included by default:
 
 ```iecst
-// Add $(ECMC_PLUGIN_STRUCPP)/lib/ecmc_debug.st to ST_SOURCES
-
 VAR
   dbgMoveDone : ECMC_DebugPrint;
 END_VAR
@@ -48,7 +47,8 @@ dbgMoveDone(Execute := move_done,
 
 `ECMC_DebugPrint` prints one line on the rising edge of `Execute`, so it is
 usable for ad-hoc tracing without flooding every cycle. The shared IOC build
-helper links the required C++ debug shim automatically.
+helper also links the required C++ debug shim automatically. If you want to
+disable the default ST helper include, set `INCLUDE_DEBUG_ST := 0`.
 
 This is not limited to one flat `PROGRAM`. Normal IEC 61131-3
 `FUNCTION_BLOCK`s, `FUNCTION`s, and reusable helper code can be used as well.
