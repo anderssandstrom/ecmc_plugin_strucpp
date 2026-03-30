@@ -75,6 +75,9 @@ pid(Setpoint := 12800.0,
 - feed-forward input `FF` and gain `Kff`
 - output limiting through `OutMin` / `OutMax`
 - integrator limiting through `IMin` / `IMax`
+- anti-windup when the output saturates
+- optional derivative filtering through `DFilterTau`
+- bumpless first enable cycle with derivative state reset
 
 Defaults are chosen so the FB can be called with only the parameters you
 actually care about:
@@ -85,6 +88,7 @@ actually care about:
 - `Kd := 0.0`
 - `Kff := 1.0`
 - `DT := 1.0`
+- `DFilterTau := 0.0`
 
 Output and integrator limits are disabled unless `Max > Min`. If you want to
 disable the default control-helper include, set `INCLUDE_CONTROL_ST := 0`.
