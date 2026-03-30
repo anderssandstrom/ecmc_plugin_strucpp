@@ -16,3 +16,7 @@ For a motion-library IOC example with EPICS-triggered `MC_*` commands, see
 For a self-running `MC_MoveAbsolute` bounce example derived from the MTEST
 layout, see
 [`psi_ioc_examples/MTEST04-MTN-STRUCPP-MC`](psi_ioc_examples/MTEST04-MTN-STRUCPP-MC).
+
+For a self-running direct-mapped PID position example derived from the same
+MTEST layout, see
+[`psi_ioc_examples/MTEST04-MTN-STRUCPP-PID`](psi_ioc_examples/MTEST04-MTN-STRUCPP-PID).

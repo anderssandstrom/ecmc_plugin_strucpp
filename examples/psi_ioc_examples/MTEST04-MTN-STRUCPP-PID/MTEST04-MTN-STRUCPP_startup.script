@@ -1,0 +1,21 @@
+# Small direct-mapped PID example for ecmc_plugin_strucpp.
+#
+# The logic library lives in the installed IOC-local bin directory. In the
+# standard layout the plugin defaults to:
+#   bin/main.so
+#   bin/main.so.map
+#   bin/main.so.substitutions
+#
+# This sample expects direct EL7041 PDO items:
+#   %IW0 -> ec.s14.positionActual01
+#   %QW0 -> ec.s14.driveControl01
+#   %QW2 -> ec.s14.velocitySetpoint01
+
+require ecmccfg "ECMC_VER=strucpp"
+${SCRIPTEXEC} ${ecmccfg_DIR}addSlave.cmd, "SLAVE_ID=14,HW_DESC=EL7041-0052"
+${SCRIPTEXEC} ${ecmccfg_DIR}applyComponent.cmd  "COMP=Motor-Generic-2Phase-Stepper,  MACROS='I_MAX_MA=500, I_STDBY_MA=200, U_NOM_MV=48000, R_COIL_MOHM=1230'"
+
+require ecmc_plugin_strucpp sandst_a "REPORT=1,LOAD_APP_PVS=1"
+
+# Optional plugin panel:
+# caqtdm -macro "IOC=c6025a-04,PLG_ID=0" $(ecmc_plugin_strucpp_DIR)qt/ecmc_plugin_strucpp_main.ui

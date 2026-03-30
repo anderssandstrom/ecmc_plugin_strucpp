@@ -16,5 +16,8 @@ Start here:
 - [`MTEST04-MTN-STRUCPP-MC`](MTEST04-MTN-STRUCPP-MC)
   motion-library variant of the MTEST example that automatically bounces
   between `0` and `12800` with `MC_MoveAbsolute`
+- [`MTEST04-MTN-STRUCPP-PID`](MTEST04-MTN-STRUCPP-PID)
+  direct-mapped MTEST variant that uses the bundled `ECMC_PID` FB to drive
+  the velocity setpoint while bouncing between `0` and `12800`
 
 Only source examples are kept here. Build outputs are intentionally not tracked.
