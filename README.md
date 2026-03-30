@@ -52,6 +52,42 @@ disable the default ST helper include, set `INCLUDE_DEBUG_ST := 0`. Debug
 printouts are disabled by default and only appear when `ctrl.word` bit 2 is
 set.
 
+The shared IOC build helper also includes a small bundled control helper in
+[`lib/ecmc_control.st`](lib/ecmc_control.st):
+
+```iecst
+VAR
+  pid : ECMC_PID;
+END_VAR
+
+pid(Setpoint := 12800.0,
+    Actual := actual_pos,
+    FF := vel_ff,
+    Kp := 1.0,
+    Ki := 0.01,
+    OutMin := -2000.0,
+    OutMax := 2000.0);
+```
+
+`ECMC_PID` is a simple ST PID controller with:
+
+- feed-forward input `FF` and gain `Kff`
+- output limiting through `OutMin` / `OutMax`
+- integrator limiting through `IMin` / `IMax`
+
+Defaults are chosen so the FB can be called with only the parameters you
+actually care about:
+
+- `Enable := TRUE`
+- `Kp := 1.0`
+- `Ki := 0.0`
+- `Kd := 0.0`
+- `Kff := 1.0`
+- `DT := 1.0`
+
+Output and integrator limits are disabled unless `Max > Min`. If you want to
+disable the default control-helper include, set `INCLUDE_CONTROL_ST := 0`.
+
 This is not limited to one flat `PROGRAM`. Normal IEC 61131-3
 `FUNCTION_BLOCK`s, `FUNCTION`s, and reusable helper code can be used as well.
 The repo also ships a bundled motion library with PLCopen-style `MC_*` blocks
