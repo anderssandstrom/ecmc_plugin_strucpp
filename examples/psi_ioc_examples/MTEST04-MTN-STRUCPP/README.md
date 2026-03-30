@@ -1,82 +1,68 @@
-# `ioc_project_minimal`
+# `MTEST04-MTN-STRUCPP`
 
-This is the smallest practical IOC-project example for `ecmc_plugin_strucpp`.
-
-It is meant to show the default workflow only:
-
-- one ST source file
-- one short `src/Makefile`
-- no handwritten C++ files
-- startup only calls `require`
-- direct EtherCAT item mapping, not memmaps
+This PSI IOC example is a small direct-mapped motion test for
+`ecmc_plugin_strucpp`.
 
 The source tree is:
 
 - [`src/main.st`](src/main.st)
 - [`src/Makefile`](src/Makefile)
+- [`MTEST04-MTN-STRUCPP_startup.script`](MTEST04-MTN-STRUCPP_startup.script)
+- [`MTEST04-MTN-STRUCPP_parameters.yaml`](MTEST04-MTN-STRUCPP_parameters.yaml)
 
-This minimal example also shows both annotation-placeholder styles:
+It shows:
 
-- inline default in ST:
-  - `ec.s${SLAVE_ID=14}...`
-- required build-time define from `src/Makefile`:
-  - `ANNOTATION_DEFINES := CH_ID=01`
+- direct `@ecmc` mapping to EtherCAT items
+- `@epics` export of selected ST variables
+- bundled `ECMC_DebugPrint` usage from ST
+- the standard IOC build helper flow with generated `bin/main.so*`
+- generation of the dedicated IOC substitutions file:
+  `MTEST04-MTN-STRUCPP_strucpp.subs`
 
-Those placeholders are expanded across the bundled ST source itself before
-`strucpp` runs, not only inside generated mapping metadata.
-
-It also shows both EPICS record-name override forms directly in
-[`src/main.st`](src/main.st):
-
-- `rec=Main-CycleCounterAct`
-  keeps the normal `P` prefix and overrides only the suffix
-- `prefix=$(IOC): rec=Main-PosActMini`
-  uses a custom record prefix for that one record
-
-Here `$(IOC)` is expected to come from the IOC environment or the
-`gfa-iocutils` startup naming, not from the ST build step.
-
-The expected flow is:
-
-1. `make`
-2. `ioc install --source .`
-3. IOC startup loads:
-   - `bin/main.so`
-   - `bin/main.so.map`
-   - `bin/main.so.substitutions`
-
-Because the helper stages the map and substitutions next to the logic library,
-the startup script can stay minimal:
-
-```iocsh
-require ecmccfg
-${SCRIPTEXEC} ${ecmccfg_DIR}addSlave.cmd, "SLAVE_ID=14,HW_DESC=EL7041-0052"
-require ecmc_plugin_strucpp sandst_a "REPORT=1"
-# caqtdm -macro "IOC=c6025a-04,PLG_ID=0" $(ecmc_plugin_strucpp_DIR)qt/ecmc_plugin_strucpp_main.ui
-```
-
-This example uses `// @ecmc ...` annotations in the ST source, so the plugin
-defaults to `bin/main.so.map` and does not need `INPUT_ITEM`,
-`OUTPUT_ITEM`, or `MAPPING_FILE` macros in the normal case.
-
-The concrete sample maps directly to EL7041 PDO items:
+The EtherCAT mappings in [`src/main.st`](src/main.st) are:
 
 - `%IW0` -> `ec.s14.positionActual01`
 - `%QW0` -> `ec.s14.driveControl01`
 - `%QW2` -> `ec.s14.velocitySetpoint01`
 
-So in this example:
+The current ST logic does this:
 
-- `SLAVE_ID` defaults to `14` inside the ST annotations
-- `CH_ID` comes from `ANNOTATION_DEFINES`
-- the simple logic drives the axis back and forth between positions `0` and
-  `1000`
+- enables the drive with `drive_control := 16#0001`
+- exports the current position to EPICS as `Main-PosActMini`
+- seeds `velocity_setpoint` to `+1000` if it starts at `0`
+- drives between positions `0` and `12800`
+- flips the velocity sign at those two limits
 
-If needed, you can override both at build time, for example:
+It also prints to the IOC shell:
+
+- once at startup:
+  `ST program started`
+- periodically every 1000 cycles:
+  `actual_position=...`
+- on reversals:
+  `reverse -> +1000 at pos=...`
+  `reverse -> -1000 at pos=...`
+
+The expected flow is:
+
+1. `make`
+2. `ioc install --clean -V --ioc MTEST04-MTN-STRUCPP`
+3. start the IOC with
+   [`MTEST04-MTN-STRUCPP_startup.script`](MTEST04-MTN-STRUCPP_startup.script)
+
+The build produces and stages:
+
+- `bin/main.so`
+- `bin/main.so.map`
+- `bin/main.so.substitutions`
+- `bin/main.so.summary.txt`
+
+and the project-root `Makefile` also regenerates:
+
+- `MTEST04-MTN-STRUCPP_strucpp.subs`
+
+The generic plugin panel can be opened with:
 
 ```sh
-make ANNOTATION_DEFINES="SLAVE_ID=18 CH_ID=01"
+caqtdm -macro "IOC=c6025a-04,PLG_ID=0" $(ecmc_plugin_strucpp_DIR)qt/ecmc_plugin_strucpp_main.ui
 ```
-
-So this example is deliberately showing the direct EtherCAT-data path rather
-than the older contiguous memmap path.
