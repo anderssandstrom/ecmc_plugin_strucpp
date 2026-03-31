@@ -13,6 +13,8 @@ The panel expects `IOC` without a trailing `:` and builds PV names like:
 - `$(IOC):Plg-ST$(PLG_ID)-CtrlWord-RB`
 - `$(IOC):Plg-ST$(PLG_ID)-SmpMs-RB`
 - `$(IOC):Plg-ST$(PLG_ID)-ExeMsAct`
+- `$(IOC):Plg-ST$(PLG_ID)-InMsAct`
+- `$(IOC):Plg-ST$(PLG_ID)-OutMsAct`
 - `$(IOC):Plg-ST$(PLG_ID)-TotMsAct`
 - `$(IOC):Plg-ST$(PLG_ID)-DbgTxtAct`
 

@@ -932,6 +932,8 @@ The plugin also publishes a small built-in control/status set on the same port:
 - `plugin.strucpp0.ctrl.rate_ms`
 - `plugin.strucpp0.stat.rate_ms`
 - `plugin.strucpp0.stat.exec_ms`
+- `plugin.strucpp0.stat.input_ms`
+- `plugin.strucpp0.stat.output_ms`
 - `plugin.strucpp0.stat.total_ms`
 - `plugin.strucpp0.stat.div`
 - `plugin.strucpp0.stat.count`
@@ -944,6 +946,8 @@ shorter plugin-style record names:
 - `Plg-ST0-SmpMs-RB`
 - `Plg-ST0-SmpMsAct`
 - `Plg-ST0-ExeMsAct`
+- `Plg-ST0-InMsAct`
+- `Plg-ST0-OutMsAct`
 - `Plg-ST0-TotMsAct`
 - `Plg-ST0-DivAct`
 - `Plg-ST0-CntAct`
@@ -958,6 +962,14 @@ shorter plugin-style record names:
 
 `stat.exec_ms` is the last measured ST execution time and is only updated while
 the measurement bit is enabled.
+
+`stat.input_ms` is the last measured input-side overhead before `run_cycle()`,
+including binding gathers and `%I` copy-plan work, and is only updated while
+the total-measurement bit is enabled.
+
+`stat.output_ms` is the last measured output-side overhead after `run_cycle()`,
+including `%Q` copy-plan work, binding scatter, and export sync, and is only
+updated while the total-measurement bit is enabled.
 
 `stat.total_ms` is the last measured total plugin cycle time around the ST
 execution path, including plugin-side copying and export work, and is only

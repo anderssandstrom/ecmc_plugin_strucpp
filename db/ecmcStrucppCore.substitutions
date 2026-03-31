@@ -14,6 +14,8 @@ file "ecmcStrucppAi.template" {
 pattern { P, REC_PREFIX, PORT, ADDR, TIMEOUT, REC, ASYN, DESC, EGU, PREC }
 { "$(P=)", "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", "Plg-ST0-SmpMsAct", "plugin.strucpp0.stat.rate_ms", "Actual ST sample period", "ms", "3" }
 { "$(P=)", "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", "Plg-ST0-ExeMsAct", "plugin.strucpp0.stat.exec_ms", "Last ST execution time", "ms", "3" }
+{ "$(P=)", "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", "Plg-ST0-InMsAct", "plugin.strucpp0.stat.input_ms", "Input gather and copy time", "ms", "3" }
+{ "$(P=)", "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", "Plg-ST0-OutMsAct", "plugin.strucpp0.stat.output_ms", "Output scatter and export time", "ms", "3" }
 { "$(P=)", "$(P=)", "$(PORT=PLUGIN.STRUCPP0)", "$(ADDR=0)", "$(TIMEOUT=1000)", "Plg-ST0-TotMsAct", "plugin.strucpp0.stat.total_ms", "Last plugin cycle time", "ms", "3" }
 }
 

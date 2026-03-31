@@ -4,10 +4,10 @@
  <widget class="QDialog" name="Dialog">
   <property name="geometry">
    <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>430</width>
-    <height>346</height>
+     <x>0</x>
+     <y>0</y>
+     <width>430</width>
+     <height>406</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -270,7 +270,7 @@
    <property name="geometry">
     <rect>
      <x>220</x>
-     <y>246</y>
+     <y>306</y>
      <width>101</width>
      <height>18</height>
     </rect>
@@ -283,7 +283,7 @@
    <property name="geometry">
     <rect>
      <x>330</x>
-     <y>242</y>
+     <y>302</y>
      <width>81</width>
      <height>22</height>
     </rect>
@@ -305,7 +305,7 @@
    <property name="geometry">
     <rect>
      <x>220</x>
-     <y>276</y>
+     <y>336</y>
      <width>101</width>
      <height>18</height>
     </rect>
@@ -318,7 +318,7 @@
    <property name="geometry">
     <rect>
      <x>330</x>
-     <y>272</y>
+     <y>332</y>
      <width>81</width>
      <height>22</height>
     </rect>
@@ -336,11 +336,87 @@
     <enum>caLineEdit::Channel</enum>
    </property>
   </widget>
+  <widget class="caLabel" name="caLabelInput">
+   <property name="geometry">
+    <rect>
+     <x>220</x>
+     <y>246</y>
+     <width>101</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Input [ms]</string>
+   </property>
+  </widget>
+  <widget class="caLineEdit" name="caLineEditInput">
+   <property name="geometry">
+    <rect>
+     <x>330</x>
+     <y>242</y>
+     <width>81</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="channel" stdset="0">
+    <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-InMsAct</string>
+   </property>
+   <property name="colorMode">
+    <enum>caLineEdit::Static</enum>
+   </property>
+   <property name="precisionMode">
+    <enum>caLineEdit::Channel</enum>
+   </property>
+   <property name="limitsMode">
+    <enum>caLineEdit::Channel</enum>
+   </property>
+   <property name="unitsEnabled">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="caLabel" name="caLabelOutput">
+   <property name="geometry">
+    <rect>
+     <x>220</x>
+     <y>276</y>
+     <width>101</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Output [ms]</string>
+   </property>
+  </widget>
+  <widget class="caLineEdit" name="caLineEditOutput">
+   <property name="geometry">
+    <rect>
+     <x>330</x>
+     <y>272</y>
+     <width>81</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="channel" stdset="0">
+    <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-OutMsAct</string>
+   </property>
+   <property name="colorMode">
+    <enum>caLineEdit::Static</enum>
+   </property>
+   <property name="precisionMode">
+    <enum>caLineEdit::Channel</enum>
+   </property>
+   <property name="limitsMode">
+    <enum>caLineEdit::Channel</enum>
+   </property>
+   <property name="unitsEnabled">
+    <bool>true</bool>
+   </property>
+  </widget>
   <widget class="caLabel" name="caLabelDebugText">
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>306</y>
+     <y>366</y>
      <width>111</width>
      <height>18</height>
     </rect>
@@ -353,7 +429,7 @@
    <property name="geometry">
     <rect>
      <x>130</x>
-     <y>302</y>
+     <y>362</y>
      <width>281</width>
      <height>22</height>
     </rect>
