@@ -25,6 +25,8 @@ Both helpers use the plugin's built-in debug path:
   `Plg-ST0-DbgTxtAct`
 - output is disabled by default and only becomes active when
   `ctrl.word` bit 2 is set
+- that means debug output can be enabled or disabled at runtime from the
+  plugin control PV / panel, without editing ST code
 
 ## `ECMC_DebugPrint`
 

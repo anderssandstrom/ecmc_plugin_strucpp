@@ -14,6 +14,9 @@ Detailed reference:
 - `ECMC_DebugPrintNow`
   Plain function version. Prints every time the call is executed.
 
+Both debug helpers can be enabled or disabled at runtime through the plugin
+control PV by toggling `ctrl.word` bit 2.
+
 ## `lib/ecmc_control.st`
 
 Detailed reference:
@@ -38,6 +41,8 @@ Detailed reference:
   Clamp a value to a min/max range.
 - `ECMC_InWindow`
   Check whether a value is inside a numeric window.
+- `ECMC_GetCycleTimeS`
+  Read the EtherCAT cycle time in seconds.
 - `ECMC_RateLimiter`
   Limit how fast a value is allowed to rise or fall.
 - `ECMC_FirstOrderFilter`

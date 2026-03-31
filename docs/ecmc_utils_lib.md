@@ -110,6 +110,22 @@ Returns:
 
 - `BOOL`
 
+### `ECMC_GetCycleTimeS`
+
+Type:
+
+- `FUNCTION`
+
+Purpose:
+
+- read the configured EtherCAT / RT base cycle time in seconds
+- useful as `DT` for `ECMC_PID`, `ECMC_RateLimiter`, `ECMC_FirstOrderFilter`,
+  and `ECMC_Integrator`
+
+Returns:
+
+- `LREAL`
+
 ### `ECMC_RateLimiter`
 
 Type:
@@ -355,6 +371,7 @@ Both return:
 
 ```iecst
 VAR
+  dt      : LREAL;
   filt    : ECMC_FirstOrderFilter;
   hyst    : ECMC_HysteresisBool;
   integ   : ECMC_Integrator;
@@ -364,9 +381,10 @@ VAR
   err     : DINT;
 END_VAR
 
-filt(Input := velocity_cmd, Tau := 0.02, DT := 0.001);
+dt := ECMC_GetCycleTimeS();
+filt(Input := velocity_cmd, Tau := 0.02, DT := dt);
 hyst(In := axis_load, Low := 20.0, High := 30.0);
-integ(In := ctrl_err, K := 0.5, DT := 0.001, Min := -10.0, Max := 10.0);
+integ(In := ctrl_err, K := 0.5, DT := dt, Min := -10.0, Max := 10.0);
 
 statusM();
 statusS(SlaveId := 14);

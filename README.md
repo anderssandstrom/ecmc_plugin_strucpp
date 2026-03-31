@@ -108,6 +108,7 @@ The bundled `ECMC_*` utility additions are:
 - `ECMC_ApplyDeadband`
 - `ECMC_Clamp`
 - `ECMC_InWindow`
+- `ECMC_GetCycleTimeS`
 - `ECMC_RateLimiter`
 - `ECMC_FirstOrderFilter`
 - `ECMC_HysteresisBool`
@@ -137,6 +138,7 @@ Example:
 
 ```iecst
 VAR
+  dt      : LREAL;
   filt    : ECMC_FirstOrderFilter;
   hyst    : ECMC_HysteresisBool;
   integ   : ECMC_Integrator;
@@ -146,9 +148,10 @@ VAR
   setErr   : DINT;
 END_VAR
 
-filt(Input := velocity_cmd, Tau := 0.02, DT := 0.001);
+dt := ECMC_GetCycleTimeS();
+filt(Input := velocity_cmd, Tau := 0.02, DT := dt);
 hyst(In := axis_load, Low := 20.0, High := 30.0);
-integ(In := ctrl_err, K := 0.5, DT := 0.001, Min := -10.0, Max := 10.0);
+integ(In := ctrl_err, K := 0.5, DT := dt, Min := -10.0, Max := 10.0);
 statusM();
 statusS(SlaveId := 14);
 axisPos := ECMC_AxisGetActualPos(AxisId := 1);

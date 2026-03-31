@@ -4,6 +4,14 @@
 
 namespace strucpp {
 
+double ecmcStrucppGetCycleTimeS() {
+  const auto* services = ecmcStrucpp::getHostServices();
+  if (!services || !services->get_cycle_time_s) {
+    return 0.0;
+  }
+  return services->get_cycle_time_s();
+}
+
 uint32_t ecmcStrucppGetEcMasterStateWord(int32_t master_index) {
   const auto* services = ecmcStrucpp::getHostServices();
   if (!services || !services->get_ec_master_state_word) {
@@ -133,6 +141,10 @@ int32_t ecmcStrucppSetAxisExtActPos(int32_t axis_index, double value) {
 }
 
 }  // namespace strucpp
+
+double ecmcStrucppGetCycleTimeS() {
+  return strucpp::ecmcStrucppGetCycleTimeS();
+}
 
 uint32_t ecmcStrucppGetEcMasterStateWord(int32_t master_index) {
   return strucpp::ecmcStrucppGetEcMasterStateWord(master_index);

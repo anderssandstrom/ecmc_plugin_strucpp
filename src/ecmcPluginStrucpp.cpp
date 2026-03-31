@@ -656,6 +656,10 @@ uint32_t getHostControlWord() {
   return static_cast<uint32_t>(g_control_word);
 }
 
+double getHostCycleTimeS() {
+  return getEcmcSampleTimeMS() / 1000.0;
+}
+
 uint32_t getHostEcMasterStateWord(int32_t master_index) {
   return getEcmcMasterStateWord(master_index);
 }
@@ -728,8 +732,9 @@ void publishHostDebugText(const char* message) {
 }
 
 const ecmcStrucppHostServices g_host_services = {
-  4,
+  5,
   &getHostControlWord,
+  &getHostCycleTimeS,
   &getHostEcMasterStateWord,
   &getHostEcSlaveStateWord,
   &getHostAxisTrajSource,

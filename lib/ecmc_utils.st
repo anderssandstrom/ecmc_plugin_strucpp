@@ -116,6 +116,13 @@ ELSE
 END_IF;
 END_FUNCTION
 
+FUNCTION ECMC_GetCycleTimeS : LREAL
+{external
+  extern double ecmcStrucppGetCycleTimeS();
+  ECMC_GETCYCLETIMES = ecmcStrucppGetCycleTimeS();
+}
+END_FUNCTION
+
 FUNCTION_BLOCK ECMC_RateLimiter
 VAR_INPUT
   Enable      : BOOL := TRUE;
