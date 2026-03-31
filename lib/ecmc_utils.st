@@ -119,7 +119,7 @@ END_FUNCTION
 FUNCTION ECMC_GetCycleTimeS : LREAL
 {external
   extern double ecmcStrucppGetCycleTimeS();
-  ECMC_GETCYCLETIMES = ecmcStrucppGetCycleTimeS();
+  ECMC_GETCYCLETIMES.set(ecmcStrucppGetCycleTimeS());
 }
 END_FUNCTION
 
@@ -381,7 +381,7 @@ VAR_INPUT
 END_VAR
 {external
   extern int32_t ecmcStrucppGetAxisTrajSource(int32_t axis_index);
-  ECMC_AXISGETTRAJSOURCE = ecmcStrucppGetAxisTrajSource(AXISID.get());
+  ECMC_AXISGETTRAJSOURCE.set(ecmcStrucppGetAxisTrajSource(AXISID.get()));
 }
 END_FUNCTION
 
@@ -391,7 +391,7 @@ VAR_INPUT
 END_VAR
 {external
   extern int32_t ecmcStrucppGetAxisEncSource(int32_t axis_index);
-  ECMC_AXISGETENCSOURCE = ecmcStrucppGetAxisEncSource(AXISID.get());
+  ECMC_AXISGETENCSOURCE.set(ecmcStrucppGetAxisEncSource(AXISID.get()));
 }
 END_FUNCTION
 
@@ -401,7 +401,7 @@ VAR_INPUT
 END_VAR
 {external
   extern double ecmcStrucppGetAxisActualPos(int32_t axis_index);
-  ECMC_AXISGETACTUALPOS = ecmcStrucppGetAxisActualPos(AXISID.get());
+  ECMC_AXISGETACTUALPOS.set(ecmcStrucppGetAxisActualPos(AXISID.get()));
 }
 END_FUNCTION
 
@@ -411,7 +411,7 @@ VAR_INPUT
 END_VAR
 {external
   extern double ecmcStrucppGetAxisSetpointPos(int32_t axis_index);
-  ECMC_AXISGETSETPOINTPOS = ecmcStrucppGetAxisSetpointPos(AXISID.get());
+  ECMC_AXISGETSETPOINTPOS.set(ecmcStrucppGetAxisSetpointPos(AXISID.get()));
 }
 END_FUNCTION
 
@@ -421,7 +421,7 @@ VAR_INPUT
 END_VAR
 {external
   extern double ecmcStrucppGetAxisActualVel(int32_t axis_index);
-  ECMC_AXISGETACTUALVEL = ecmcStrucppGetAxisActualVel(AXISID.get());
+  ECMC_AXISGETACTUALVEL.set(ecmcStrucppGetAxisActualVel(AXISID.get()));
 }
 END_FUNCTION
 
@@ -431,7 +431,7 @@ VAR_INPUT
 END_VAR
 {external
   extern double ecmcStrucppGetAxisSetpointVel(int32_t axis_index);
-  ECMC_AXISGETSETPOINTVEL = ecmcStrucppGetAxisSetpointVel(AXISID.get());
+  ECMC_AXISGETSETPOINTVEL.set(ecmcStrucppGetAxisSetpointVel(AXISID.get()));
 }
 END_FUNCTION
 
@@ -441,7 +441,7 @@ VAR_INPUT
 END_VAR
 {external
   extern int32_t ecmcStrucppGetAxisEnabled(int32_t axis_index);
-  ECMC_AXISISENABLED = ecmcStrucppGetAxisEnabled(AXISID.get()) != 0;
+  ECMC_AXISISENABLED.set(ecmcStrucppGetAxisEnabled(AXISID.get()) != 0);
 }
 END_FUNCTION
 
@@ -451,7 +451,7 @@ VAR_INPUT
 END_VAR
 {external
   extern int32_t ecmcStrucppGetAxisBusy(int32_t axis_index);
-  ECMC_AXISISBUSY = ecmcStrucppGetAxisBusy(AXISID.get()) != 0;
+  ECMC_AXISISBUSY.set(ecmcStrucppGetAxisBusy(AXISID.get()) != 0);
 }
 END_FUNCTION
 
@@ -461,7 +461,7 @@ VAR_INPUT
 END_VAR
 {external
   extern int32_t ecmcStrucppGetAxisError(int32_t axis_index);
-  ECMC_AXISHASERROR = ecmcStrucppGetAxisError(AXISID.get()) != 0;
+  ECMC_AXISHASERROR.set(ecmcStrucppGetAxisError(AXISID.get()) != 0);
 }
 END_FUNCTION
 
@@ -471,7 +471,7 @@ VAR_INPUT
 END_VAR
 {external
   extern int32_t ecmcStrucppGetAxisErrorId(int32_t axis_index);
-  ECMC_AXISGETERRORID = ecmcStrucppGetAxisErrorId(AXISID.get());
+  ECMC_AXISGETERRORID.set(ecmcStrucppGetAxisErrorId(AXISID.get()));
 }
 END_FUNCTION
 
@@ -482,7 +482,7 @@ VAR_INPUT
 END_VAR
 {external
   extern int32_t ecmcStrucppSetAxisTrajSource(int32_t axis_index, int32_t source);
-  ECMC_AXISSETTRAJSOURCE = ecmcStrucppSetAxisTrajSource(AXISID.get(), SOURCE.get());
+  ECMC_AXISSETTRAJSOURCE.set(ecmcStrucppSetAxisTrajSource(AXISID.get(), SOURCE.get()));
 }
 END_FUNCTION
 
@@ -493,7 +493,7 @@ VAR_INPUT
 END_VAR
 {external
   extern int32_t ecmcStrucppSetAxisEncSource(int32_t axis_index, int32_t source);
-  ECMC_AXISSETENCSOURCE = ecmcStrucppSetAxisEncSource(AXISID.get(), SOURCE.get());
+  ECMC_AXISSETENCSOURCE.set(ecmcStrucppSetAxisEncSource(AXISID.get(), SOURCE.get()));
 }
 END_FUNCTION
 
@@ -532,7 +532,7 @@ VAR_INPUT
 END_VAR
 {external
   extern int32_t ecmcStrucppSetAxisExtSetPos(int32_t axis_index, double value);
-  ECMC_AXISSETEXTERNALSETPOINTPOS = ecmcStrucppSetAxisExtSetPos(AXISID.get(), POSITION.get());
+  ECMC_AXISSETEXTERNALSETPOINTPOS.set(ecmcStrucppSetAxisExtSetPos(AXISID.get(), POSITION.get()));
 }
 END_FUNCTION
 
@@ -543,6 +543,6 @@ VAR_INPUT
 END_VAR
 {external
   extern int32_t ecmcStrucppSetAxisExtActPos(int32_t axis_index, double value);
-  ECMC_AXISSETEXTERNALENCODERPOS = ecmcStrucppSetAxisExtActPos(AXISID.get(), POSITION.get());
+  ECMC_AXISSETEXTERNALENCODERPOS.set(ecmcStrucppSetAxisExtActPos(AXISID.get(), POSITION.get()));
 }
 END_FUNCTION
