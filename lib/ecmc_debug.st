@@ -32,6 +32,6 @@ END_VAR
   const auto message = MESSAGE.get();
   extern void ecmcStrucppDebugPrint(const char* message);
   ecmcStrucppDebugPrint(message.c_str());
-  ECMC_DEBUGPRINTNOW.set(true);
+  return true;
 }
 END_FUNCTION
