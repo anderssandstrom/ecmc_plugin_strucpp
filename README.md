@@ -3,6 +3,10 @@
 `ecmc_plugin_strucpp` is a generic `ecmc` host plugin for running
 loadable `STruCpp` logic libraries inside the normal `ecmc` realtime loop.
 
+Current zero-copy direct-mapping support relies on the `STruCpp` fork at
+`https://github.com/anderssandstrom/STruCpp`, branch
+`feature/zero-copy-located-vars`.
+
 In this repo, `ST` means **Structured Text** as defined by **IEC 61131-3**,
 the PLC programming-language standard. It does not mean EPICS sequencer
 State Notation Language `.st` files.
@@ -1086,6 +1090,9 @@ make STRUCPP=/path/to/strucpp
 ```
 
 If `STRUCPP` is not set, the makefile defaults to `../strucpp`.
+
+For the current zero-copy direct-mapping path, `STRUCPP` must point to the
+`anderssandstrom/STruCpp` fork on branch `feature/zero-copy-located-vars`.
 
 The bundled motion library is distributed with the repo, so normal users do not
 need Node or `strucpp` just to consume `MC_*` blocks from an application repo.
