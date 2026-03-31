@@ -77,6 +77,12 @@ struct BoundAddressMapping {
   ecmcDataItemInfo info {};
 };
 
+struct ZeroCopyBinding {
+  strucpp::LocatedVar* var {};
+  void* original_pointer {};
+  std::string item_name;
+};
+
 struct PluginConfig {
   std::string logic_lib;
   std::string mapping_file;
@@ -134,6 +140,10 @@ bool createBoundParam(const char* name,
                       std::string* error_out);
 void applyControlWord(uint32_t control_word);
 void logError(const char* fmt, ...);
+const BoundAddressMapping* findAddressMapping(const strucpp::LocatedVar& var,
+                                              const std::vector<BoundAddressMapping>& bindings);
+const strucpp::LocatedVar* logicLocatedVars();
+size_t logicLocatedVarCount();
 
 extern int32_t g_control_word;
 extern bool g_execute_count_publish_due;
@@ -620,6 +630,7 @@ std::vector<BoundItemBinding> g_bound_input_bindings;
 std::vector<BoundItemBinding> g_bound_output_bindings;
 std::vector<AddressMappingSpec> g_mapping_specs;
 std::vector<BoundAddressMapping> g_bound_mappings;
+std::vector<ZeroCopyBinding> g_zero_copy_bindings;
 LogicRuntime g_logic {};
 ecmcStrucppCompiledCopyPlan g_copy_plan {};
 std::vector<ExportedParamBinding> g_builtin_params;
@@ -1829,6 +1840,122 @@ bool validateDirectMappedItemType(const strucpp::LocatedVar& var,
   return true;
 }
 
+bool isZeroCopySafeDataType(ecmcEcDataType type) {
+  switch (type) {
+  case ECMC_EC_U8:
+  case ECMC_EC_S8:
+  case ECMC_EC_U16:
+  case ECMC_EC_S16:
+  case ECMC_EC_U32:
+  case ECMC_EC_S32:
+  case ECMC_EC_U64:
+  case ECMC_EC_S64:
+  case ECMC_EC_F32:
+  case ECMC_EC_F64:
+    return true;
+  case ECMC_EC_NONE:
+  case ECMC_EC_B1:
+  case ECMC_EC_B2:
+  case ECMC_EC_B3:
+  case ECMC_EC_B4:
+  case ECMC_EC_S8_TO_U8:
+  case ECMC_EC_S16_TO_U16:
+  case ECMC_EC_S32_TO_U32:
+  case ECMC_EC_S64_TO_U64:
+    return false;
+  }
+  return false;
+}
+
+strucpp::LocatedVar* logicLocatedVarsMutable() {
+  return const_cast<strucpp::LocatedVar*>(logicLocatedVars());
+}
+
+bool canZeroCopyBindDirectMappedVar(const strucpp::LocatedVar& var,
+                                    const BoundAddressMapping& mapping) {
+  if (var.area != strucpp::LocatedArea::Input &&
+      var.area != strucpp::LocatedArea::Output) {
+    return false;
+  }
+
+  if (var.size == strucpp::LocatedSize::Bit) {
+    return false;
+  }
+
+  if (!var.owner || !var.bind_external || !var.get_raw_ptr) {
+    return false;
+  }
+
+  if (!mapping.item.data || mapping.item.size != var.byte_size()) {
+    return false;
+  }
+
+  if (!isZeroCopySafeDataType(mapping.info.dataType)) {
+    return false;
+  }
+
+  return true;
+}
+
+void releaseZeroCopyBindings() {
+  for (auto& binding : g_zero_copy_bindings) {
+    if (!binding.var) {
+      continue;
+    }
+
+    if (binding.var->bind_external) {
+      binding.var->bind_external(binding.var->owner, nullptr);
+    }
+
+    if (binding.var->get_raw_ptr && binding.var->owner) {
+      binding.var->pointer = binding.var->get_raw_ptr(binding.var->owner);
+    } else {
+      binding.var->pointer = binding.original_pointer;
+    }
+  }
+
+  g_zero_copy_bindings.clear();
+}
+
+bool applyDirectMappedZeroCopyBindings(strucpp::LocatedVar* vars,
+                                       size_t count,
+                                       const std::vector<BoundAddressMapping>& mappings,
+                                       std::string* error_out) {
+  if (!vars) {
+    return true;
+  }
+
+  releaseZeroCopyBindings();
+
+  for (size_t i = 0; i < count; ++i) {
+    auto& var = vars[i];
+    const BoundAddressMapping* const mapping = findAddressMapping(var, mappings);
+    if (!mapping || !canZeroCopyBindDirectMappedVar(var, *mapping)) {
+      continue;
+    }
+
+    ZeroCopyBinding binding {};
+    binding.var = &var;
+    binding.original_pointer = var.pointer;
+    binding.item_name = mapping->item.name;
+
+    var.bind_external(var.owner, mapping->item.data);
+    var.pointer = var.get_raw_ptr(var.owner);
+    if (var.pointer != mapping->item.data) {
+      releaseZeroCopyBindings();
+      if (error_out) {
+        *error_out = "Zero-copy binding failed for " + formatAddress(var) +
+                     " -> " + mapping->item.name;
+      }
+      return false;
+    }
+
+    g_zero_copy_bindings.push_back(std::move(binding));
+  }
+
+  return true;
+}
+
 bool addressesEqual(const LocatedAddressKey& lhs, const LocatedAddressKey& rhs) {
   return lhs.area == rhs.area && lhs.size == rhs.size &&
          lhs.byte_index == rhs.byte_index && lhs.bit_index == rhs.bit_index;
@@ -2254,7 +2381,7 @@ const strucpp::LocatedVar* findLocatedVarForAddress(const strucpp::LocatedVar* v
 
 void logDirectMappingValidationReport(const std::vector<BoundAddressMapping>& mappings) {
   logValidationReportHeader("direct_mapping");
-  const strucpp::LocatedVar* const vars = logicLocatedVars();
+  strucpp::LocatedVar* const vars = logicLocatedVarsMutable();
   const size_t var_count = logicLocatedVarCount();
   for (const auto& mapping : mappings) {
     const strucpp::LocatedVar* const var = findLocatedVarForAddress(vars,
@@ -2662,6 +2789,10 @@ bool appendDirectMappedVar(const strucpp::LocatedVar& var,
     return false;
   }
 
+  if (var.pointer == mapping->item.data) {
+    return true;
+  }
+
   if (var.area == strucpp::LocatedArea::Input) {
     out_plan->input_scalars_to_var.push_back(
       {mapping->item.data, var.pointer, byte_size});
@@ -2749,6 +2880,7 @@ std::string describeBindingSpecs(const std::vector<ItemBindingSpec>& specs) {
 }
 
 void clearRuntimeState() {
+  releaseZeroCopyBindings();
   g_images = ecmcStrucppIoImages {};
   g_copy_plan = ecmcStrucppCompiledCopyPlan {};
   g_input_image.clear();
@@ -2969,8 +3101,8 @@ static void destruct(void) {
   g_builtin_params.clear();
   g_exported_params.clear();
   g_grouped_bool_params.clear();
-  unloadLogicRuntime();
   clearRuntimeState();
+  unloadLogicRuntime();
   destroyAsynPort();
   g_config = PluginConfig {};
   g_runtime_execute_divider = 1;
@@ -3027,12 +3159,18 @@ static int enterRealtime(void) {
       return -1;
     }
 
+    if (!applyDirectMappedZeroCopyBindings(vars, var_count, g_bound_mappings, &error)) {
+      logError("%s", error.c_str());
+      return -1;
+    }
+
     if (!buildDirectMappedCopyPlan(vars,
                                    var_count,
                                    g_bound_mappings,
                                    g_images.memory,
                                    &g_copy_plan,
                                    &error)) {
+      releaseZeroCopyBindings();
       logError("%s", error.c_str());
       return -1;
     }
@@ -3049,8 +3187,9 @@ static int enterRealtime(void) {
             g_config.mapping_file.c_str(),
             g_bound_mappings.size(),
             g_images.memory.size);
-    logInfo("mapping_summary direct_mappings=%zu exports=%zu",
+    logInfo("mapping_summary direct_mappings=%zu zero_copy=%zu exports=%zu",
             g_bound_mappings.size(),
+            g_zero_copy_bindings.size(),
             g_exported_params.size() + g_grouped_bool_params.size());
     if (g_config.validate_report) {
       logDirectMappingValidationReport(g_bound_mappings);
