@@ -21,9 +21,8 @@ The panel expects `IOC` without a trailing `:` and builds PV names like:
 The control word is edited through a `caByteController` with:
 
 - bit 0: enable ST execution
-- bit 1: measure ST logic time
+- bit 1: measure all timing stats
 - bit 2: enable ST debug prints
-- bit 3: measure total plugin cycle time
 
 The requested sample period is also editable directly.
 

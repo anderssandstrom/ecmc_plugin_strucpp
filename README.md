@@ -51,8 +51,8 @@ helper also links the required C++ debug shim automatically. If you want to
 disable the default ST helper include, set `INCLUDE_DEBUG_ST := 0`. Debug
 printouts are disabled by default and only appear when `ctrl.word` bit 2 is
 set. When enabled, the latest short debug message is also published on the
-plugin's own asyn interface as `Plg-ST0-DbgTxtAct`. A separate total-cycle
-timing measurement is available on `ctrl.word` bit 3.
+plugin's own asyn interface as `Plg-ST0-DbgTxtAct`. Timing measurements are
+available on `ctrl.word` bit 1.
 
 If you want an unconditional print whenever the call is executed, the same
 library also provides `ECMC_DebugPrintNow(Message := '...')`.
@@ -956,24 +956,23 @@ shorter plugin-style record names:
 `ctrl.word` uses:
 
 - bit 0: enable ST execution
-- bit 1: enable ST-only execution-time measurement
+- bit 1: enable all timing measurements
 - bit 2: enable ST debug prints
-- bit 3: enable total plugin-cycle measurement
 
 `stat.exec_ms` is the last measured ST execution time and is only updated while
 the measurement bit is enabled.
 
 `stat.input_ms` is the last measured input-side overhead before `run_cycle()`,
 including binding gathers and `%I` copy-plan work, and is only updated while
-the total-measurement bit is enabled.
+the timing bit is enabled.
 
 `stat.output_ms` is the last measured output-side overhead after `run_cycle()`,
 including `%Q` copy-plan work, binding scatter, and export sync, and is only
-updated while the total-measurement bit is enabled.
+updated while the timing bit is enabled.
 
 `stat.total_ms` is the last measured total plugin cycle time around the ST
 execution path, including plugin-side copying and export work, and is only
-updated while the total-measurement bit is enabled.
+updated while the timing bit is enabled.
 
 `stat.count` is intentionally rate-limited to a maximum PV update rate of
 10 Hz.

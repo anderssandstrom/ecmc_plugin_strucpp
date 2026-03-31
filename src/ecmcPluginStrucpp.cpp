@@ -155,12 +155,10 @@ constexpr const char* kBuiltinDebugTextName = "plugin.strucpp0.stat.dbg_txt";
 constexpr size_t kBuiltinDebugTextMaxChars = 39;
 constexpr uint32_t kControlWordEnableExecutionBit =
   ECMC_STRUCPP_CONTROL_WORD_ENABLE_EXECUTION_BIT;
-constexpr uint32_t kControlWordMeasureExecTimeBit =
-  ECMC_STRUCPP_CONTROL_WORD_MEASURE_EXEC_TIME_BIT;
+constexpr uint32_t kControlWordEnableTimingBit =
+  ECMC_STRUCPP_CONTROL_WORD_ENABLE_TIMING_BIT;
 constexpr uint32_t kControlWordEnableDebugPrintsBit =
   ECMC_STRUCPP_CONTROL_WORD_ENABLE_DEBUG_PRINTS_BIT;
-constexpr uint32_t kControlWordMeasureTotalTimeBit =
-  ECMC_STRUCPP_CONTROL_WORD_MEASURE_TOTAL_TIME_BIT;
 
 class StrucppAsynPort : public asynPortDriver {
  public:
@@ -1470,9 +1468,8 @@ void applyControlWord(uint32_t control_word) {
   g_execution_enabled =
     (control_word & kControlWordEnableExecutionBit) != 0 ? 1u : 0u;
   g_measure_exec_time_enabled =
-    (control_word & kControlWordMeasureExecTimeBit) != 0 ? 1u : 0u;
-  g_measure_total_time_enabled =
-    (control_word & kControlWordMeasureTotalTimeBit) != 0 ? 1u : 0u;
+    (control_word & kControlWordEnableTimingBit) != 0 ? 1u : 0u;
+  g_measure_total_time_enabled = g_measure_exec_time_enabled;
   if (!g_measure_exec_time_enabled) {
     g_last_exec_time_ms = 0.0;
   }

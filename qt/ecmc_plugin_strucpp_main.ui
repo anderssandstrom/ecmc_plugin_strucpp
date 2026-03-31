@@ -71,7 +71,7 @@
     <string notr="true">$(IOC):Plg-ST$(PLG_ID=0)-CtrlWord-RB</string>
    </property>
    <property name="endBit">
-    <number>3</number>
+    <number>2</number>
    </property>
   </widget>
   <widget class="caLabel" name="caLabelBit0">
@@ -97,7 +97,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>bit1 exec-time</string>
+    <string>bit1 timing</string>
    </property>
   </widget>
   <widget class="caLabel" name="caLabelBit2">
@@ -112,19 +112,6 @@
    <property name="text">
     <string>bit2 ST debug</string>
     </property>
-  </widget>
-  <widget class="caLabel" name="caLabelBit3">
-   <property name="geometry">
-    <rect>
-     <x>165</x>
-     <y>138</y>
-     <width>181</width>
-     <height>18</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>bit3 total time</string>
-   </property>
   </widget>
   <widget class="caLabel" name="caLabelRateReq">
    <property name="geometry">
