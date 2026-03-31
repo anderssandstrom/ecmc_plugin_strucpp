@@ -1027,6 +1027,9 @@ size_t logicExportedVarCount() {
   return static_cast<size_t>(g_logic.api->get_exported_var_count(g_logic.instance));
 }
 
+const strucpp::LocatedVar* logicLocatedVars();
+size_t logicLocatedVarCount();
+
 bool bindBuiltinVars(std::string* error_out) {
   g_builtin_params.clear();
   g_builtin_debug_text_param_id = -1;
