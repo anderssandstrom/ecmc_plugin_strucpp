@@ -10375,7 +10375,7 @@ LocatedVar locatedVars[4] = {
 };
 
 Program_MAIN::Program_MAIN()
-    : ACTUAL_POSITION(0), DRIVE_CONTROL(0), VELOCITY_SETPOINT(0), CYCLE_COUNTER(0), ACTUAL_POS_EXPORT(0)
+    : ACTUAL_POSITION(0), DRIVE_CONTROL(0), VELOCITY_SETPOINT(0), CYCLE_COUNTER(0), ACTUAL_POS_EXPORT(0), DBG_SAMPLE_TRIGGER(false), STARTUP_PRINTED(false)
 {
     // Initialize located variable pointers
     locatedVars[0].pointer = ACTUAL_POSITION.raw_ptr();
@@ -10388,11 +10388,546 @@ void Program_MAIN::run() {
     ACTUAL_POS_EXPORT = ACTUAL_POSITION;
     CYCLE_COUNTER = CYCLE_COUNTER + 1;
     DRIVE_CONTROL = 0x0001;
-    if (ACTUAL_POSITION < 0) {
+    DBG_STARTUP.EXECUTE = !STARTUP_PRINTED;
+    DBG_STARTUP.MESSAGE = "ST program started";
+    DBG_STARTUP();
+    STARTUP_PRINTED = true;
+    DBG_SAMPLE_TRIGGER = (CYCLE_COUNTER % 1000) == 0;
+    DBG_POSITION.EXECUTE = DBG_SAMPLE_TRIGGER;
+    DBG_POSITION.MESSAGE = CONCAT("actual_position=", TO_STRING(ACTUAL_POSITION));
+    DBG_POSITION();
+    if (VELOCITY_SETPOINT == 0) {
         VELOCITY_SETPOINT = 1000;
-    } else if (ACTUAL_POSITION > 1000) {
+    }
+    if (ACTUAL_POSITION <= 0) {
+        VELOCITY_SETPOINT = 1000;
+    } else if (ACTUAL_POSITION >= 12800) {
         VELOCITY_SETPOINT = -1000;
     }
+    DBG_REVERSE_POS.EXECUTE = ACTUAL_POSITION <= 0;
+    DBG_REVERSE_POS.MESSAGE = CONCAT("reverse -> +1000 at pos=", TO_STRING(ACTUAL_POSITION));
+    DBG_REVERSE_POS();
+    DBG_REVERSE_NEG.EXECUTE = ACTUAL_POSITION >= 12800;
+    DBG_REVERSE_NEG.MESSAGE = CONCAT("reverse -> -1000 at pos=", TO_STRING(ACTUAL_POSITION));
+    DBG_REVERSE_NEG();
+}
+
+ECMC_PID::ECMC_PID()
+    : ENABLE(true), RESET(false), FF(0.0), KP(1.0), KI(0.0), KD(0.0), KFF(1.0), DT(1.0), DFILTERTAU(0.0), OUTMIN(0.0), OUTMAX(0.0), IMIN(0.0), IMAX(0.0)
+{
+    // Initialize variables
+}
+
+void ECMC_PID::operator()() {
+    ERROR = SETPOINT - ACTUAL;
+    if (RESET) {
+        OUTPUT = 0.0;
+        PPART = 0.0;
+        IPART = 0.0;
+        DPART = 0.0;
+        FFPART = 0.0;
+        LIMITED = false;
+        PREVERROR = ERROR;
+        DSTATE = 0.0;
+        WASENABLED = false;
+    } else if (!ENABLE) {
+        ERROR = SETPOINT - ACTUAL;
+        OUTPUT = 0.0;
+        PPART = 0.0;
+        DPART = 0.0;
+        FFPART = FF * KFF;
+        LIMITED = false;
+        PREVERROR = ERROR;
+        DSTATE = 0.0;
+        WASENABLED = false;
+    } else if (!WASENABLED) {
+        PPART = ERROR * KP;
+        DPART = 0.0;
+        FFPART = FF * KFF;
+        UNSATOUTPUT = PPART + IPART + FFPART;
+        OUTPUT = UNSATOUTPUT;
+        LIMITED = false;
+        if (OUTMAX > OUTMIN) {
+            if (OUTPUT > OUTMAX) {
+                OUTPUT = OUTMAX;
+                LIMITED = true;
+            }
+            if (OUTPUT < OUTMIN) {
+                OUTPUT = OUTMIN;
+                LIMITED = true;
+            }
+        }
+        PREVERROR = ERROR;
+        DSTATE = 0.0;
+        WASENABLED = true;
+    } else {
+        PPART = ERROR * KP;
+        CANDIDATEI = IPART + ERROR * KI * DT;
+        if (IMAX > IMIN) {
+            if (CANDIDATEI > IMAX) {
+                CANDIDATEI = IMAX;
+            }
+            if (CANDIDATEI < IMIN) {
+                CANDIDATEI = IMIN;
+            }
+        }
+        if (DT > 0.0) {
+            DRAW = (ERROR - PREVERROR) / DT;
+            if (DFILTERTAU > 0.0) {
+                DALPHA = DT / (DFILTERTAU + DT);
+                DSTATE = DSTATE + DALPHA * (DRAW - DSTATE);
+            } else {
+                DSTATE = DRAW;
+            }
+            DPART = KD * DSTATE;
+        } else {
+            DSTATE = 0.0;
+            DPART = 0.0;
+        }
+        FFPART = FF * KFF;
+        UNSATOUTPUT = PPART + CANDIDATEI + DPART + FFPART;
+        OUTPUT = UNSATOUTPUT;
+        LIMITED = false;
+        if (OUTMAX > OUTMIN) {
+            if (OUTPUT > OUTMAX) {
+                OUTPUT = OUTMAX;
+                LIMITED = true;
+            }
+            if (OUTPUT < OUTMIN) {
+                OUTPUT = OUTMIN;
+                LIMITED = true;
+            }
+        }
+        if ((!LIMITED) || ((UNSATOUTPUT > OUTMAX) && (ERROR < 0.0)) || ((UNSATOUTPUT < OUTMIN) && (ERROR > 0.0))) {
+            IPART = CANDIDATEI;
+        }
+        PREVERROR = ERROR;
+        WASENABLED = true;
+    }
+}
+
+ECMC_DEBOUNCEBOOL::ECMC_DEBOUNCEBOOL()
+    : ONDELAY(0LL), OFFDELAY(0LL)
+{
+    // Initialize variables
+}
+
+void ECMC_DEBOUNCEBOOL::operator()() {
+    RISING = false;
+    FALLING = false;
+    ONTIMER.IN = IN;
+    ONTIMER.PT = ONDELAY;
+    ONTIMER();
+    OFFTIMER.IN = !IN;
+    OFFTIMER.PT = OFFDELAY;
+    OFFTIMER();
+    if (IN) {
+        if ((ONDELAY <= 0LL) || ONTIMER.Q) {
+            if (!OUT) {
+                RISING = true;
+            }
+            OUT = true;
+        }
+    } else {
+        if ((OFFDELAY <= 0LL) || OFFTIMER.Q) {
+            if (OUT) {
+                FALLING = true;
+            }
+            OUT = false;
+        }
+    }
+}
+
+ECMC_RATELIMITER::ECMC_RATELIMITER()
+    : ENABLE(true), RESET(false), RISINGRATE(0.0), FALLINGRATE(0.0), DT(1.0), INITTOINPUT(true)
+{
+    // Initialize variables
+}
+
+void ECMC_RATELIMITER::operator()() {
+    if (RESET || (!ENABLE)) {
+        if (INITTOINPUT) {
+            OUTPUT = INPUT;
+        }
+        LIMITED = false;
+    } else {
+        DELTA = INPUT - OUTPUT;
+        LIMITED = false;
+        if ((DT <= 0.0)) {
+            OUTPUT = INPUT;
+        } else if (DELTA > 0.0) {
+            if (RISINGRATE <= 0.0) {
+                OUTPUT = INPUT;
+            } else {
+                MAXSTEP = RISINGRATE * DT;
+                if (DELTA > MAXSTEP) {
+                    OUTPUT = OUTPUT + MAXSTEP;
+                    LIMITED = true;
+                } else {
+                    OUTPUT = INPUT;
+                }
+            }
+        } else if (DELTA < 0.0) {
+            if (FALLINGRATE <= 0.0) {
+                OUTPUT = INPUT;
+            } else {
+                MAXSTEP = FALLINGRATE * DT;
+                if ((-DELTA) > MAXSTEP) {
+                    OUTPUT = OUTPUT - MAXSTEP;
+                    LIMITED = true;
+                } else {
+                    OUTPUT = INPUT;
+                }
+            }
+        }
+    }
+}
+
+ECMC_FIRSTORDERFILTER::ECMC_FIRSTORDERFILTER()
+    : ENABLE(true), RESET(false), TAU(0.0), DT(1.0), INITTOINPUT(true)
+{
+    // Initialize variables
+}
+
+void ECMC_FIRSTORDERFILTER::operator()() {
+    if (RESET || (!ENABLE)) {
+        if (INITTOINPUT) {
+            OUTPUT = INPUT;
+        }
+    } else if ((TAU <= 0.0) || (DT <= 0.0)) {
+        OUTPUT = INPUT;
+    } else {
+        ALPHA = DT / (TAU + DT);
+        OUTPUT = OUTPUT + ALPHA * (INPUT - OUTPUT);
+    }
+}
+
+ECMC_HYSTERESISBOOL::ECMC_HYSTERESISBOOL()
+    : LOW(0.0), HIGH(0.0), RESET(false), INITSTATE(false)
+{
+    // Initialize variables
+}
+
+void ECMC_HYSTERESISBOOL::operator()() {
+    LO = LOW;
+    HI = HIGH;
+    if (HI < LO) {
+        LO = HIGH;
+        HI = LOW;
+    }
+    RISING = false;
+    FALLING = false;
+    if (RESET) {
+        if (OUT != INITSTATE) {
+            RISING = INITSTATE;
+            FALLING = !INITSTATE;
+        }
+        OUT = INITSTATE;
+    } else {
+        if (!OUT) {
+            if (IN >= HI) {
+                OUT = true;
+                RISING = true;
+            }
+        } else {
+            if (IN <= LO) {
+                OUT = false;
+                FALLING = true;
+            }
+        }
+    }
+}
+
+ECMC_INTEGRATOR::ECMC_INTEGRATOR()
+    : ENABLE(true), RESET(false), HOLD(false), K(1.0), DT(1.0), MIN(0.0), MAX(0.0), INIT(0.0)
+{
+    // Initialize variables
+}
+
+void ECMC_INTEGRATOR::operator()() {
+    LO = MIN;
+    HI = MAX;
+    if (HI < LO) {
+        LO = MAX;
+        HI = MIN;
+    }
+    if (RESET) {
+        OUT = INIT;
+        LIMITED = false;
+    } else if (ENABLE && (!HOLD) && (DT > 0.0)) {
+        CANDIDATE = OUT + IN * K * DT;
+        LIMITED = false;
+        if (HI > LO) {
+            if (CANDIDATE < LO) {
+                CANDIDATE = LO;
+                LIMITED = true;
+            } else if (CANDIDATE > HI) {
+                CANDIDATE = HI;
+                LIMITED = true;
+            }
+        }
+        OUT = CANDIDATE;
+    } else {
+        LIMITED = false;
+    }
+}
+
+ECMC_ECSLAVESTATUS::ECMC_ECSLAVESTATUS()
+    : MASTERID(-1)
+{
+    // Initialize variables
+}
+
+void ECMC_ECSLAVESTATUS::operator()() {
+    extern uint32_t ecmcStrucppGetEcSlaveStateWord(int32_t master_index, int32_t slave_index);
+      const uint32_t word = ecmcStrucppGetEcSlaveStateWord(MASTERID.get(), SLAVEID.get());
+      const uint32_t state_code = (word >> 3u) & 0xFu;
+
+      STATEWORD.set(word);
+      STATECODE.set(static_cast<uint8_t>(state_code));
+      VALID.set((word & (1u << 0u)) != 0u);
+      ONLINE.set((word & (1u << 1u)) != 0u);
+      OPERATIONAL.set((word & (1u << 2u)) != 0u);
+      INIT.set(state_code == 1u);
+      PREOP.set(state_code == 2u);
+      SAFEOP.set(state_code == 4u);
+      OP.set(state_code == 8u);
+}
+
+ECMC_ECMASTERSTATUS::ECMC_ECMASTERSTATUS()
+    : MASTERID(-1)
+{
+    // Initialize variables
+}
+
+void ECMC_ECMASTERSTATUS::operator()() {
+    extern uint32_t ecmcStrucppGetEcMasterStateWord(int32_t master_index);
+      const uint32_t word = ecmcStrucppGetEcMasterStateWord(MASTERID.get());
+      const uint32_t state_code = (word >> 2u) & 0xFu;
+
+      STATEWORD.set(word);
+      STATECODE.set(static_cast<uint8_t>(state_code));
+      VALID.set((word & (1u << 0u)) != 0u);
+      LINKUP.set((word & (1u << 1u)) != 0u);
+      INIT.set(state_code == 1u);
+      PREOP.set(state_code == 2u);
+      SAFEOP.set(state_code == 4u);
+      OP.set(state_code == 8u);
+      SLAVESRESPONDING.set(static_cast<uint16_t>((word >> 16u) & 0xFFFFu));
+}
+
+ECMC_DEBUGPRINT::ECMC_DEBUGPRINT() {
+    // Initialize variables
+}
+
+void ECMC_DEBUGPRINT::operator()() {
+    const bool execute = EXECUTE.get();
+      FIRED.set(false);
+
+      if (execute && !PREVEXECUTE.get()) {
+        const auto message = MESSAGE.get();
+        extern void ecmcStrucppDebugPrint(const char* message);
+        ecmcStrucppDebugPrint(message.c_str());
+        FIRED.set(true);
+      }
+
+      PREVEXECUTE.set(execute);
+}
+
+IEC_LREAL ECMC_APPLYDEADBAND(IEC_LREAL VALUE, IEC_LREAL WIDTH, IEC_LREAL CENTER) {
+    IEC_LREAL ECMC_APPLYDEADBAND_result;
+    IEC_LREAL DELTA;
+    DELTA = VALUE - CENTER;
+    if (WIDTH <= 0.0) {
+        ECMC_APPLYDEADBAND_result = VALUE;
+    } else if (ABS(DELTA) <= WIDTH) {
+        ECMC_APPLYDEADBAND_result = CENTER;
+    } else if (DELTA > 0.0) {
+        ECMC_APPLYDEADBAND_result = CENTER + (DELTA - WIDTH);
+    } else {
+        ECMC_APPLYDEADBAND_result = CENTER + (DELTA + WIDTH);
+    }
+    return ECMC_APPLYDEADBAND_result;
+}
+
+IEC_LREAL ECMC_CLAMP(IEC_LREAL VALUE, IEC_LREAL MIN, IEC_LREAL MAX) {
+    IEC_LREAL ECMC_CLAMP_result;
+    IEC_LREAL LO;
+    IEC_LREAL HI;
+    LO = MIN;
+    HI = MAX;
+    if (HI < LO) {
+        LO = MAX;
+        HI = MIN;
+    }
+    if (HI > LO) {
+        if (VALUE < LO) {
+            ECMC_CLAMP_result = LO;
+        } else if (VALUE > HI) {
+            ECMC_CLAMP_result = HI;
+        } else {
+            ECMC_CLAMP_result = VALUE;
+        }
+    } else {
+        ECMC_CLAMP_result = VALUE;
+    }
+    return ECMC_CLAMP_result;
+}
+
+IEC_BOOL ECMC_INWINDOW(IEC_LREAL VALUE, IEC_LREAL LOW, IEC_LREAL HIGH, IEC_BOOL INCLUSIVE) {
+    IEC_BOOL ECMC_INWINDOW_result;
+    IEC_LREAL LO;
+    IEC_LREAL HI;
+    LO = LOW;
+    HI = HIGH;
+    if (HI < LO) {
+        LO = HIGH;
+        HI = LOW;
+    }
+    if (INCLUSIVE) {
+        ECMC_INWINDOW_result = (VALUE >= LO) && (VALUE <= HI);
+    } else {
+        ECMC_INWINDOW_result = (VALUE > LO) && (VALUE < HI);
+    }
+    return ECMC_INWINDOW_result;
+}
+
+IEC_LREAL ECMC_GETCYCLETIMES() {
+    IEC_LREAL ECMC_GETCYCLETIMES_result;
+    extern double ecmcStrucppGetCycleTimeS();
+      return ecmcStrucppGetCycleTimeS();
+    return ECMC_GETCYCLETIMES_result;
+}
+
+IEC_DINT ECMC_AXISGETTRAJSOURCE(IEC_DINT AXISID) {
+    IEC_DINT ECMC_AXISGETTRAJSOURCE_result;
+    extern int32_t ecmcStrucppGetAxisTrajSource(int32_t axis_index);
+      return ecmcStrucppGetAxisTrajSource(AXISID.get());
+    return ECMC_AXISGETTRAJSOURCE_result;
+}
+
+IEC_DINT ECMC_AXISGETENCSOURCE(IEC_DINT AXISID) {
+    IEC_DINT ECMC_AXISGETENCSOURCE_result;
+    extern int32_t ecmcStrucppGetAxisEncSource(int32_t axis_index);
+      return ecmcStrucppGetAxisEncSource(AXISID.get());
+    return ECMC_AXISGETENCSOURCE_result;
+}
+
+IEC_LREAL ECMC_AXISGETACTUALPOS(IEC_DINT AXISID) {
+    IEC_LREAL ECMC_AXISGETACTUALPOS_result;
+    extern double ecmcStrucppGetAxisActualPos(int32_t axis_index);
+      return ecmcStrucppGetAxisActualPos(AXISID.get());
+    return ECMC_AXISGETACTUALPOS_result;
+}
+
+IEC_LREAL ECMC_AXISGETSETPOINTPOS(IEC_DINT AXISID) {
+    IEC_LREAL ECMC_AXISGETSETPOINTPOS_result;
+    extern double ecmcStrucppGetAxisSetpointPos(int32_t axis_index);
+      return ecmcStrucppGetAxisSetpointPos(AXISID.get());
+    return ECMC_AXISGETSETPOINTPOS_result;
+}
+
+IEC_LREAL ECMC_AXISGETACTUALVEL(IEC_DINT AXISID) {
+    IEC_LREAL ECMC_AXISGETACTUALVEL_result;
+    extern double ecmcStrucppGetAxisActualVel(int32_t axis_index);
+      return ecmcStrucppGetAxisActualVel(AXISID.get());
+    return ECMC_AXISGETACTUALVEL_result;
+}
+
+IEC_LREAL ECMC_AXISGETSETPOINTVEL(IEC_DINT AXISID) {
+    IEC_LREAL ECMC_AXISGETSETPOINTVEL_result;
+    extern double ecmcStrucppGetAxisSetpointVel(int32_t axis_index);
+      return ecmcStrucppGetAxisSetpointVel(AXISID.get());
+    return ECMC_AXISGETSETPOINTVEL_result;
+}
+
+IEC_BOOL ECMC_AXISISENABLED(IEC_DINT AXISID) {
+    IEC_BOOL ECMC_AXISISENABLED_result;
+    extern int32_t ecmcStrucppGetAxisEnabled(int32_t axis_index);
+      return ecmcStrucppGetAxisEnabled(AXISID.get()) != 0;
+    return ECMC_AXISISENABLED_result;
+}
+
+IEC_BOOL ECMC_AXISISBUSY(IEC_DINT AXISID) {
+    IEC_BOOL ECMC_AXISISBUSY_result;
+    extern int32_t ecmcStrucppGetAxisBusy(int32_t axis_index);
+      return ecmcStrucppGetAxisBusy(AXISID.get()) != 0;
+    return ECMC_AXISISBUSY_result;
+}
+
+IEC_BOOL ECMC_AXISHASERROR(IEC_DINT AXISID) {
+    IEC_BOOL ECMC_AXISHASERROR_result;
+    extern int32_t ecmcStrucppGetAxisError(int32_t axis_index);
+      return ecmcStrucppGetAxisError(AXISID.get()) != 0;
+    return ECMC_AXISHASERROR_result;
+}
+
+IEC_DINT ECMC_AXISGETERRORID(IEC_DINT AXISID) {
+    IEC_DINT ECMC_AXISGETERRORID_result;
+    extern int32_t ecmcStrucppGetAxisErrorId(int32_t axis_index);
+      return ecmcStrucppGetAxisErrorId(AXISID.get());
+    return ECMC_AXISGETERRORID_result;
+}
+
+IEC_DINT ECMC_AXISSETTRAJSOURCE(IEC_DINT AXISID, IEC_DINT SOURCE) {
+    IEC_DINT ECMC_AXISSETTRAJSOURCE_result;
+    extern int32_t ecmcStrucppSetAxisTrajSource(int32_t axis_index, int32_t source);
+      return ecmcStrucppSetAxisTrajSource(AXISID.get(), SOURCE.get());
+    return ECMC_AXISSETTRAJSOURCE_result;
+}
+
+IEC_DINT ECMC_AXISSETENCSOURCE(IEC_DINT AXISID, IEC_DINT SOURCE) {
+    IEC_DINT ECMC_AXISSETENCSOURCE_result;
+    extern int32_t ecmcStrucppSetAxisEncSource(int32_t axis_index, int32_t source);
+      return ecmcStrucppSetAxisEncSource(AXISID.get(), SOURCE.get());
+    return ECMC_AXISSETENCSOURCE_result;
+}
+
+IEC_DINT ECMC_AXISUSEINTERNALTRAJ(IEC_DINT AXISID) {
+    IEC_DINT ECMC_AXISUSEINTERNALTRAJ_result;
+    ECMC_AXISUSEINTERNALTRAJ_result = ECMC_AXISSETTRAJSOURCE(AXISID, 0);
+    return ECMC_AXISUSEINTERNALTRAJ_result;
+}
+
+IEC_DINT ECMC_AXISUSEEXTERNALTRAJ(IEC_DINT AXISID) {
+    IEC_DINT ECMC_AXISUSEEXTERNALTRAJ_result;
+    ECMC_AXISUSEEXTERNALTRAJ_result = ECMC_AXISSETTRAJSOURCE(AXISID, 1);
+    return ECMC_AXISUSEEXTERNALTRAJ_result;
+}
+
+IEC_DINT ECMC_AXISUSEINTERNALENC(IEC_DINT AXISID) {
+    IEC_DINT ECMC_AXISUSEINTERNALENC_result;
+    ECMC_AXISUSEINTERNALENC_result = ECMC_AXISSETENCSOURCE(AXISID, 0);
+    return ECMC_AXISUSEINTERNALENC_result;
+}
+
+IEC_DINT ECMC_AXISUSEEXTERNALENC(IEC_DINT AXISID) {
+    IEC_DINT ECMC_AXISUSEEXTERNALENC_result;
+    ECMC_AXISUSEEXTERNALENC_result = ECMC_AXISSETENCSOURCE(AXISID, 1);
+    return ECMC_AXISUSEEXTERNALENC_result;
+}
+
+IEC_DINT ECMC_AXISSETEXTERNALSETPOINTPOS(IEC_DINT AXISID, IEC_LREAL POSITION) {
+    IEC_DINT ECMC_AXISSETEXTERNALSETPOINTPOS_result;
+    extern int32_t ecmcStrucppSetAxisExtSetPos(int32_t axis_index, double value);
+      return ecmcStrucppSetAxisExtSetPos(AXISID.get(), POSITION.get());
+    return ECMC_AXISSETEXTERNALSETPOINTPOS_result;
+}
+
+IEC_DINT ECMC_AXISSETEXTERNALENCODERPOS(IEC_DINT AXISID, IEC_LREAL POSITION) {
+    IEC_DINT ECMC_AXISSETEXTERNALENCODERPOS_result;
+    extern int32_t ecmcStrucppSetAxisExtActPos(int32_t axis_index, double value);
+      return ecmcStrucppSetAxisExtActPos(AXISID.get(), POSITION.get());
+    return ECMC_AXISSETEXTERNALENCODERPOS_result;
+}
+
+IEC_BOOL ECMC_DEBUGPRINTNOW(IEC_STRING MESSAGE) {
+    IEC_BOOL ECMC_DEBUGPRINTNOW_result;
+    const auto message = MESSAGE.get();
+      extern void ecmcStrucppDebugPrint(const char* message);
+      ecmcStrucppDebugPrint(message.c_str());
+      return true;
+    return ECMC_DEBUGPRINTNOW_result;
 }
 
 }  // namespace strucpp

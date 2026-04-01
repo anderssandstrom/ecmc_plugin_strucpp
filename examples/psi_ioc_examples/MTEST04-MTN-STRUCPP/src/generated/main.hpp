@@ -5541,7 +5541,254 @@ IEC_INT _BUFFER_INSERT(IECStringVar<STRING_LENGTH> STR, IEC_INT POS, IEC_Ptr<Arr
 IEC_BOOL _BUFFER_UPPERCASE(IEC_Ptr<Array1D<IEC_BYTE, 0, 32000>> PT, IEC_INT SIZE);
 IEC_INT _STRING_TO_BUFFER(IECStringVar<STRING_LENGTH> STR, IEC_INT POS, IEC_Ptr<Array1D<IEC_BYTE, 0, 32767>> PT, IEC_UINT SIZE);
 
+class ECMC_PID;
+class ECMC_DEBOUNCEBOOL;
+class ECMC_RATELIMITER;
+class ECMC_FIRSTORDERFILTER;
+class ECMC_HYSTERESISBOOL;
+class ECMC_INTEGRATOR;
+class ECMC_ECSLAVESTATUS;
+class ECMC_ECMASTERSTATUS;
+class ECMC_DEBUGPRINT;
 class Program_MAIN;
+
+class ECMC_PID {
+public:
+    // Inputs
+    IEC_BOOL ENABLE;
+    IEC_BOOL RESET;
+    IEC_LREAL SETPOINT;
+    IEC_LREAL ACTUAL;
+    IEC_LREAL FF;
+    IEC_LREAL KP;
+    IEC_LREAL KI;
+    IEC_LREAL KD;
+    IEC_LREAL KFF;
+    IEC_LREAL DT;
+    IEC_LREAL DFILTERTAU;
+    IEC_LREAL OUTMIN;
+    IEC_LREAL OUTMAX;
+    IEC_LREAL IMIN;
+    IEC_LREAL IMAX;
+    // Outputs
+    IEC_LREAL ERROR;
+    IEC_LREAL OUTPUT;
+    IEC_LREAL PPART;
+    IEC_LREAL IPART;
+    IEC_LREAL DPART;
+    IEC_LREAL FFPART;
+    IEC_BOOL LIMITED;
+    // Local variables
+    IEC_LREAL PREVERROR;
+    IEC_LREAL DSTATE;
+    IEC_BOOL WASENABLED;
+    IEC_LREAL CANDIDATEI;
+    IEC_LREAL DRAW;
+    IEC_LREAL DALPHA;
+    IEC_LREAL UNSATOUTPUT;
+
+    // Constructor
+    ECMC_PID();
+
+    // Execute function block
+    void operator()();
+
+    virtual ~ECMC_PID() = default;
+};
+
+class ECMC_DEBOUNCEBOOL {
+public:
+    // Inputs
+    IEC_BOOL IN;
+    IEC_TIME ONDELAY;
+    IEC_TIME OFFDELAY;
+    // Outputs
+    IEC_BOOL OUT;
+    IEC_BOOL RISING;
+    IEC_BOOL FALLING;
+    // Local variables
+    TON ONTIMER;
+    TON OFFTIMER;
+
+    // Constructor
+    ECMC_DEBOUNCEBOOL();
+
+    // Execute function block
+    void operator()();
+
+    virtual ~ECMC_DEBOUNCEBOOL() = default;
+};
+
+class ECMC_RATELIMITER {
+public:
+    // Inputs
+    IEC_BOOL ENABLE;
+    IEC_BOOL RESET;
+    IEC_LREAL INPUT;
+    IEC_LREAL RISINGRATE;
+    IEC_LREAL FALLINGRATE;
+    IEC_LREAL DT;
+    IEC_BOOL INITTOINPUT;
+    // Outputs
+    IEC_LREAL OUTPUT;
+    IEC_BOOL LIMITED;
+    // Local variables
+    IEC_LREAL DELTA;
+    IEC_LREAL MAXSTEP;
+
+    // Constructor
+    ECMC_RATELIMITER();
+
+    // Execute function block
+    void operator()();
+
+    virtual ~ECMC_RATELIMITER() = default;
+};
+
+class ECMC_FIRSTORDERFILTER {
+public:
+    // Inputs
+    IEC_BOOL ENABLE;
+    IEC_BOOL RESET;
+    IEC_LREAL INPUT;
+    IEC_LREAL TAU;
+    IEC_LREAL DT;
+    IEC_BOOL INITTOINPUT;
+    // Outputs
+    IEC_LREAL OUTPUT;
+    // Local variables
+    IEC_LREAL ALPHA;
+
+    // Constructor
+    ECMC_FIRSTORDERFILTER();
+
+    // Execute function block
+    void operator()();
+
+    virtual ~ECMC_FIRSTORDERFILTER() = default;
+};
+
+class ECMC_HYSTERESISBOOL {
+public:
+    // Inputs
+    IEC_LREAL IN;
+    IEC_LREAL LOW;
+    IEC_LREAL HIGH;
+    IEC_BOOL RESET;
+    IEC_BOOL INITSTATE;
+    // Outputs
+    IEC_BOOL OUT;
+    IEC_BOOL RISING;
+    IEC_BOOL FALLING;
+    // Local variables
+    IEC_LREAL LO;
+    IEC_LREAL HI;
+
+    // Constructor
+    ECMC_HYSTERESISBOOL();
+
+    // Execute function block
+    void operator()();
+
+    virtual ~ECMC_HYSTERESISBOOL() = default;
+};
+
+class ECMC_INTEGRATOR {
+public:
+    // Inputs
+    IEC_BOOL ENABLE;
+    IEC_BOOL RESET;
+    IEC_BOOL HOLD;
+    IEC_LREAL IN;
+    IEC_LREAL K;
+    IEC_LREAL DT;
+    IEC_LREAL MIN;
+    IEC_LREAL MAX;
+    IEC_LREAL INIT;
+    // Outputs
+    IEC_LREAL OUT;
+    IEC_BOOL LIMITED;
+    // Local variables
+    IEC_LREAL CANDIDATE;
+    IEC_LREAL LO;
+    IEC_LREAL HI;
+
+    // Constructor
+    ECMC_INTEGRATOR();
+
+    // Execute function block
+    void operator()();
+
+    virtual ~ECMC_INTEGRATOR() = default;
+};
+
+class ECMC_ECSLAVESTATUS {
+public:
+    // Inputs
+    IEC_INT SLAVEID;
+    IEC_INT MASTERID;
+    // Outputs
+    IEC_BOOL VALID;
+    IEC_BOOL ONLINE;
+    IEC_BOOL OPERATIONAL;
+    IEC_BOOL INIT;
+    IEC_BOOL PREOP;
+    IEC_BOOL SAFEOP;
+    IEC_BOOL OP;
+    IEC_BYTE STATECODE;
+    IEC_DWORD STATEWORD;
+
+    // Constructor
+    ECMC_ECSLAVESTATUS();
+
+    // Execute function block
+    void operator()();
+
+    virtual ~ECMC_ECSLAVESTATUS() = default;
+};
+
+class ECMC_ECMASTERSTATUS {
+public:
+    // Inputs
+    IEC_INT MASTERID;
+    // Outputs
+    IEC_BOOL VALID;
+    IEC_BOOL LINKUP;
+    IEC_BOOL INIT;
+    IEC_BOOL PREOP;
+    IEC_BOOL SAFEOP;
+    IEC_BOOL OP;
+    IEC_BYTE STATECODE;
+    IEC_UINT SLAVESRESPONDING;
+    IEC_DWORD STATEWORD;
+
+    // Constructor
+    ECMC_ECMASTERSTATUS();
+
+    // Execute function block
+    void operator()();
+
+    virtual ~ECMC_ECMASTERSTATUS() = default;
+};
+
+class ECMC_DEBUGPRINT {
+public:
+    // Inputs
+    IEC_BOOL EXECUTE;
+    IEC_STRING MESSAGE;
+    // Outputs
+    IEC_BOOL FIRED;
+    // Local variables
+    IEC_BOOL PREVEXECUTE;
+
+    // Constructor
+    ECMC_DEBUGPRINT();
+
+    // Execute function block
+    void operator()();
+
+    virtual ~ECMC_DEBUGPRINT() = default;
+};
 
 class Program_MAIN : public ProgramBase {
 public:
@@ -5551,6 +5798,12 @@ public:
     IEC_INT VELOCITY_SETPOINT;  // AT %QW2
     IEC_INT CYCLE_COUNTER;  // AT %MW0
     IEC_INT ACTUAL_POS_EXPORT;
+    IEC_BOOL DBG_SAMPLE_TRIGGER;
+    IEC_BOOL STARTUP_PRINTED;
+    ECMC_DEBUGPRINT DBG_STARTUP;
+    ECMC_DEBUGPRINT DBG_POSITION;
+    ECMC_DEBUGPRINT DBG_REVERSE_POS;
+    ECMC_DEBUGPRINT DBG_REVERSE_NEG;
 
     // Constructor
     Program_MAIN();
@@ -5559,6 +5812,29 @@ public:
     void run() override;
 };
 
+IEC_LREAL ECMC_APPLYDEADBAND(IEC_LREAL VALUE, IEC_LREAL WIDTH, IEC_LREAL CENTER);
+IEC_LREAL ECMC_CLAMP(IEC_LREAL VALUE, IEC_LREAL MIN, IEC_LREAL MAX);
+IEC_BOOL ECMC_INWINDOW(IEC_LREAL VALUE, IEC_LREAL LOW, IEC_LREAL HIGH, IEC_BOOL INCLUSIVE);
+IEC_LREAL ECMC_GETCYCLETIMES();
+IEC_DINT ECMC_AXISGETTRAJSOURCE(IEC_DINT AXISID);
+IEC_DINT ECMC_AXISGETENCSOURCE(IEC_DINT AXISID);
+IEC_LREAL ECMC_AXISGETACTUALPOS(IEC_DINT AXISID);
+IEC_LREAL ECMC_AXISGETSETPOINTPOS(IEC_DINT AXISID);
+IEC_LREAL ECMC_AXISGETACTUALVEL(IEC_DINT AXISID);
+IEC_LREAL ECMC_AXISGETSETPOINTVEL(IEC_DINT AXISID);
+IEC_BOOL ECMC_AXISISENABLED(IEC_DINT AXISID);
+IEC_BOOL ECMC_AXISISBUSY(IEC_DINT AXISID);
+IEC_BOOL ECMC_AXISHASERROR(IEC_DINT AXISID);
+IEC_DINT ECMC_AXISGETERRORID(IEC_DINT AXISID);
+IEC_DINT ECMC_AXISSETTRAJSOURCE(IEC_DINT AXISID, IEC_DINT SOURCE);
+IEC_DINT ECMC_AXISSETENCSOURCE(IEC_DINT AXISID, IEC_DINT SOURCE);
+IEC_DINT ECMC_AXISUSEINTERNALTRAJ(IEC_DINT AXISID);
+IEC_DINT ECMC_AXISUSEEXTERNALTRAJ(IEC_DINT AXISID);
+IEC_DINT ECMC_AXISUSEINTERNALENC(IEC_DINT AXISID);
+IEC_DINT ECMC_AXISUSEEXTERNALENC(IEC_DINT AXISID);
+IEC_DINT ECMC_AXISSETEXTERNALSETPOINTPOS(IEC_DINT AXISID, IEC_LREAL POSITION);
+IEC_DINT ECMC_AXISSETEXTERNALENCODERPOS(IEC_DINT AXISID, IEC_LREAL POSITION);
+IEC_BOOL ECMC_DEBUGPRINTNOW(IEC_STRING MESSAGE);
 // =============================================================================
 // Located Variables Descriptor Array
 // =============================================================================

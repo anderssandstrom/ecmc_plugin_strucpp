@@ -278,6 +278,20 @@ and a split source layout, use:
 
 - [`examples/psi_ioc_examples/ioc_project_example`](examples/psi_ioc_examples/ioc_project_example)
 
+The shared IOC build helper includes `lib/ecmc_control.st`,
+`lib/ecmc_utils.st`, and `lib/ecmc_debug.st` by default. Motion helpers are
+available too, but are opt-in so they do not shadow any external `MC_*`
+library you may already be using. Enable them with:
+
+```make
+INCLUDE_MOTION_ST := 1
+```
+
+When motion helpers are enabled, the shared build helper also adds
+`-L $(ECMC_PLUGIN_STRUCPP)/libs` for `strucpp` and the `ecmcMcApi.h` include
+path from `$(ECMC)/devEcmcSup/motion` for the C++ compile. Override `ECMC` in
+your app `Makefile` if your checkout layout differs.
+
 ## Bundled Motion Library
 
 This repo now ships a reusable ST motion library:

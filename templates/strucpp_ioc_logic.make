@@ -4,6 +4,7 @@ ST_SOURCE ?= $(PROGRAM).st
 INCLUDE_DEBUG_ST ?= 1
 INCLUDE_CONTROL_ST ?= 1
 INCLUDE_UTILS_ST ?= 1
+INCLUDE_MOTION_ST ?= 0
 COMMON_ST_SOURCES :=
 ifeq ($(INCLUDE_CONTROL_ST),1)
 COMMON_ST_SOURCES += $(ECMC_PLUGIN_STRUCPP)/lib/ecmc_control.st
@@ -22,6 +23,7 @@ GEN_DIR ?= generated
 
 STRUCPP ?= ../../../strucpp
 ECMC_PLUGIN_STRUCPP ?= ../../../ecmc_plugin_strucpp
+ECMC ?= $(abspath $(ECMC_PLUGIN_STRUCPP)/../ECMC/ecmc)
 PYTHON ?= python3
 EPICS_VERSION ?= 7.0.10
 OS_CLASS ?= deb12
@@ -35,6 +37,11 @@ ifeq ($(origin STRUCPP_CLI), undefined)
     STRUCPP_CLI := strucpp
   endif
 endif
+STRUCPP_LIB_PATHS :=
+ifeq ($(INCLUDE_MOTION_ST),1)
+STRUCPP_LIB_PATHS += $(ECMC_PLUGIN_STRUCPP)/libs
+endif
+STRUCPP_LIB_ARGS := $(foreach dir,$(STRUCPP_LIB_PATHS),-L $(dir))
 
 MAPGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_mapgen.py
 EXPORTGEN := $(ECMC_PLUGIN_STRUCPP)/scripts/strucpp_epics_exportgen.py
@@ -50,6 +57,9 @@ CXX ?= c++
 CXXFLAGS += -std=c++17 -fPIC -Wall -Wextra
 CPPFLAGS += -I$(STRUCPP)/src/runtime/include
 CPPFLAGS += -I$(ECMC_PLUGIN_STRUCPP)/src
+ifeq ($(INCLUDE_MOTION_ST),1)
+CPPFLAGS += -I$(ECMC)/devEcmcSup/motion
+endif
 CPPFLAGS += -I.
 CPPFLAGS += -I$(GEN_DIR)
 
@@ -95,7 +105,7 @@ $(ST_BUNDLE): $(ST_SOURCES) $(BUNDLEGEN)
 
 $(GEN_CPP): $(ST_BUNDLE)
 	mkdir -p $(GEN_DIR)
-	$(STRUCPP_CLI) $< -o $@
+	$(STRUCPP_CLI) $(STRUCPP_LIB_ARGS) $< -o $@
 
 $(GEN_HPP): $(GEN_CPP)
 

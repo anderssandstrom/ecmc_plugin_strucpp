@@ -2,7 +2,8 @@ PROGRAM MAIN
 VAR
   cycle_counter    AT %MW0 : INT;   // @epics rec=Main-CycleCounterAct
   target_high      AT %MX2.0 : BOOL;
-  start_armed      AT %MX2.1 : BOOL;
+  move_execute     AT %MX2.1 : BOOL;
+  move_request     AT %MX2.2 : BOOL;
 
   axis             : ECMC_AXIS_REF;
   power            : MC_Power;
@@ -34,17 +35,11 @@ readPos(Axis := axis, Enable := TRUE);
 readStatus(Axis := axis, Enable := TRUE);
 power(Axis := axis, Enable := TRUE);
 
-readyTrig(CLK := power.Status AND readPos.Valid);
-moveDoneTrig(CLK := moveAbs.Done);
+readyTrig(CLK := power.Status AND readPos.Valid AND readStatus.Valid AND readStatus.StandStill AND NOT readStatus.Disabled AND NOT readStatus.ErrorStop);
 
 IF readyTrig.Q THEN
   target_high := TRUE;
-  start_armed := TRUE;
-END_IF;
-
-IF moveDoneTrig.Q THEN
-  target_high := NOT target_high;
-  start_armed := TRUE;
+  move_request := TRUE;
 END_IF;
 
 IF target_high THEN
@@ -54,14 +49,29 @@ ELSE
 END_IF;
 
 moveAbs(Axis := axis,
-        Execute := start_armed,
+        Execute := move_execute,
         Position := target_pos_export,
-        Velocity := 1000.0,
-        Acceleration := 2000.0,
-        Deceleration := 2000.0);
-start_armed := FALSE;
+        Velocity := 360.0,
+        Acceleration := 360.0,
+        Deceleration := 360.0);
 
 actual_pos_export := readPos.Position;
+moveDoneTrig(CLK := moveAbs.Done);
+
+IF moveDoneTrig.Q THEN
+  target_high := NOT target_high;
+  move_request := TRUE;
+END_IF;
+
+IF move_execute AND (moveAbs.Done OR moveAbs.Error OR moveAbs.CommandAborted) THEN
+  move_execute := FALSE;
+END_IF;
+
+IF move_request AND NOT move_execute AND NOT moveAbs.Done THEN
+  move_execute := TRUE;
+  move_request := FALSE;
+END_IF;
+
 power_ok_export := power.Status;
 move_busy_export := moveAbs.Busy;
 move_done_export := moveAbs.Done;

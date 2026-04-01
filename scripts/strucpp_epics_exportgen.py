@@ -46,8 +46,14 @@ def parse_program_class(header_path: pathlib.Path):
     raise RuntimeError(f"Failed to find Program_* class in {header_path}")
 
 
+def remove_prefix(text: str, prefix: str) -> str:
+    if text.startswith(prefix):
+        return text[len(prefix):]
+    return text
+
+
 def derive_export_name(program_class: str, var_name: str):
-    program_name = program_class.removeprefix("Program_").lower()
+    program_name = remove_prefix(program_class, "Program_").lower()
     return f"plugin.strucpp0.{program_name}.{var_name}"
 
 
