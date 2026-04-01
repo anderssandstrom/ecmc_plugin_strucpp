@@ -88,6 +88,7 @@ struct PluginConfig {
   size_t memory_bytes {256};
   double sample_rate_ms {0.0};
   bool validate_report {false};
+  bool run_before_epics_started {false};
 };
 
 struct LogicRuntime {
@@ -133,6 +134,7 @@ bool createBoundParam(const char* name,
                       std::vector<ExportedParamBinding>* out_bindings,
                       std::string* error_out);
 void applyControlWord(uint32_t control_word);
+bool isEpicsStarted();
 void logError(const char* fmt, ...);
 
 extern int32_t g_control_word;
@@ -654,8 +656,17 @@ std::string g_builtin_debug_text;
 std::string g_builtin_debug_text_last_value;
 bool g_builtin_debug_text_initialized = false;
 
+bool isEpicsStarted() {
+  static int* started_flag = static_cast<int*>(dlsym(RTLD_DEFAULT, "allowCallbackEpicsState"));
+  return started_flag && (*started_flag != 0);
+}
+
 uint32_t getHostControlWord() {
   return static_cast<uint32_t>(g_control_word);
+}
+
+void setHostControlWord(uint32_t control_word) {
+  applyControlWord(control_word);
 }
 
 double getHostCycleTimeS() {
@@ -734,8 +745,9 @@ void publishHostDebugText(const char* message) {
 }
 
 const ecmcStrucppHostServices g_host_services = {
-  5,
+  6,
   &getHostControlWord,
+  &setHostControlWord,
   &getHostCycleTimeS,
   &getHostEcMasterStateWord,
   &getHostEcSlaveStateWord,
@@ -2185,6 +2197,13 @@ bool parseConfigString(const char* raw_config,
                             error_out)) {
           return false;
         }
+      } else if (key == "run_before_epics_started") {
+        if (!parseBoolToken(value,
+                            "run_before_epics_started",
+                            &out_config->run_before_epics_started,
+                            error_out)) {
+          return false;
+        }
       } else {
         if (error_out) {
           *error_out = "Unsupported config key: '" + key + "'";
@@ -2905,10 +2924,11 @@ static int construct(char* configStr) {
     logError("%s", error.c_str());
     return -1;
   }
-  logInfo("construct parsed config logic_lib=%s asyn_port=%s sample_rate_ms=%g",
+  logInfo("construct parsed config logic_lib=%s asyn_port=%s sample_rate_ms=%g run_before_epics_started=%d",
           g_config.logic_lib.c_str(),
           g_config.asyn_port_name.c_str(),
-          g_config.sample_rate_ms);
+          g_config.sample_rate_ms,
+          g_config.run_before_epics_started ? 1 : 0);
 
   double base_sample_time_ms = 0.0;
   if (!resolveExecuteDivider(g_config,
@@ -2962,7 +2982,7 @@ static int construct(char* configStr) {
   alreadyLoaded = 1;
   const std::string input_bindings = describeBindingSpecs(g_config.input_bindings);
   const std::string output_bindings = describeBindingSpecs(g_config.output_bindings);
-  logInfo("configured logic_lib=%s asyn_port=%s mapping_file=%s input_item=%s input_bindings=%s output_item=%s output_bindings=%s memory_bytes=%zu sample_rate_ms=%g execute_divider=%zu",
+  logInfo("configured logic_lib=%s asyn_port=%s mapping_file=%s input_item=%s input_bindings=%s output_item=%s output_bindings=%s memory_bytes=%zu sample_rate_ms=%g execute_divider=%zu run_before_epics_started=%d",
           g_config.logic_lib.c_str(),
           g_config.asyn_port_name.c_str(),
           g_config.mapping_file.empty() ? "<none>" : g_config.mapping_file.c_str(),
@@ -2972,7 +2992,8 @@ static int construct(char* configStr) {
           output_bindings.c_str(),
           g_config.memory_bytes,
           g_config.sample_rate_ms,
-          g_runtime_execute_divider);
+          g_runtime_execute_divider,
+          g_config.run_before_epics_started ? 1 : 0);
   if (g_config.sample_rate_ms > 0.0) {
     logInfo("sample_rate base_ms=%g requested_ms=%g actual_ms=%g",
             base_sample_time_ms,
@@ -3241,6 +3262,15 @@ static int realtime(int) {
     return 0;
   }
 
+  if (!g_config.run_before_epics_started && !isEpicsStarted()) {
+    g_last_exec_time_ms = 0.0;
+    g_last_input_time_ms = 0.0;
+    g_last_output_time_ms = 0.0;
+    g_last_total_time_ms = 0.0;
+    syncBuiltinParams(false, true);
+    return 0;
+  }
+
   if (g_execution_enabled == 0u) {
     g_last_exec_time_ms = 0.0;
     g_last_input_time_ms = 0.0;
@@ -3364,7 +3394,8 @@ ecmcPluginData makePluginData() {
   data.desc = "Generic ecmc host plugin for loadable STruCpp logic libraries.";
   data.optionDesc =
     "logic_lib=<path>;asyn_port=<plugin-port>;[mapping_file=<path>|input_item=<name>|input_bindings=<offset:item[@bytes],...>];"
-    "[mapping_file=<path>|output_item=<name>|output_bindings=<offset:item[@bytes],...>];memory_bytes=<n>;sample_rate_ms=<n>\n"
+    "[mapping_file=<path>|output_item=<name>|output_bindings=<offset:item[@bytes],...>];memory_bytes=<n>;sample_rate_ms=<n>;"
+    "run_before_epics_started=<0|1>\n"
     "PLC consts: STRUCPP_AREA_I=0, STRUCPP_AREA_Q=1, STRUCPP_AREA_M=2\n"
     "PLC funcs: strucpp_get_bit(a,b,bit), strucpp_set_bit(a,b,bit,v), "
     "strucpp_get_u8(a,b), strucpp_set_u8(a,b,v), strucpp_get_s8(a,b), strucpp_set_s8(a,b,v), "

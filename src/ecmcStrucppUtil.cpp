@@ -1,8 +1,18 @@
 #include <cstdint>
+#include <dlfcn.h>
 
 #include "ecmcStrucppLogicWrapper.hpp"
 
 namespace strucpp {
+
+namespace {
+
+int* lookupEpicsStartedFlag() {
+  static int* cached_flag = static_cast<int*>(dlsym(RTLD_DEFAULT, "allowCallbackEpicsState"));
+  return cached_flag;
+}
+
+}  // namespace
 
 double ecmcStrucppGetCycleTimeS() {
   const auto* services = ecmcStrucpp::getHostServices();
@@ -140,6 +150,14 @@ int32_t ecmcStrucppSetAxisExtActPos(int32_t axis_index, double value) {
   return services->set_axis_ext_act_pos(axis_index, value);
 }
 
+int32_t ecmcStrucppGetEpicsStarted() {
+  const int* started_flag = lookupEpicsStartedFlag();
+  if (!started_flag) {
+    return 0;
+  }
+  return *started_flag != 0 ? 1 : 0;
+}
+
 }  // namespace strucpp
 
 double ecmcStrucppGetCycleTimeS() {
@@ -208,4 +226,8 @@ int32_t ecmcStrucppSetAxisExtSetPos(int32_t axis_index, double value) {
 
 int32_t ecmcStrucppSetAxisExtActPos(int32_t axis_index, double value) {
   return strucpp::ecmcStrucppSetAxisExtActPos(axis_index, value);
+}
+
+int32_t ecmcStrucppGetEpicsStarted() {
+  return strucpp::ecmcStrucppGetEpicsStarted();
 }

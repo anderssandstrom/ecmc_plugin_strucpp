@@ -123,6 +123,33 @@ FUNCTION ECMC_GetCycleTimeS : LREAL
 }
 END_FUNCTION
 
+FUNCTION ECMC_EpicsStarted : BOOL
+{external
+  extern int32_t ecmcStrucppGetEpicsStarted();
+  return ecmcStrucppGetEpicsStarted() != 0;
+}
+END_FUNCTION
+
+FUNCTION_BLOCK ECMC_StartupDelay
+VAR_INPUT
+  Enable : BOOL := TRUE;
+  Delay  : TIME := T#500ms;
+END_VAR
+VAR_OUTPUT
+  Ready  : BOOL;
+  Rising : BOOL;
+END_VAR
+VAR
+  DelayTimer : TON;
+  PrevReady  : BOOL;
+END_VAR
+
+DelayTimer(IN := Enable, PT := Delay);
+Ready := DelayTimer.Q;
+Rising := Ready AND NOT PrevReady;
+PrevReady := Ready;
+END_FUNCTION_BLOCK
+
 FUNCTION_BLOCK ECMC_RateLimiter
 VAR_INPUT
   Enable      : BOOL := TRUE;

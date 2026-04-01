@@ -28,6 +28,8 @@ VAR
   dbg_target_high    : ECMC_DebugPrint;
 END_VAR
 
+ECMC_DebugPrintEnable(Enable := TRUE);
+
 cycle_counter := cycle_counter + 1;
 axis.AxisIndex := 1;
 
@@ -35,7 +37,9 @@ readPos(Axis := axis, Enable := TRUE);
 readStatus(Axis := axis, Enable := TRUE);
 power(Axis := axis, Enable := TRUE);
 
-readyTrig(CLK := power.Status AND readPos.Valid AND readStatus.Valid AND readStatus.StandStill AND NOT readStatus.Disabled AND NOT readStatus.ErrorStop);
+readyTrig(CLK := power.Status AND power.Valid AND readPos.Valid AND
+                 readStatus.Valid AND readStatus.StandStill AND
+                 NOT readStatus.Disabled AND NOT readStatus.ErrorStop);
 
 IF readyTrig.Q THEN
   target_high := TRUE;
@@ -43,7 +47,7 @@ IF readyTrig.Q THEN
 END_IF;
 
 IF target_high THEN
-  target_pos_export := 12800.0;
+  target_pos_export := 3600.0;
 ELSE
   target_pos_export := 0.0;
 END_IF;
@@ -87,7 +91,7 @@ dbg_position(Execute := dbg_sample_trigger,
                                TO_STRING(actual_pos_export)));
 
 dbg_target_high(Execute := readyTrig.Q OR (moveDoneTrig.Q AND target_high),
-                Message := 'MC_MoveAbsolute -> 12800');
+                Message := 'MC_MoveAbsolute -> 3600');
 dbg_target_low(Execute := moveDoneTrig.Q AND NOT target_high,
                Message := 'MC_MoveAbsolute -> 0');
 END_PROGRAM

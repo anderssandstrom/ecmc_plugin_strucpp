@@ -126,6 +126,65 @@ Returns:
 
 - `LREAL`
 
+### `ECMC_EpicsStarted`
+
+Type:
+
+- `FUNCTION`
+
+Purpose:
+
+- report whether the IOC has finished EPICS startup
+- mirrors the `ecmc` startup state used by `epics_get_started()`
+- can be used to hold back startup logic until the IOC is fully running
+
+Returns:
+
+- `BOOL`
+
+Example:
+
+```iecst
+IF ECMC_EpicsStarted() THEN
+  startupReady(Enable := axis_ready_raw,
+               Delay := T#500ms);
+END_IF;
+```
+
+### `ECMC_StartupDelay`
+
+Type:
+
+- `FUNCTION_BLOCK`
+
+Purpose:
+
+- delay a startup-ready signal until it has stayed true for a configured time
+- useful to avoid acting on transient startup states
+
+Inputs:
+
+- `Enable : BOOL := TRUE`
+- `Delay : TIME := T#500ms`
+
+Outputs:
+
+- `Ready : BOOL`
+- `Rising : BOOL`
+
+Example:
+
+```iecst
+VAR
+  startupReady : ECMC_StartupDelay;
+  startTrig    : R_TRIG;
+END_VAR
+
+startupReady(Enable := axis_ready_raw,
+             Delay := T#500ms);
+startTrig(CLK := startupReady.Ready);
+```
+
 ### `ECMC_RateLimiter`
 
 Type:

@@ -98,6 +98,31 @@ IF axis_error THEN
 END_IF;
 ```
 
+## `ECMC_DebugPrintEnable`
+
+Type:
+
+- `FUNCTION`
+
+Inputs:
+
+- `Enable : BOOL`
+
+Return value:
+
+- `BOOL`
+
+Behavior:
+
+- enables or disables plugin debug printouts by writing `ctrl.word` bit 2
+- returns `TRUE` after requesting the change
+
+Example:
+
+```iecst
+ECMC_DebugPrintEnable(Enable := TRUE);
+```
+
 ## Recommended Use
 
 - Prefer `ECMC_DebugPrint` for cyclic logic, because it avoids repeated prints

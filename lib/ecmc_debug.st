@@ -35,3 +35,14 @@ END_VAR
   return true;
 }
 END_FUNCTION
+
+FUNCTION ECMC_DebugPrintEnable : BOOL
+VAR_INPUT
+  Enable : BOOL;
+END_VAR
+{external
+  extern void ecmcStrucppSetDebugPrintEnabled(int enable);
+  ecmcStrucppSetDebugPrintEnabled(ENABLE.get() ? 1 : 0);
+  return true;
+}
+END_FUNCTION

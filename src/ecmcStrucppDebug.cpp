@@ -25,8 +25,31 @@ void ecmcStrucppDebugPrint(const char* message) {
   }
 }
 
+void ecmcStrucppSetDebugPrintEnabled(bool enable) {
+  const auto* services = ecmcStrucpp::getHostServices();
+  if (!services || !services->get_control_word || !services->set_control_word) {
+    return;
+  }
+
+  uint32_t control_word = services->get_control_word();
+  if (enable) {
+    control_word |= ECMC_STRUCPP_CONTROL_WORD_ENABLE_DEBUG_PRINTS_BIT;
+  } else {
+    control_word &= ~ECMC_STRUCPP_CONTROL_WORD_ENABLE_DEBUG_PRINTS_BIT;
+  }
+  services->set_control_word(control_word);
+}
+
+void ecmcStrucppSetDebugPrintEnabled(int enable) {
+  ecmcStrucppSetDebugPrintEnabled(enable != 0);
+}
+
 }  // namespace strucpp
 
 void ecmcStrucppDebugPrint(const char* message) {
   strucpp::ecmcStrucppDebugPrint(message);
+}
+
+void ecmcStrucppSetDebugPrintEnabled(int enable) {
+  strucpp::ecmcStrucppSetDebugPrintEnabled(enable);
 }
