@@ -137,6 +137,8 @@ Purpose:
 - report whether the IOC has finished EPICS startup
 - mirrors the `ecmc` startup state used by `epics_get_started()`
 - can be used to hold back startup logic until the IOC is fully running
+- remains useful when the plugin is configured with
+  `run_before_epics_started=1`
 
 Returns:
 
@@ -150,6 +152,13 @@ IF ECMC_EpicsStarted() THEN
                Delay := T#500ms);
 END_IF;
 ```
+
+Note:
+
+- by default the plugin already skips ST execution until EPICS startup is
+  complete
+- use this helper when you intentionally enable early execution and still want
+  startup-aware behavior inside ST
 
 ### `ECMC_StartupDelay`
 

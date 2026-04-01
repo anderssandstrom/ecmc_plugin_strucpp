@@ -28,6 +28,7 @@ VAR
   dbg_target_high    : ECMC_DebugPrint;
 END_VAR
 
+// Optional for demo visibility. Remove if you want quiet operation.
 ECMC_DebugPrintEnable(Enable := TRUE);
 
 cycle_counter := cycle_counter + 1;
